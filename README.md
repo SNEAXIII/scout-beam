@@ -4,6 +4,7 @@ A solo deduction game: a bot hides pieces on a grid, the player fires beams from
 deduces the hidden layout. Vocabulary: [`CONTEXT.md`](CONTEXT.md).
 
 - `api/` — Rust: axum + sqlx on PostgreSQL, OpenAPI with utoipa.
+- `front/` — Next.js App Router, React 19, Tailwind CSS 4, shadcn/ui.
 
 ## API
 
@@ -40,3 +41,16 @@ with `ENV=dev`; an omitted login is generated server-side.
 
 `make check` runs format, clippy, the `.sqlx` cache check and the tests. A changed query or
 migration needs `make prepare` in the same commit: the Docker image compiles against `.sqlx/`.
+
+## Front
+
+Everything below runs from `front/`, with the API up on `localhost:8002`.
+
+```bash
+cp .env.example .env.local   # NEXT_PUBLIC_API_URL, defaults to http://localhost:8002
+pnpm install
+pnpm dev                     # http://localhost:3001 — sign in on /login: 3–30 ASCII letters or digits
+```
+
+`pnpm exec tsc --noEmit` and `pnpm exec oxlint --type-aware` check a change; `pnpm build` builds it.
+The API's `CORS_ALLOWED_ORIGIN` must be `http://localhost:3001`.

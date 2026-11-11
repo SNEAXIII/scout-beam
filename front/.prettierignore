@@ -1,0 +1,6 @@
+**/.next/**
+**/node_modules/**
+**/*.tsbuildinfo
+next-env.d.ts
+pnpm-lock.yaml
+AGENTS.md
