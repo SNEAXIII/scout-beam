@@ -1,4 +1,6 @@
 import { apiRequest } from '@/app/lib/api'
+import type { BeamColour } from '@/app/lib/colours'
+import type { Layout } from '@/app/lib/pieces'
 
 export type GameStatus = 'in_progress' | 'solved'
 
@@ -11,6 +13,24 @@ export interface GameSummary {
 
 export const listGames = (): Promise<GameSummary[]> => apiRequest<GameSummary[]>('/games')
 
-/** The created game's view; only its summary fields are typed until the game page needs more. */
-export const createGame = (): Promise<GameSummary> =>
-  apiRequest<GameSummary>('/games', { method: 'POST' })
+export interface Shot {
+  entry: number
+  exit_entry: number
+  colour: BeamColour
+}
+
+export interface GameView extends GameSummary {
+  /** In firing order. */
+  shots: Shot[]
+  /** Only once solved. */
+  layout?: Layout
+}
+
+export const createGame = (): Promise<GameView> =>
+  apiRequest<GameView>('/games', { method: 'POST' })
+
+export const getGame = (id: string): Promise<GameView> => apiRequest<GameView>(`/games/${id}`)
+
+/** Re-firing an entry answers the stored shot; a solved game answers 409. */
+export const fireShot = (id: string, entry: number): Promise<Shot> =>
+  apiRequest<Shot>(`/games/${id}/shots`, { method: 'POST', body: { entry } })
