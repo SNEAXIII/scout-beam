@@ -6,6 +6,7 @@ pub mod app;
 pub mod auth;
 pub mod config;
 pub mod domains;
+pub mod engine;
 pub mod shared;
 pub mod state;
 
