@@ -2,4 +2,5 @@
 //!
 //! A domain may use `shared` and `auth`; it never reaches into another domain's repository.
 
+pub mod game;
 pub mod user;

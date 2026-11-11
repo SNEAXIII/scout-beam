@@ -9,11 +9,15 @@ use common::TestApp;
 use http::StatusCode;
 use sqlx::PgPool;
 
-const EXPECTED_PATHS: [(&str, &str); 4] = [
+const EXPECTED_PATHS: [(&str, &str); 8] = [
     ("/health", "get"),
     ("/auth/dev-login", "post"),
     ("/auth/session", "get"),
     ("/auth/refresh", "post"),
+    ("/games", "post"),
+    ("/games", "get"),
+    ("/games/{game_id}", "get"),
+    ("/games/{game_id}/shots", "post"),
 ];
 
 #[sqlx::test]

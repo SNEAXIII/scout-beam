@@ -43,6 +43,7 @@ struct ApiDoc;
 fn openapi() -> utoipa::openapi::OpenApi {
     let mut document = ApiDoc::openapi();
     document.merge(domains::user::openapi());
+    document.merge(domains::game::openapi());
     document
 }
 
@@ -53,6 +54,7 @@ pub fn build_app(state: AppState) -> Result<Router> {
     let router = Router::new()
         .route("/health", get(health))
         .merge(domains::user::router(is_dev))
+        .merge(domains::game::router())
         .with_state(state)
         .merge(docs_router());
 
