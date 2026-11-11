@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entry, exit_entry, colour as \"colour: ShotColour\"\n           FROM shot\n           WHERE game_id = $1 AND entry = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entry",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "shot",
+            "name": "entry"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "exit_entry",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "shot",
+            "name": "exit_entry"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "colour: ShotColour",
+        "type_info": {
+          "Custom": {
+            "name": "beam_colour",
+            "kind": {
+              "Enum": [
+                "none",
+                "white",
+                "red",
+                "blue",
+                "yellow",
+                "violet",
+                "orange",
+                "green",
+                "black"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "shot",
+            "name": "colour"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int2"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0d07bc8732db254994fe94c9704d2d2b29bcdff96a4ddb65945dfc9394aa1798"
+}

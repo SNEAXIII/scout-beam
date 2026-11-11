@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: postgres://user:password@localhost:5436/scout_beam
+  JWT_SECRET: ci-secret
+  ENV: dev
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: scout_beam
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U user -d scout_beam"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli
+
+      # The sqlx macros check every query against a live schema, so it must exist before any build.
+      - name: Apply migrations
+        run: sqlx migrate run
+
+      - name: Check the sqlx offline cache
+        run: cargo sqlx prepare --check
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test

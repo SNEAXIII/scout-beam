@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status as \"status: GameStatus\" FROM game WHERE id = $1 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status: GameStatus",
+        "type_info": {
+          "Custom": {
+            "name": "game_status",
+            "kind": {
+              "Enum": [
+                "in_progress",
+                "solved",
+                "surrendered"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f6c7cee8de2fa1835d964fd08a3d497be946597dc9900e0cc401e119174da8b9"
+}

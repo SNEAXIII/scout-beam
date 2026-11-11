@@ -1,0 +1,78 @@
+[package]
+name = "scout-beam"
+version = "0.1.0"
+edition = "2024"
+publish = false
+# Without this, the seed-user binary makes `cargo run` ambiguous.
+default-run = "scout-beam"
+description = "Scout Beam API: a solo beam-deduction game (axum + sqlx + PostgreSQL)"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.7", features = [
+    "trace",
+    "cors",
+    "timeout",
+    "request-id",
+    "set-header",
+] }
+sqlx = { version = "0.9", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "uuid",
+    "chrono",
+    "macros",
+    "migrate",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+utoipa = { version = "6", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "10", features = ["axum", "vendored"] }
+jsonwebtoken = { version = "11", features = ["rust_crypto"] }
+rand = "0.10"
+clap = { version = "4", features = ["derive"] }
+validator = { version = "0.21", features = ["derive"] }
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+http = "1"
+
+[dev-dependencies]
+http-body-util = "0.1"
+
+[lints.rust]
+# There is no reason for this crate to contain unsafe: it is HTTP and SQL.
+unsafe_code = "forbid"
+unused_qualifications = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+cargo = { level = "deny", priority = -1 }
+
+# A panic in a request path is a 500 nobody chose: each remaining one needs an #[allow] at the site.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+
+# --- deliberately off -------------------------------------------------------
+# A "# Errors" section on every Result would only repeat the error enum in prose.
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+doc_markdown = "allow"
+# `user::UserError` reads better than `user::Error` at the call site.
+module_name_repetitions = "allow"
+# Comes entirely from transitive dependencies; nothing to act on here.
+multiple_crate_versions = "allow"
