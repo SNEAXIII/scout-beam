@@ -1,0 +1,8 @@
+# Everything the image build does not read: the context is uploaded, so nothing here can leak into a layer.
+.env
+target
+tests
+*.md
+compose.yaml
+Makefile
+scripts

@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE \"user\"\n           SET role = $2\n           WHERE id = $1\n           RETURNING id, login, role as \"role: Role\", last_login_date, created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "login",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "role: Role",
+        "type_info": {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "super_admin",
+                "admin",
+                "user"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "last_login_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "super_admin",
+                "admin",
+                "user"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "bb19c425b91653b5cfe52ebd66c86e781efa946cf1878e38cd131d41a6f0f1a9"
+}
