@@ -1,6 +1,6 @@
 //! Making up a login when nobody supplies one: a themed word pair, collisions settled with digits.
 
-use rand::Rng;
+use rand::RngExt;
 use sqlx::PgPool;
 
 use crate::domains::user::repository;

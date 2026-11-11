@@ -1,7 +1,7 @@
 //! The bot: draws a random valid layout for a new game.
 
-use rand::Rng;
 use rand::seq::SliceRandom;
+use rand::{Rng, RngExt};
 
 use super::colour::Colour;
 use super::grid::{COLUMNS, Layout, ROWS};
