@@ -2,7 +2,7 @@ import { apiRequest } from '@/app/lib/api'
 import type { BeamColour } from '@/app/lib/colours'
 import type { Layout, Piece } from '@/app/lib/pieces'
 
-export type GameStatus = 'in_progress' | 'solved'
+export type GameStatus = 'in_progress' | 'solved' | 'surrendered'
 
 export interface GameSummary {
   id: string
@@ -22,7 +22,7 @@ export interface Shot {
 export interface GameView extends GameSummary {
   /** In firing order. */
   shots: Shot[]
-  /** Only once solved. */
+  /** Only once over: solved or surrendered. */
   layout?: Layout
 }
 
@@ -31,7 +31,7 @@ export const createGame = (): Promise<GameView> =>
 
 export const getGame = (id: string): Promise<GameView> => apiRequest<GameView>(`/games/${id}`)
 
-/** Re-firing an entry answers the stored shot; a solved game answers 409. */
+/** Re-firing an entry answers the stored shot; a game over answers 409. */
 export const fireShot = (id: string, entry: number): Promise<Shot> =>
   apiRequest<Shot>(`/games/${id}/shots`, { method: 'POST', body: { entry } })
 
@@ -41,7 +41,7 @@ export interface PropositionVerdict {
   layout?: Layout
 }
 
-/** A broken layout rule answers 422 naming it; a solved game answers 409. */
+/** A broken layout rule answers 422 naming it; a game over answers 409. */
 export const submitProposition = (
   id: string,
   pieces: readonly Piece[]
@@ -50,3 +50,7 @@ export const submitProposition = (
     method: 'POST',
     body: { pieces },
   })
+
+/** Give up: answers the game with its hidden layout; a game over answers 409. */
+export const surrenderGame = (id: string): Promise<GameView> =>
+  apiRequest<GameView>(`/games/${id}/surrender`, { method: 'POST' })
