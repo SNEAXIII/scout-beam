@@ -212,7 +212,37 @@
           "boolean": true
         }
       }
-    ]
+    ],
+    "sonarjs/cognitive-complexity": "warn",
+    "sonarjs/no-identical-functions": "warn",
+    "sonarjs/no-duplicated-branches": "warn",
+    "sonarjs/no-all-duplicated-branches": "warn",
+    "sonarjs/no-identical-conditions": "warn",
+    "sonarjs/no-identical-expressions": "warn",
+    "sonarjs/no-nested-conditional": "warn",
+    "sonarjs/no-nested-template-literals": "error",
+    "sonarjs/no-redundant-boolean": "warn",
+    "sonarjs/prefer-single-boolean-return": "warn",
+    "sonarjs/no-inverted-boolean-check": "warn",
+    "sonarjs/no-gratuitous-expressions": "warn",
+    "sonarjs/no-invariant-returns": "warn",
+    "sonarjs/no-redundant-jump": "warn",
+    "sonarjs/no-dead-store": "warn",
+    "sonarjs/no-unused-collection": "warn",
+    "sonarjs/no-element-overwrite": "warn",
+    "sonarjs/no-use-of-empty-return-value": "warn",
+    "sonarjs/no-useless-catch": "warn",
+    "sonarjs/no-ignored-exceptions": "warn",
+    "sonarjs/no-hook-setter-in-body": "warn",
+    "sonarjs/no-useless-react-setstate": "warn",
+    "sonarjs/no-uniq-key": "warn",
+    "sonarjs/use-type-alias": "error",
+    "sonarjs/redundant-type-aliases": "warn",
+    "sonarjs/prefer-type-guard": "warn",
+    "sonarjs/super-linear-regex": "error",
+    "sonarjs/no-hardcoded-secrets": "warn",
+    "sonarjs/todo-tag": "warn",
+    "sonarjs/fixme-tag": "warn"
   },
   "overrides": [
     {
@@ -249,5 +279,6 @@
         "__dirname": "readonly"
       }
     }
-  ]
+  ],
+  "jsPlugins": ["eslint-plugin-sonarjs"]
 }
