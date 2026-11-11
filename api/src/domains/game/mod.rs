@@ -1,5 +1,5 @@
 //! Game domain: one attempt by a player to find a hidden layout, the shots fired at it and the
-//! propositions submitted as its answer.
+//! propositions submitted as its answer, until it is solved or surrendered.
 //!
 //! Reaches the engine for drawing and tracing, and the user domain only through `CurrentUser`.
 
@@ -31,6 +31,7 @@ pub fn router() -> Router<AppState> {
         routes::core::read_game,
         routes::core::fire_shot,
         routes::core::submit_proposition,
+        routes::core::surrender,
     ),
     components(schemas(
         dto::GameView,

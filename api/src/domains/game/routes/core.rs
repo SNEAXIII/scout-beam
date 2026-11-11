@@ -1,4 +1,4 @@
-//! `/games/*` — starting games, reading them, firing shots, submitting propositions.
+//! `/games/*` — starting games, reading them, firing shots, submitting propositions, surrendering.
 
 use axum::extract::{Path, State};
 use axum::routing::{get, post};
@@ -25,6 +25,7 @@ pub fn router() -> Router<AppState> {
         .route("/{game_id}", get(read_game))
         .route("/{game_id}/shots", post(fire_shot))
         .route("/{game_id}/propositions", post(submit_proposition))
+        .route("/{game_id}/surrender", post(surrender))
 }
 
 /// `POST /games` — the bot draws a hidden layout.
@@ -65,7 +66,7 @@ pub(crate) async fn list_games(
     Ok(Json(games.into_iter().map(Into::into).collect()))
 }
 
-/// `GET /games/{game_id}` — status and shots; the layout only once solved.
+/// `GET /games/{game_id}` — status and shots; the layout only once the game is over.
 #[utoipa::path(
     get,
     path = "/games/{game_id}",
@@ -101,7 +102,7 @@ pub(crate) async fn read_game(
         (status = 200, description = "Entry already fired: the stored shot", body = ShotResponse),
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
         (status = 404, description = "No such game among the caller's", body = ErrorResponse),
-        (status = 409, description = "The game is already solved", body = ErrorResponse),
+        (status = 409, description = "The game is already solved or surrendered", body = ErrorResponse),
         (status = 422, description = "Entry outside 1 to 36, or malformed body", body = ErrorResponse),
     ),
 )]
@@ -134,7 +135,7 @@ pub(crate) async fn fire_shot(
         (status = 201, description = "Proposition stored; the hidden layout comes with a correct one", body = PropositionResponse),
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
         (status = 404, description = "No such game among the caller's", body = ErrorResponse),
-        (status = 409, description = "The game is already solved", body = ErrorResponse),
+        (status = 409, description = "The game is already solved or surrendered", body = ErrorResponse),
         (status = 422, description = "The layout breaks a rule, named in the detail, or malformed body", body = ErrorResponse),
     ),
 )]
@@ -147,4 +148,29 @@ pub(crate) async fn submit_proposition(
     let game = service::get_owned(&state.pool, game_id, user.id).await?;
     let verdict = service::propose(&state.pool, &game, &body.into_layout()).await?;
     Ok((StatusCode::CREATED, Json(verdict.into())))
+}
+
+/// `POST /games/{game_id}/surrender` — give up: the game ends unsolved and its layout is revealed.
+#[utoipa::path(
+    post,
+    path = "/games/{game_id}/surrender",
+    tag = "Games",
+    params(("game_id" = Uuid, Path, description = "Game")),
+    security(("bearer" = [])),
+    responses(
+        (status = 200, description = "Game surrendered, with its shots and hidden layout", body = GameView),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 404, description = "No such game among the caller's", body = ErrorResponse),
+        (status = 409, description = "The game is already solved or surrendered", body = ErrorResponse),
+    ),
+)]
+pub(crate) async fn surrender(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(game_id): Path<Uuid>,
+) -> ApiResult<Json<GameView>> {
+    let game = service::get_owned(&state.pool, game_id, user.id).await?;
+    let game = service::surrender(&state.pool, &game).await?;
+    let shots = service::shots_of(&state.pool, &game).await?;
+    Ok(Json(GameView::new(&game, shots)))
 }

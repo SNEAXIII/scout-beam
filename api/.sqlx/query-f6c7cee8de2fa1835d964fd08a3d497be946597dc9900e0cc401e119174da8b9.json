@@ -12,9 +12,16 @@
             "kind": {
               "Enum": [
                 "in_progress",
-                "solved"
+                "solved",
+                "surrendered"
               ]
             }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "status"
           }
         }
       }

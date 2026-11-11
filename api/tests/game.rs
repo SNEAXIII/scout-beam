@@ -1,5 +1,5 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! `/games` end to end: starting a game, reading it back, firing shots.
+//! `/games` end to end: starting a game, reading it back, firing shots, surrendering.
 
 mod common;
 
@@ -17,6 +17,15 @@ impl TestApp {
             &format!("/games/{game_id}/shots"),
             Some(token),
             json!({ "entry": entry }),
+        )
+        .await
+    }
+
+    async fn surrender(&self, game_id: Uuid, token: &str) -> Response {
+        self.post(
+            &format!("/games/{game_id}/surrender"),
+            Some(token),
+            json!({}),
         )
         .await
     }
@@ -330,4 +339,86 @@ async fn an_anonymous_caller_cannot_fire(pool: PgPool) {
     .assert_status(StatusCode::UNAUTHORIZED);
 
     assert_eq!(app.shot_count(game_id).await, 0);
+}
+
+// --- POST /games/{game_id}/surrender -----------------------------------------
+
+#[sqlx::test]
+async fn a_surrendered_game_reveals_its_layout_and_keeps_its_shots(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+    app.fire(game_id, &token, json!(7)).await;
+
+    let surrendered = app.surrender(game_id, &token).await;
+
+    surrendered.assert_status(StatusCode::OK);
+    assert_eq!(surrendered.body["status"], "surrendered");
+    assert!(surrendered.body["solved_at"].is_null());
+    assert_eq!(surrendered.body["shots"][0]["entry"], 7);
+    let revealed: Layout = serde_json::from_value(surrendered.body["layout"].clone()).unwrap();
+    assert_eq!(revealed, app.stored_layout(game_id).await);
+
+    let read = app.get(&format!("/games/{game_id}"), Some(&token)).await;
+    assert_eq!(read.body["status"], "surrendered");
+    assert_eq!(read.body["layout"], surrendered.body["layout"]);
+}
+
+#[sqlx::test]
+async fn a_surrendered_game_takes_no_shot_no_proposition_and_no_second_surrender(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+    app.surrender(game_id, &token)
+        .await
+        .assert_status(StatusCode::OK);
+    let layout = app.stored_layout(game_id).await;
+
+    let fired = app.fire(game_id, &token, json!(7)).await;
+    let proposed = app.propose(game_id, Some(&token), &layout).await;
+    let again = app.surrender(game_id, &token).await;
+
+    for refused in [&fired, &proposed, &again] {
+        refused.assert_status(StatusCode::CONFLICT);
+        assert!(
+            refused.detail().contains("abandonnée"),
+            "{}",
+            refused.detail()
+        );
+    }
+    assert_eq!(app.shot_count(game_id).await, 0);
+}
+
+#[sqlx::test]
+async fn surrendering_a_solved_game_is_a_conflict(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+    app.solve(game_id, &token).await;
+
+    let surrendered = app.surrender(game_id, &token).await;
+
+    surrendered.assert_status(StatusCode::CONFLICT);
+    assert!(
+        surrendered.detail().contains("déjà résolue"),
+        "{}",
+        surrendered.detail()
+    );
+}
+
+#[sqlx::test]
+async fn another_players_game_cannot_be_surrendered(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, owner_token) = app.seed_with_token("owner", Role::User).await;
+    let (_, intruder_token) = app.seed_with_token("intruder", Role::User).await;
+    let game_id = app.start_game(&owner_token).await;
+
+    app.surrender(game_id, &intruder_token)
+        .await
+        .assert_status(StatusCode::NOT_FOUND);
+
+    let read = app
+        .get(&format!("/games/{game_id}"), Some(&owner_token))
+        .await;
+    assert_eq!(read.body["status"], "in_progress");
 }

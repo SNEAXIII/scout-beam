@@ -129,6 +129,22 @@ where
     Ok(())
 }
 
+pub async fn mark_surrendered<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Game>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query_as!(
+        Game,
+        r#"UPDATE game SET status = 'surrendered'
+           WHERE id = $1
+           RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
+                     created_at, solved_at"#,
+        game_id
+    )
+    .fetch_one(executor)
+    .await
+}
+
 pub async fn mark_solved<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Game>
 where
     E: PgExecutor<'e>,

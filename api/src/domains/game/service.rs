@@ -46,11 +46,9 @@ pub async fn shots_of(pool: &PgPool, game: &Game) -> Result<Vec<Shot>, GameError
 }
 
 /// Trace a beam from `entry` and store it, unless that entry was already fired.
-/// A shot racing a solving proposition is harmless: the layout is revealed then anyway.
+/// A shot racing the end of the game is harmless: the layout is revealed then anyway.
 pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Firing), GameError> {
-    if game.is_solved() {
-        return Err(GameError::AlreadySolved);
-    }
+    playable(game.status)?;
 
     let traced = engine::trace(game.layout.pieces(), entry)?;
     let shot = Shot {
@@ -70,18 +68,16 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
 
 /// Store a valid proposition; a correct one solves the game in the same transaction.
 pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verdict, GameError> {
-    if game.is_solved() {
-        return Err(GameError::AlreadySolved);
-    }
+    playable(game.status)?;
     layout.validate()?;
     let correct = engine::same_shots(game.layout.pieces(), layout)?;
 
     let mut tx = pool.begin().await?;
-    // The lock holds a racing proposition until this one commits; it then reads `Solved`.
+    // The lock holds a racing proposition or surrender until this one commits; it then reads the end.
     let status = repository::lock_status(&mut *tx, game.id).await?;
-    if status != Some(GameStatus::InProgress) {
+    if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
-        return Err(status.map_or(GameError::NotFound, |_| GameError::AlreadySolved));
+        return Err(refusal);
     }
     repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
     let verdict = if correct {
@@ -91,6 +87,31 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
     };
     tx.commit().await?;
     Ok(verdict)
+}
+
+/// Give up: the game ends unsolved and its layout is revealed.
+pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
+    playable(game.status)?;
+
+    let mut tx = pool.begin().await?;
+    // Same lock as `propose`: whichever of the two commits first ends the game.
+    let status = repository::lock_status(&mut *tx, game.id).await?;
+    if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
+        tx.rollback().await?;
+        return Err(refusal);
+    }
+    let surrendered = repository::mark_surrendered(&mut *tx, game.id).await?;
+    tx.commit().await?;
+    Ok(surrendered)
+}
+
+/// Only a game in progress takes a shot, a proposition or a surrender.
+const fn playable(status: GameStatus) -> Result<(), GameError> {
+    match status {
+        GameStatus::InProgress => Ok(()),
+        GameStatus::Solved => Err(GameError::AlreadySolved),
+        GameStatus::Surrendered => Err(GameError::Surrendered),
+    }
 }
 
 /// The entry rule is the engine's; this only puts it in the game's vocabulary.

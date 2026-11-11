@@ -17,6 +17,7 @@ use crate::engine::{BeamColour, Layout};
 pub enum GameStatus {
     InProgress,
     Solved,
+    Surrendered,
 }
 
 /// The hidden layout as stored. No `Serialize`, and a `Debug` that prints nothing: it cannot
@@ -53,13 +54,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn is_solved(&self) -> bool {
-        self.status == GameStatus::Solved
-    }
-
-    /// The hidden layout, once the player has found it.
+    /// The hidden layout, once the game is over: solved or surrendered.
     pub fn revealed_layout(&self) -> Option<&Layout> {
-        self.is_solved().then(|| self.layout.pieces())
+        (self.status != GameStatus::InProgress).then(|| self.layout.pieces())
     }
 }
 

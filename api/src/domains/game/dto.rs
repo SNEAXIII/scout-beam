@@ -18,7 +18,7 @@ pub struct GameView {
     pub solved_at: Option<DateTime<Utc>>,
     /// In firing order.
     pub shots: Vec<ShotResponse>,
-    /// The hidden layout: absent from the payload until the game is solved.
+    /// The hidden layout: absent from the payload until the game is solved or surrendered.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Object>)]
     pub layout: Option<Layout>,
