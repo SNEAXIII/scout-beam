@@ -12,16 +12,6 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 impl TestApp {
-    async fn start_game(&self, token: &str) -> Uuid {
-        let created = self.post("/games", Some(token), json!({})).await;
-        created.assert_status(StatusCode::CREATED);
-        created.body["id"]
-            .as_str()
-            .expect("the id is returned")
-            .parse()
-            .expect("the id is a uuid")
-    }
-
     async fn fire(&self, game_id: Uuid, token: &str, entry: Value) -> Response {
         self.post(
             &format!("/games/{game_id}/shots"),
@@ -31,30 +21,12 @@ impl TestApp {
         .await
     }
 
-    async fn stored_layout(&self, game_id: Uuid) -> Layout {
-        let layout: Value = sqlx::query_scalar("SELECT layout FROM game WHERE id = $1")
-            .bind(game_id)
-            .fetch_one(&self.pool)
-            .await
-            .expect("the game is stored");
-        serde_json::from_value(layout).expect("the stored layout is the engine's")
-    }
-
     async fn shot_count(&self, game_id: Uuid) -> i64 {
         sqlx::query_scalar("SELECT count(*) FROM shot WHERE game_id = $1")
             .bind(game_id)
             .fetch_one(&self.pool)
             .await
             .expect("shots are counted")
-    }
-
-    /// Task 5 solves a game through a proposition; until then the state is set directly.
-    async fn mark_solved(&self, game_id: Uuid) {
-        sqlx::query("UPDATE game SET status = 'solved', solved_at = now() WHERE id = $1")
-            .bind(game_id)
-            .execute(&self.pool)
-            .await
-            .expect("the game is marked solved");
     }
 }
 
@@ -169,7 +141,7 @@ async fn a_solved_game_reveals_its_layout(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
-    app.mark_solved(game_id).await;
+    app.solve(game_id, &token).await;
 
     let read = app.get(&format!("/games/{game_id}"), Some(&token)).await;
 
@@ -278,7 +250,7 @@ async fn firing_on_a_solved_game_is_a_conflict(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
-    app.mark_solved(game_id).await;
+    app.solve(game_id, &token).await;
 
     let fired = app.fire(game_id, &token, json!(7)).await;
 

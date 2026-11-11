@@ -25,6 +25,17 @@ pub fn trace(layout: &Layout, entry: Entry) -> Result<Shot, TraceError> {
     trace_with_cap(layout, entry, STEP_CAP)
 }
 
+/// Whether every entry answers the same exit and beam colour on both layouts: all a player can
+/// observe of one, so the test a proposition passes.
+pub fn same_shots(a: &Layout, b: &Layout) -> Result<bool, TraceError> {
+    for entry in Entry::all() {
+        if trace(a, entry)? != trace(b, entry)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 fn trace_with_cap(layout: &Layout, entry: Entry, cap: usize) -> Result<Shot, TraceError> {
     let occupancy = Occupancy::of(layout);
     let (mut cell, mut direction) = entry.launch();
@@ -157,6 +168,52 @@ mod tests {
     fn a_beam_that_never_meets_a_piece_carries_no_colour() {
         let square = piece(Shape::Square, Colour::Red, 4, 3, Rotation::Deg0);
         assert_eq!(shoot(vec![square], 1), (28, BeamColour::None));
+    }
+
+    /// Found by searching with the engine: the red square answers every entry alike at (5,0) and
+    /// at (7,0), where the red bar below already sends the column's beams back red.
+    fn layout_with_square_at(square_x: u8, square_colour: Colour) -> Layout {
+        Layout {
+            pieces: vec![
+                piece(Shape::Square, square_colour, square_x, 0, Rotation::Deg0),
+                piece(Shape::Bar, Colour::Red, 7, 3, Rotation::Deg90),
+                piece(Shape::Spike, Colour::White, 5, 4, Rotation::Deg0),
+                piece(Shape::Corner, Colour::Blue, 3, 2, Rotation::Deg0),
+                piece(Shape::Diamond, Colour::Yellow, 1, 5, Rotation::Deg0),
+            ],
+        }
+    }
+
+    #[test]
+    fn a_layout_gives_the_same_shots_as_itself() {
+        let layout = layout_with_square_at(5, Colour::Red);
+        assert!(same_shots(&layout, &layout.clone()).unwrap());
+    }
+
+    #[test]
+    fn a_piece_placed_where_no_shot_tells_it_apart_gives_the_same_shots() {
+        let hidden = layout_with_square_at(5, Colour::Red);
+        let moved = layout_with_square_at(7, Colour::Red);
+        hidden.validate().unwrap();
+        moved.validate().unwrap();
+
+        assert_ne!(hidden, moved);
+        assert!(same_shots(&hidden, &moved).unwrap());
+    }
+
+    #[test]
+    fn a_piece_of_another_colour_does_not_give_the_same_shots() {
+        let hidden = layout_with_square_at(5, Colour::Red);
+        let recoloured = layout_with_square_at(5, Colour::Blue);
+        assert!(!same_shots(&hidden, &recoloured).unwrap());
+    }
+
+    #[test]
+    fn a_piece_moved_into_a_beams_way_does_not_give_the_same_shots() {
+        let hidden = layout_with_square_at(5, Colour::Red);
+        let moved = layout_with_square_at(0, Colour::Red);
+        moved.validate().unwrap();
+        assert!(!same_shots(&hidden, &moved).unwrap());
     }
 
     #[test]

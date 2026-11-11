@@ -1,9 +1,11 @@
 //! Every SQL statement of the game domain, and nothing else.
 
-use sqlx::PgPool;
+use sqlx::types::Json;
+use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
 use crate::domains::game::model::{Game, GameStatus, GameSummary, SealedLayout, Shot, ShotColour};
+use crate::engine::Layout;
 
 /// The caller's game, or nothing — another player's game is indistinguishable from a missing one.
 pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Result<Option<Game>> {
@@ -91,5 +93,54 @@ pub async fn find_shot(pool: &PgPool, game_id: Uuid, entry: i16) -> sqlx::Result
         entry
     )
     .fetch_optional(pool)
+    .await
+}
+
+/// The game's status, its row locked until the caller's transaction ends.
+pub async fn lock_status<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Option<GameStatus>>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query_scalar!(
+        r#"SELECT status as "status: GameStatus" FROM game WHERE id = $1 FOR UPDATE"#,
+        game_id
+    )
+    .fetch_optional(executor)
+    .await
+}
+
+pub async fn insert_proposition<'e, E>(
+    executor: E,
+    game_id: Uuid,
+    layout: &Layout,
+    correct: bool,
+) -> sqlx::Result<()>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query!(
+        "INSERT INTO proposition (game_id, layout, correct) VALUES ($1, $2, $3)",
+        game_id,
+        Json(layout) as _,
+        correct
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
+}
+
+pub async fn mark_solved<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Game>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query_as!(
+        Game,
+        r#"UPDATE game SET status = 'solved', solved_at = now()
+           WHERE id = $1
+           RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
+                     created_at, solved_at"#,
+        game_id
+    )
+    .fetch_one(executor)
     .await
 }

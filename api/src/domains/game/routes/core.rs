@@ -1,4 +1,4 @@
-//! `/games/*` — starting games, reading them, firing shots.
+//! `/games/*` — starting games, reading them, firing shots, submitting propositions.
 
 use axum::extract::{Path, State};
 use axum::routing::{get, post};
@@ -6,7 +6,10 @@ use axum::{Json, Router};
 use http::StatusCode;
 use uuid::Uuid;
 
-use crate::domains::game::dto::{GameSummaryResponse, GameView, ShotRequest, ShotResponse};
+use crate::domains::game::dto::{
+    GameSummaryResponse, GameView, PropositionRequest, PropositionResponse, ShotRequest,
+    ShotResponse,
+};
 use crate::domains::game::service::{self, Firing};
 use crate::domains::user::CurrentUser;
 use crate::shared::error::ApiResult;
@@ -21,6 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/", post(create_game).get(list_games))
         .route("/{game_id}", get(read_game))
         .route("/{game_id}/shots", post(fire_shot))
+        .route("/{game_id}/propositions", post(submit_proposition))
 }
 
 /// `POST /games` — the bot draws a hidden layout.
@@ -116,4 +120,31 @@ pub(crate) async fn fire_shot(
         Firing::Replayed => StatusCode::OK,
     };
     Ok((status, Json(shot.into())))
+}
+
+/// `POST /games/{game_id}/propositions` — submit a layout as the answer; a correct one solves the game.
+#[utoipa::path(
+    post,
+    path = "/games/{game_id}/propositions",
+    tag = "Games",
+    params(("game_id" = Uuid, Path, description = "Game")),
+    request_body = PropositionRequest,
+    security(("bearer" = [])),
+    responses(
+        (status = 201, description = "Proposition stored; the hidden layout comes with a correct one", body = PropositionResponse),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 404, description = "No such game among the caller's", body = ErrorResponse),
+        (status = 409, description = "The game is already solved", body = ErrorResponse),
+        (status = 422, description = "The layout breaks a rule, named in the detail, or malformed body", body = ErrorResponse),
+    ),
+)]
+pub(crate) async fn submit_proposition(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(game_id): Path<Uuid>,
+    ValidatedJson(body): ValidatedJson<PropositionRequest>,
+) -> ApiResult<(StatusCode, Json<PropositionResponse>)> {
+    let game = service::get_owned(&state.pool, game_id, user.id).await?;
+    let verdict = service::propose(&state.pool, &game, &body.into_layout()).await?;
+    Ok((StatusCode::CREATED, Json(verdict.into())))
 }

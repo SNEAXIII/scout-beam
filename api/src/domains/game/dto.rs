@@ -6,7 +6,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::domains::game::model::{Game, GameStatus, GameSummary, Shot, ShotColour};
-use crate::engine::Layout;
+use crate::domains::game::service::Verdict;
+use crate::engine::{Layout, Piece};
 
 /// A game as its player sees it.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -80,6 +81,53 @@ impl From<Shot> for ShotResponse {
             entry: shot.entry,
             exit_entry: shot.exit_entry,
             colour: shot.colour,
+        }
+    }
+}
+
+/// `POST /games/{game_id}/propositions` — a draft submitted as the answer.
+/// The layout rules are the engine's, checked by the service.
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct PropositionRequest {
+    #[schema(value_type = Vec<Object>, example = json!([
+        { "shape": "square", "colour": "red", "x": 5, "y": 0, "rotation": 0 },
+        { "shape": "bar", "colour": "red", "x": 7, "y": 3, "rotation": 1 },
+        { "shape": "spike", "colour": "white", "x": 5, "y": 4, "rotation": 0 },
+        { "shape": "corner", "colour": "blue", "x": 3, "y": 2, "rotation": 0 },
+        { "shape": "diamond", "colour": "yellow", "x": 1, "y": 5, "rotation": 0 }
+    ]))]
+    pub pieces: Vec<Piece>,
+}
+
+impl PropositionRequest {
+    pub fn into_layout(self) -> Layout {
+        Layout {
+            pieces: self.pieces,
+        }
+    }
+}
+
+/// Whether the proposition answers every entry like the hidden layout.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct PropositionResponse {
+    pub correct: bool,
+    /// The hidden layout, only when the proposition was correct.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<Object>)]
+    pub layout: Option<Layout>,
+}
+
+impl From<Verdict> for PropositionResponse {
+    fn from(verdict: Verdict) -> Self {
+        match verdict {
+            Verdict::Wrong => Self {
+                correct: false,
+                layout: None,
+            },
+            Verdict::Correct(game) => Self {
+                correct: true,
+                layout: game.revealed_layout().cloned(),
+            },
         }
     }
 }

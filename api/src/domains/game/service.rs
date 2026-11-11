@@ -4,15 +4,22 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::domains::game::error::GameError;
-use crate::domains::game::model::{Game, GameSummary, SealedLayout, Shot};
+use crate::domains::game::model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
 use crate::domains::game::repository;
-use crate::engine::{self, Entry};
+use crate::engine::{self, Entry, Layout};
 
 /// Whether a shot was just fired or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Firing {
     New,
     Replayed,
+}
+
+/// What a stored proposition earned: the game, now solved, when it was correct.
+#[derive(Debug, Clone)]
+pub enum Verdict {
+    Wrong,
+    Correct(Game),
 }
 
 /// The bot draws a layout and the game starts with no shot.
@@ -59,6 +66,31 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
         .await?
         .map(|stored| (stored, Firing::Replayed))
         .ok_or(GameError::NotFound)
+}
+
+/// Store a valid proposition; a correct one solves the game in the same transaction.
+pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verdict, GameError> {
+    if game.is_solved() {
+        return Err(GameError::AlreadySolved);
+    }
+    layout.validate()?;
+    let correct = engine::same_shots(game.layout.pieces(), layout)?;
+
+    let mut tx = pool.begin().await?;
+    // The lock holds a racing proposition until this one commits; it then reads `Solved`.
+    let status = repository::lock_status(&mut *tx, game.id).await?;
+    if status != Some(GameStatus::InProgress) {
+        tx.rollback().await?;
+        return Err(status.map_or(GameError::NotFound, |_| GameError::AlreadySolved));
+    }
+    repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
+    let verdict = if correct {
+        Verdict::Correct(repository::mark_solved(&mut *tx, game.id).await?)
+    } else {
+        Verdict::Wrong
+    };
+    tx.commit().await?;
+    Ok(verdict)
 }
 
 /// The entry rule is the engine's; this only puts it in the game's vocabulary.

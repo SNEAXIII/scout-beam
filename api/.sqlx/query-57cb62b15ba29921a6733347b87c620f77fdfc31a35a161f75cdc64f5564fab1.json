@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE game SET status = 'solved', solved_at = now()\n           WHERE id = $1\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "layout: SealedLayout",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "status: GameStatus",
+        "type_info": {
+          "Custom": {
+            "name": "game_status",
+            "kind": {
+              "Enum": [
+                "in_progress",
+                "solved"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "solved_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "57cb62b15ba29921a6733347b87c620f77fdfc31a35a161f75cdc64f5564fab1"
+}

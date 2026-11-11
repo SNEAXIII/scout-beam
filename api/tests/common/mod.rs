@@ -11,6 +11,7 @@ use axum::body::Body;
 use http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use scout_beam::auth::JwtCodec;
+use scout_beam::engine::Layout;
 use scout_beam::shared::role::Role;
 use scout_beam::{AppState, Config, build_app};
 use serde_json::{Value, json};
@@ -105,6 +106,51 @@ impl TestApp {
         .fetch_one(&self.pool)
         .await
         .expect("user is seeded")
+    }
+
+    /// Start a game through the API and return its id.
+    pub async fn start_game(&self, token: &str) -> Uuid {
+        let created = self.post("/games", Some(token), json!({})).await;
+        created.assert_status(StatusCode::CREATED);
+        created.body["id"]
+            .as_str()
+            .expect("the id is returned")
+            .parse()
+            .expect("the id is a uuid")
+    }
+
+    /// The hidden layout, read straight from the table.
+    pub async fn stored_layout(&self, game_id: Uuid) -> Layout {
+        let layout: Value = sqlx::query_scalar("SELECT layout FROM game WHERE id = $1")
+            .bind(game_id)
+            .fetch_one(&self.pool)
+            .await
+            .expect("the game is stored");
+        serde_json::from_value(layout).expect("the stored layout is the engine's")
+    }
+
+    /// Replace the bot's draw, so a test knows what is hidden.
+    pub async fn hide_layout(&self, game_id: Uuid, layout: &Layout) {
+        sqlx::query("UPDATE game SET layout = $2 WHERE id = $1")
+            .bind(game_id)
+            .bind(serde_json::to_value(layout).expect("the layout encodes"))
+            .execute(&self.pool)
+            .await
+            .expect("the layout is hidden");
+    }
+
+    pub async fn propose(&self, game_id: Uuid, token: Option<&str>, layout: &Layout) -> Response {
+        let body = serde_json::to_value(layout).expect("the layout encodes");
+        self.post(&format!("/games/{game_id}/propositions"), token, body)
+            .await
+    }
+
+    /// Solve a game the way a player does: propose its hidden layout.
+    pub async fn solve(&self, game_id: Uuid, token: &str) {
+        let layout = self.stored_layout(game_id).await;
+        let proposed = self.propose(game_id, Some(token), &layout).await;
+        proposed.assert_status(StatusCode::CREATED);
+        assert_eq!(proposed.body["correct"], true, "{}", proposed.body);
     }
 
     /// Seed an account and return it with a matching token.
