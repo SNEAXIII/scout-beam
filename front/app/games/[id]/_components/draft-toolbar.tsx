@@ -1,10 +1,11 @@
 import { Check, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
-import { PIECE_COLOURS, SHAPE_NAMES, SHAPES } from '@/app/lib/pieces'
+import { useI18n } from '@/app/i18n'
+import { PIECE_COLOURS, SHAPES } from '@/app/lib/pieces'
 import { cn } from '@/app/lib/utils'
 import ShapeIcon from './shape-icon'
-import type { Draft } from './use-draft'
+import type { Draft } from '../_viewmodels/use-draft'
 
 interface DraftToolbarProps {
   readonly draft: Draft
@@ -12,13 +13,14 @@ interface DraftToolbarProps {
 
 /** Picks the shape the next click places, its rotation and its colour. */
 export default function DraftToolbar({ draft }: DraftToolbarProps) {
+  const { t } = useI18n()
   const fill = PIECE_SWATCHES[draft.colour].fill
   return (
     <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
       <div
         className='flex gap-1'
         role='group'
-        aria-label='Pièce à placer'
+        aria-label={t.draft.pieceToPlace}
       >
         {SHAPES.map((shape) => {
           const placed = draft.pieces.some((piece) => piece.shape === shape)
@@ -32,8 +34,8 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
               disabled={placed}
               onClick={() => draft.selectShape(shape)}
               aria-pressed={picked}
-              aria-label={`${SHAPE_NAMES[shape]}${placed ? ' (placée)' : ''}`}
-              title={SHAPE_NAMES[shape]}
+              aria-label={`${t.shapes[shape]}${placed ? t.draft.placedSuffix : ''}`}
+              title={t.shapes[shape]}
               data-cy={`draft-shape-${shape}`}
               data-placed={placed}
             >
@@ -54,18 +56,18 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
         size='sm'
         onClick={draft.rotate}
         disabled={draft.shape === null}
-        title='Tourner d’un quart de tour (R)'
+        title={t.draft.rotateHint}
         data-cy='draft-rotate'
         data-rotation={draft.rotation}
       >
         <RotateCw />
-        Tourner
+        {t.draft.rotate}
         <kbd className='rounded border border-border px-1 text-[10px] text-muted-foreground'>R</kbd>
       </Button>
       <div
         className='flex gap-1.5'
         role='group'
-        aria-label='Couleur'
+        aria-label={t.draft.colour}
       >
         {PIECE_COLOURS.map((colour) => (
           <Button
@@ -81,8 +83,8 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
             style={{ backgroundColor: PIECE_SWATCHES[colour].fill }}
             onClick={() => draft.selectColour(colour)}
             aria-pressed={draft.colour === colour}
-            aria-label={PIECE_SWATCHES[colour].name}
-            title={PIECE_SWATCHES[colour].name}
+            aria-label={t.colours[colour]}
+            title={t.colours[colour]}
             data-cy={`draft-colour-${colour}`}
           />
         ))}

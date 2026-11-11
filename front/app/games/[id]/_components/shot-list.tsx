@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BEAM_SWATCHES } from '@/app/lib/colours'
+import { useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import type { Shot } from '@/app/services/games'
 import BeamMarker from './beam-marker'
@@ -14,10 +14,11 @@ interface ShotListProps {
 }
 
 export default function ShotList({ shots, paths, highlighted, onHighlight }: ShotListProps) {
+  const { t } = useI18n()
   return (
     <Card className='flex min-h-0 flex-col'>
       <CardHeader>
-        <CardTitle>Tirs</CardTitle>
+        <CardTitle>{t.shots.title}</CardTitle>
       </CardHeader>
       <CardContent className='min-h-0 overflow-y-auto'>
         {shots.length === 0 ? (
@@ -25,7 +26,7 @@ export default function ShotList({ shots, paths, highlighted, onHighlight }: Sho
             className='text-sm text-muted-foreground'
             data-cy='shots-empty'
           >
-            Cliquez sur une entrée autour de la grille pour tirer un rayon.
+            {t.shots.empty}
           </p>
         ) : (
           <ul
@@ -59,9 +60,7 @@ export default function ShotList({ shots, paths, highlighted, onHighlight }: Sho
                       <ArrowRight className='size-3.5 text-muted-foreground' />
                       {shot.exit_entry}
                     </span>
-                    <span className='ml-auto text-muted-foreground'>
-                      {BEAM_SWATCHES[shot.colour].name}
-                    </span>
+                    <span className='ml-auto text-muted-foreground'>{t.colours[shot.colour]}</span>
                   </button>
                 </li>
               )

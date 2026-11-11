@@ -1,4 +1,4 @@
-import { BEAM_SWATCHES } from '@/app/lib/colours'
+import { fill, useI18n, type Translations } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import BeamMarker from './beam-marker'
 import type { ShotPath } from './shot-paths'
@@ -14,11 +14,12 @@ interface EntryButtonProps {
   readonly style: React.CSSProperties
 }
 
-/** "Entrée 3, rayon A : 3 → 17, Rouge", read from this end. */
-function describe(entry: number, path?: ShotPath): string {
-  if (!path) return `Entrée ${entry}`
+/** "Entry 3, beam A: 3 → 17, Red", read from this end. */
+function describe(t: Translations, entry: number, path?: ShotPath): string {
+  if (!path) return fill(t.game.entry, { entry })
   const other = path.from === entry ? path.to : path.from
-  return `Entrée ${entry}, rayon ${path.label} : ${entry} → ${other}, ${BEAM_SWATCHES[path.colour].name}`
+  const colour = t.colours[path.colour]
+  return fill(t.game.entryShot, { entry, label: path.label, other, colour })
 }
 
 export default function EntryButton({
@@ -31,6 +32,7 @@ export default function EntryButton({
   onHighlight,
   style,
 }: EntryButtonProps) {
+  const { t } = useI18n()
   const lit = highlighted !== null && path?.key === highlighted
   const hover = () => onHighlight(path?.key ?? null)
   const leave = () => onHighlight(null)
@@ -56,7 +58,7 @@ export default function EntryButton({
       onFocus={hover}
       onBlur={leave}
       aria-disabled={fired || disabled}
-      aria-label={describe(entry, path)}
+      aria-label={describe(t, entry, path)}
       data-cy={`entry-${entry}`}
       data-fired={fired}
       data-labels={path?.label ?? ''}

@@ -1,15 +1,12 @@
 import { CheckCircle2, Flag, Hourglass } from 'lucide-react'
+import { useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import type { GameStatus } from '@/app/services/games'
 
 const BADGES = {
-  in_progress: {
-    Icon: Hourglass,
-    label: 'En cours',
-    tone: 'bg-secondary text-secondary-foreground',
-  },
-  solved: { Icon: CheckCircle2, label: 'Résolue', tone: 'bg-info text-info-foreground' },
-  surrendered: { Icon: Flag, label: 'Abandonnée', tone: 'bg-muted text-muted-foreground' },
+  in_progress: { Icon: Hourglass, tone: 'bg-secondary text-secondary-foreground' },
+  solved: { Icon: CheckCircle2, tone: 'bg-info text-info-foreground' },
+  surrendered: { Icon: Flag, tone: 'bg-muted text-muted-foreground' },
 } as const
 
 interface GameStatusBadgeProps {
@@ -17,7 +14,8 @@ interface GameStatusBadgeProps {
 }
 
 export default function GameStatusBadge({ status }: GameStatusBadgeProps) {
-  const { Icon, label, tone } = BADGES[status]
+  const { t } = useI18n()
+  const { Icon, tone } = BADGES[status]
   return (
     <span
       className={cn(
@@ -27,7 +25,7 @@ export default function GameStatusBadge({ status }: GameStatusBadgeProps) {
       data-status={status}
     >
       <Icon className='size-3' />
-      {label}
+      {t.status[status]}
     </span>
   )
 }

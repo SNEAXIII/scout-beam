@@ -4,11 +4,11 @@ import {
   GRID_COLUMNS,
   GRID_ROWS,
   pieceCells,
-  SHAPE_NAMES,
   type Layout,
   type Piece,
   type Shape,
 } from '@/app/lib/pieces'
+import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 
 interface GridSvgProps {
@@ -48,13 +48,14 @@ export default function GridSvg({
   preview,
   onPieceClick,
 }: GridSvgProps) {
+  const { t } = useI18n()
   return (
     <svg
       viewBox={`0 0 ${GRID_COLUMNS} ${GRID_ROWS}`}
       className={cn('size-full rounded-sm bg-muted/40 text-border', className)}
       style={style}
       role='img'
-      aria-label={label ?? (layout ? 'Grille et pièces cachées' : 'Grille')}
+      aria-label={label ?? (layout ? t.game.gridRevealed : t.game.grid)}
       data-cy={cy}
     >
       {COLUMN_LINES.map((x) => (
@@ -88,7 +89,9 @@ export default function GridSvg({
           data-cy={`${piecePrefix}-${piece.shape}`}
           data-colour={piece.colour}
         >
-          {onPieceClick && <title>{`Retirer la pièce « ${SHAPE_NAMES[piece.shape]} »`}</title>}
+          {onPieceClick && (
+            <title>{fill(t.game.removePiece, { shape: t.shapes[piece.shape] })}</title>
+          )}
           {cells(piece)}
         </g>
       ))}

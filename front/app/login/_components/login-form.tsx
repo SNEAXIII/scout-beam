@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useI18n } from '@/app/i18n'
 import { devLogin } from '@/app/services/auth'
 
 export default function LoginForm() {
+  const { t } = useI18n()
   const router = useRouter()
   const [login, setLogin] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +25,7 @@ export default function LoginForm() {
       await devLogin(login.trim())
       router.push('/')
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Connexion impossible')
+      setError(caught instanceof Error ? caught.message : t.login.failed)
       setPending(false)
     }
   }
@@ -32,7 +34,7 @@ export default function LoginForm() {
     <Card className='w-full max-w-sm'>
       <CardHeader>
         <CardTitle>Scout Beam</CardTitle>
-        <CardDescription>Connectez-vous pour retrouver vos parties.</CardDescription>
+        <CardDescription>{t.login.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -41,7 +43,7 @@ export default function LoginForm() {
           data-cy='login-form'
         >
           <div className='flex flex-col gap-2'>
-            <Label htmlFor='login'>Identifiant</Label>
+            <Label htmlFor='login'>{t.login.login}</Label>
             <Input
               id='login'
               value={login}
@@ -66,7 +68,7 @@ export default function LoginForm() {
             data-cy='login-submit'
           >
             <LogIn />
-            Se connecter
+            {t.login.submit}
           </Button>
         </form>
       </CardContent>
