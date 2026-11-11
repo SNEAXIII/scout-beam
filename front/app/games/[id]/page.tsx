@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ApiError } from '@/app/lib/api'
+import { clearDraft } from '@/app/lib/draft'
+import { cn } from '@/app/lib/utils'
 import { getAccessToken } from '@/app/lib/session'
 import { fireShot, getGame, type GameView } from '@/app/services/games'
+import DraftPanel from './_components/draft-panel'
 import GameBoard from './_components/game-board'
 import GameHeader from './_components/game-header'
 import ShotList from './_components/shot-list'
@@ -64,8 +67,12 @@ export default function GamePage() {
   const paths = useMemo(() => shotPaths(shots), [shots])
   const solved = game?.status === 'solved'
 
+  useEffect(() => {
+    if (solved) clearDraft(id)
+  }, [solved, id])
+
   return (
-    <main className='mx-auto flex max-w-5xl flex-col gap-6 p-4 md:p-8'>
+    <main className='mx-auto flex max-w-7xl flex-col gap-6 p-4 md:p-8'>
       <GameHeader status={game?.status ?? null} />
       {error && (
         <p
@@ -78,7 +85,14 @@ export default function GamePage() {
       )}
       {game === null && !error && <p className='text-sm text-muted-foreground'>Chargement…</p>}
       {game && (
-        <div className='grid gap-6 md:grid-cols-[minmax(0,1fr)_16rem]'>
+        <div
+          className={cn(
+            'grid items-start gap-6',
+            solved
+              ? 'md:grid-cols-[minmax(0,1fr)_16rem]'
+              : 'md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_16rem]'
+          )}
+        >
           <div className='flex flex-col gap-3'>
             <GameBoard
               paths={paths}
@@ -97,12 +111,20 @@ export default function GamePage() {
               </p>
             )}
           </div>
-          <ShotList
-            shots={shots}
-            paths={paths}
-            highlighted={highlighted}
-            onHighlight={setHighlighted}
-          />
+          {!solved && (
+            <DraftPanel
+              gameId={id}
+              onSolved={() => void load()}
+            />
+          )}
+          <div className={cn(!solved && 'md:col-span-2 xl:col-span-1')}>
+            <ShotList
+              shots={shots}
+              paths={paths}
+              highlighted={highlighted}
+              onHighlight={setHighlighted}
+            />
+          </div>
         </div>
       )}
     </main>
