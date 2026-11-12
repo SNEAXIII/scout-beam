@@ -7,6 +7,7 @@ import type { Draft } from '../_viewmodels/use-draft'
 
 interface DraftBoardProps {
   readonly draft: Draft
+  readonly style?: React.CSSProperties
 }
 
 const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
@@ -14,7 +15,7 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
 ).flat()
 
 /** The draft grid: a click places the picked shape with its top-left there, or removes a piece. */
-export default function DraftBoard({ draft }: DraftBoardProps) {
+export default function DraftBoard({ draft, style }: DraftBoardProps) {
   const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
   const owners = useMemo(() => {
@@ -39,8 +40,8 @@ export default function DraftBoard({ draft }: DraftBoardProps) {
 
   return (
     <div
-      className='relative w-full'
-      style={{ aspectRatio: `${GRID_COLUMNS} / ${GRID_ROWS}` }}
+      className='relative size-full'
+      style={style}
       data-cy='draft-board'
     >
       <div

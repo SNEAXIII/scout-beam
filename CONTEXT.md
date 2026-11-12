@@ -45,7 +45,7 @@ The mix of the colours of the pieces a beam bounced off: none if it touched noth
 touched only white pieces.
 
 **Draft**:
-The player's own grid where they place the pieces they believe are hidden.
+The pieces the player places on the grid, where they believe the hidden ones are.
 _Avoid_: notes, sketch
 
 **Proposition**:

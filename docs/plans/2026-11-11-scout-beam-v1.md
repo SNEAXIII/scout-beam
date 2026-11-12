@@ -146,8 +146,9 @@ match the API answers.
 
 **Files:** `front/app/games/[id]/_components/`, `front/app/services/games.ts`
 
-A draft grid next to the game grid: pick one of the five shapes, rotate it a quarter turn, pick its
-colour, click a cell to place it, click a placed piece to remove it. Each shape can be placed once.
+The draft is drawn on the game grid itself, inside the ring of entries: pick one of the five
+shapes, rotate it a quarter turn, pick its colour, click a cell to place it, click a placed piece
+to remove it. Each shape can be placed once.
 "Proposer" is enabled when the five are placed and calls `POST /games/{id}/propositions`: a 422
 shows the broken rule, a wrong one says "Incorrect", a correct one switches the game to solved
 (Task 7). The draft is kept in `localStorage` per game so a reload keeps it.
