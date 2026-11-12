@@ -16,7 +16,7 @@ interface ShotListProps {
 export default function ShotList({ shots, paths, highlighted, onHighlight }: ShotListProps) {
   const { t } = useI18n()
   return (
-    <Card className='flex min-h-0 flex-col'>
+    <Card className='flex max-h-64 min-h-0 flex-col md:max-h-none'>
       <CardHeader className='p-3'>
         <CardTitle className='text-sm'>{t.shots.title}</CardTitle>
       </CardHeader>

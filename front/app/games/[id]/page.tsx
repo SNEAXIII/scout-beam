@@ -70,12 +70,15 @@ export default function GamePage() {
               onSolved={() => void load()}
             />
           )}
-          <ShotList
-            shots={shots}
-            paths={paths}
-            highlighted={highlighted}
-            onHighlight={setHighlighted}
-          />
+          {/* Takes the row's height without adding to it, so the shots scroll instead of growing the row. */}
+          <div className='flex min-h-0 flex-col md:h-0 md:min-h-full md:self-stretch'>
+            <ShotList
+              shots={shots}
+              paths={paths}
+              highlighted={highlighted}
+              onHighlight={setHighlighted}
+            />
+          </div>
         </div>
       )}
     </main>
