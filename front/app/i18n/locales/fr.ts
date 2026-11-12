@@ -4,6 +4,8 @@ const fr: Translations = {
   common: {
     loading: 'Chargement…',
     loadFailed: 'Chargement impossible',
+    cancel: 'Annuler',
+    confirm: 'Confirmer',
   },
   language: {
     switch: 'Switch to English',
@@ -30,7 +32,8 @@ const fr: Translations = {
     title: 'Partie',
     back: 'Retour aux parties',
     surrender: 'Se rendre',
-    surrenderConfirm: 'Abandonner cette partie ? Les pièces cachées seront révélées.',
+    surrenderTitle: 'Abandonner cette partie ?',
+    surrenderDescription: 'Les pièces cachées seront révélées et le tir sera désactivé.',
     surrenderFailed: 'Abandon impossible',
     shotFailed: 'Tir impossible',
     solved: 'Partie résolue : voici les pièces cachées. Le tir est désactivé.',

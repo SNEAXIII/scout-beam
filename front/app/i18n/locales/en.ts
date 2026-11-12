@@ -2,6 +2,8 @@ const en = {
   common: {
     loading: 'Loading…',
     loadFailed: 'Could not load',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
   },
   language: {
     switch: 'Passer en français',
@@ -28,7 +30,8 @@ const en = {
     title: 'Game',
     back: 'Back to games',
     surrender: 'Surrender',
-    surrenderConfirm: 'Surrender this game? The hidden pieces will be revealed.',
+    surrenderTitle: 'Surrender this game?',
+    surrenderDescription: 'The hidden pieces will be revealed and firing will be disabled.',
     surrenderFailed: 'Could not surrender',
     shotFailed: 'Could not fire',
     solved: 'Game solved: here are the hidden pieces. Firing is disabled.',
