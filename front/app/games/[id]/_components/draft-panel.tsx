@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { fill, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import { SHAPES } from '@/app/lib/pieces'
 import { submitProposition } from '@/app/services/games'
-import DraftBoard from './draft-board'
 import DraftToolbar from './draft-toolbar'
+import GameBoard, { type GameBoardProps } from './game-board'
 import { useDraft } from '../_viewmodels/use-draft'
 
-interface DraftPanelProps {
+interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'disabled'> {
   readonly gameId: string
   /** Called once the game is solved, by this proposition or meanwhile elsewhere; the page clears the draft. */
   readonly onSolved: () => void
@@ -22,7 +21,8 @@ interface Verdict {
   readonly error?: string
 }
 
-export default function DraftPanel({ gameId, onSolved }: DraftPanelProps) {
+/** The game board with the draft on its grid, the tools to build it and the proposition. */
+export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelProps) {
   const { t } = useI18n()
   const draft = useDraft(gameId)
   const [pending, setPending] = useState(false)
@@ -50,48 +50,50 @@ export default function DraftPanel({ gameId, onSolved }: DraftPanelProps) {
   }
 
   return (
-    <Card data-cy='draft-panel'>
-      <CardHeader>
-        <CardTitle>{t.draft.title}</CardTitle>
-      </CardHeader>
-      <CardContent className='flex flex-col gap-4'>
-        <DraftToolbar draft={draft} />
-        <DraftBoard draft={draft} />
-        <div className='flex flex-wrap items-center gap-3'>
-          <Button
-            onClick={() => void propose()}
-            disabled={!complete || pending}
-            data-cy='propose'
-          >
-            <Send />
-            {t.draft.propose}
-          </Button>
-          <span
-            className='text-sm text-muted-foreground'
-            data-cy='draft-count'
-          >
-            {fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })}
-          </span>
-        </div>
-        {shown?.error && (
-          <p
-            className='rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground'
-            role='alert'
-            data-cy='proposition-error'
-          >
-            {shown.error}
-          </p>
-        )}
-        {shown && !shown.error && (
-          <p
-            className='rounded-md border border-border px-3 py-2 text-sm font-medium'
-            role='status'
-            data-cy='proposition-incorrect'
-          >
-            {t.draft.incorrect}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <div
+      className='flex flex-col gap-3'
+      data-cy='draft-panel'
+    >
+      <DraftToolbar draft={draft} />
+      <GameBoard
+        {...board}
+        draft={draft}
+        disabled={false}
+      />
+      <div className='flex flex-wrap items-center gap-3'>
+        <Button
+          onClick={() => void propose()}
+          disabled={!complete || pending}
+          data-cy='propose'
+        >
+          <Send />
+          {t.draft.propose}
+        </Button>
+        <span
+          className='text-sm text-muted-foreground'
+          data-cy='draft-count'
+        >
+          {fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })}
+        </span>
+      </div>
+      {shown?.error && (
+        <p
+          className='rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground'
+          role='alert'
+          data-cy='proposition-error'
+        >
+          {shown.error}
+        </p>
+      )}
+      {shown && !shown.error && (
+        <p
+          className='rounded-md border border-border px-3 py-2 text-sm font-medium'
+          role='status'
+          data-cy='proposition-incorrect'
+        >
+          {t.draft.incorrect}
+        </p>
+      )}
+    </div>
   )
 }
