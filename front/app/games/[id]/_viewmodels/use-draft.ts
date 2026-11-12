@@ -62,7 +62,8 @@ export function useDraft(gameId: string, keyboardLayout: KeyboardLayout): Draft 
   useEffect(() => {
     const keys = KEYMAPS[keyboardLayout]
     const onKey = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey || typing(event.target)) return
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || typing(event.target))
+        return
       const key = event.key.toLowerCase()
       if (key === keys.colourPrevious || key === keys.colourNext) {
         const step = key === keys.colourNext ? 1 : -1
