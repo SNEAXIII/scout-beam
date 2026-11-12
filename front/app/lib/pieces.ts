@@ -79,6 +79,13 @@ export function pieceCells(piece: Piece): PieceCell[] {
 export const fitsGrid = (piece: Piece): boolean =>
   pieceCells(piece).every(({ x, y }) => x >= 0 && y >= 0 && x < GRID_COLUMNS && y < GRID_ROWS)
 
+/** Whether `piece` covers a cell one of `others` covers, even a half cell's empty half. */
+export function overlaps(piece: Piece, others: readonly Piece[]): boolean {
+  const key = ({ x, y }: PieceCell) => `${x},${y}`
+  const taken = new Set(others.flatMap((other) => pieceCells(other).map(key)))
+  return pieceCells(piece).some((cell) => taken.has(key(cell)))
+}
+
 /** SVG `points` of a cell drawn with unit-sized cells. */
 export function cellPoints({ x, y, fill }: PieceCell): string {
   const nw = [x, y]
