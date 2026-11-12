@@ -58,7 +58,6 @@ export function useGame(id: string) {
   )
 
   const surrender = useCallback(async () => {
-    if (!window.confirm(t.game.surrenderConfirm)) return
     setSurrendering(true)
     setError(null)
     try {
