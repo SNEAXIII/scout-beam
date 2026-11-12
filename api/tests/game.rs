@@ -13,21 +13,13 @@ use uuid::Uuid;
 
 impl TestApp {
     async fn fire(&self, game_id: Uuid, token: &str, entry: Value) -> Response {
-        self.post(
-            &format!("/games/{game_id}/shots"),
-            Some(token),
-            json!({ "entry": entry }),
-        )
-        .await
+        let message = json!({ "type": "fire", "entry": entry });
+        self.play(game_id, Some(token), message).await
     }
 
     async fn surrender(&self, game_id: Uuid, token: &str) -> Response {
-        self.post(
-            &format!("/games/{game_id}/surrender"),
-            Some(token),
-            json!({}),
-        )
-        .await
+        let message = json!({ "type": "surrender" });
+        self.play(game_id, Some(token), message).await
     }
 
     async fn shot_count(&self, game_id: Uuid) -> i64 {
@@ -197,7 +189,7 @@ async fn an_anonymous_caller_cannot_read_a_game(pool: PgPool) {
         .assert_status(StatusCode::UNAUTHORIZED);
 }
 
-// --- POST /games/{id}/shots ---------------------------------------------------
+// --- fire, on /games/{id}/ws ---------------------------------------------------
 
 #[sqlx::test]
 async fn a_shot_answers_what_the_engine_traces_on_the_hidden_layout(pool: PgPool) {
@@ -330,18 +322,14 @@ async fn an_anonymous_caller_cannot_fire(pool: PgPool) {
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
 
-    app.post(
-        &format!("/games/{game_id}/shots"),
-        None,
-        json!({ "entry": 7 }),
-    )
-    .await
-    .assert_status(StatusCode::UNAUTHORIZED);
+    app.play(game_id, None, json!({ "type": "fire", "entry": 7 }))
+        .await
+        .assert_status(StatusCode::UNAUTHORIZED);
 
     assert_eq!(app.shot_count(game_id).await, 0);
 }
 
-// --- POST /games/{game_id}/surrender -----------------------------------------
+// --- surrender, on /games/{game_id}/ws -----------------------------------------
 
 #[sqlx::test]
 async fn a_surrendered_game_reveals_its_layout_and_keeps_its_shots(pool: PgPool) {

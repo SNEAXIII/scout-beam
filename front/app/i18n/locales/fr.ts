@@ -50,6 +50,8 @@ const fr: Translations = {
     surrenderDescription: 'Les pièces cachées seront révélées et le tir sera désactivé.',
     surrenderFailed: 'Abandon impossible',
     shotFailed: 'Tir impossible',
+    offline: 'Pas connecté à la partie : réessayez dans un instant',
+    reconnecting: 'Connexion perdue, reconnexion…',
     solved: 'Partie résolue : voici les pièces cachées. Le tir est désactivé.',
     surrendered: 'Partie abandonnée : voici les pièces cachées. Le tir est désactivé.',
     grid: 'Grille',

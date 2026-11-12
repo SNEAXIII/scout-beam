@@ -2,15 +2,15 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
-use validator::Validate;
 
 use crate::domains::game::model::{Game, GameStatus, GameSummary, Shot, ShotColour};
 use crate::domains::game::service::Verdict;
 use crate::engine::{Layout, Piece};
 
 /// A game as its player sees it.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct GameView {
     pub id: Uuid,
     pub status: GameStatus,
@@ -57,16 +57,8 @@ impl From<GameSummary> for GameSummaryResponse {
     }
 }
 
-/// `POST /games/{game_id}/shots`
-#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
-pub struct ShotRequest {
-    /// Bounds are checked by the service through `Entry::new`.
-    #[schema(example = 7, minimum = 1, maximum = 36)]
-    pub entry: u8,
-}
-
 /// Where the beam fired from `entry` left the grid, and the colour it picked up.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
 pub struct ShotResponse {
     #[schema(example = 7)]
     pub entry: i16,
@@ -85,35 +77,12 @@ impl From<Shot> for ShotResponse {
     }
 }
 
-/// `POST /games/{game_id}/propositions` — a draft submitted as the answer.
-/// The layout rules are the engine's, checked by the service.
-#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
-pub struct PropositionRequest {
-    #[schema(value_type = Vec<Object>, example = json!([
-        { "shape": "square", "colour": "red", "x": 5, "y": 0, "rotation": 0 },
-        { "shape": "bar", "colour": "red", "x": 7, "y": 3, "rotation": 1 },
-        { "shape": "spike", "colour": "white", "x": 5, "y": 4, "rotation": 0 },
-        { "shape": "corner", "colour": "blue", "x": 3, "y": 2, "rotation": 0 },
-        { "shape": "diamond", "colour": "yellow", "x": 1, "y": 5, "rotation": 0 }
-    ]))]
-    pub pieces: Vec<Piece>,
-}
-
-impl PropositionRequest {
-    pub fn into_layout(self) -> Layout {
-        Layout {
-            pieces: self.pieces,
-        }
-    }
-}
-
 /// Whether the proposition answers every entry like the hidden layout.
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PropositionResponse {
     pub correct: bool,
     /// The hidden layout, only when the proposition was correct.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<Object>)]
     pub layout: Option<Layout>,
 }
 
@@ -130,4 +99,56 @@ impl From<Verdict> for PropositionResponse {
             },
         }
     }
+}
+
+/// What a player sends on a game's socket; the first message must be `auth`.
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ClientMessage {
+    Auth {
+        token: String,
+    },
+    /// Bounds are checked by the service through `Entry::new`.
+    Fire {
+        entry: u8,
+    },
+    /// A draft submitted as the answer; the layout rules are the engine's, checked by the service.
+    Propose {
+        pieces: Vec<Piece>,
+    },
+    Surrender,
+}
+
+/// One answer per client message, in order, plus what another socket on the game changed.
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ServerMessage {
+    /// On connecting, after a surrender, and pushed when the game ends elsewhere.
+    Game {
+        game: GameView,
+    },
+    /// `replayed` when the entry had been fired before: the stored shot.
+    Shot {
+        shot: ShotResponse,
+        replayed: bool,
+    },
+    Verdict(PropositionResponse),
+    /// The status and detail an HTTP endpoint would have answered.
+    Error {
+        action: Action,
+        status: u16,
+        detail: Value,
+    },
+}
+
+/// The client message an error answers; `connect` errors close the socket.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Action {
+    Connect,
+    Fire,
+    Propose,
+    Surrender,
+    /// The message could not be read.
+    Message,
 }

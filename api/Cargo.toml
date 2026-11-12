@@ -8,8 +8,8 @@ default-run = "scout-beam"
 description = "Scout Beam API: a solo beam-deduction game (axum + sqlx + PostgreSQL)"
 
 [dependencies]
-axum = { version = "0.8", features = ["macros"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
+axum = { version = "0.8", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "sync", "time", "net"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.7", features = [
     "trace",
@@ -46,6 +46,9 @@ http = "1"
 
 [dev-dependencies]
 http-body-util = "0.1"
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+tokio-tungstenite = "0.29"
+
 
 [lints.rust]
 # There is no reason for this crate to contain unsafe: it is HTTP and SQL.
