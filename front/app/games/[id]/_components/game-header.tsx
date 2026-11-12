@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmationDialog } from '@/components/confirmation-dialog'
+import LanguageSwitcher from '@/components/language-switcher'
 import GameStatusBadge from '@/app/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
 import type { GameStatus } from '@/app/services/games'
@@ -18,7 +19,7 @@ export default function GameHeader({ status, onSurrender, surrendering }: GameHe
   const { t } = useI18n()
   const [confirming, setConfirming] = useState(false)
   return (
-    <header className='flex items-center gap-2'>
+    <header className='flex flex-wrap items-center gap-2 pt-2'>
       <Button
         asChild
         variant='ghost'
@@ -35,19 +36,21 @@ export default function GameHeader({ status, onSurrender, surrendering }: GameHe
       </Button>
       <h1 className='text-xl font-semibold tracking-tight'>{t.game.title}</h1>
       {status && <GameStatusBadge status={status} />}
-      {status === 'in_progress' && (
-        <Button
-          variant='outline'
-          size='sm'
-          className='ml-auto'
-          onClick={() => setConfirming(true)}
-          disabled={surrendering}
-          data-cy='surrender'
-        >
-          <Flag />
-          {t.game.surrender}
-        </Button>
-      )}
+      <div className='ml-auto flex items-center gap-2'>
+        {status === 'in_progress' && (
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setConfirming(true)}
+            disabled={surrendering}
+            data-cy='surrender'
+          >
+            <Flag />
+            {t.game.surrender}
+          </Button>
+        )}
+        <LanguageSwitcher />
+      </div>
       <ConfirmationDialog
         open={confirming}
         onOpenChange={setConfirming}

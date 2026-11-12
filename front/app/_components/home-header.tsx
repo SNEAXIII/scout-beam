@@ -5,6 +5,7 @@ import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import { clearTokens } from '@/app/lib/session'
+import LanguageSwitcher from '@/components/language-switcher'
 import NewGameButton from './new-game-button'
 
 export default function HomeHeader() {
@@ -31,6 +32,7 @@ export default function HomeHeader() {
         >
           <LogOut />
         </Button>
+        <LanguageSwitcher />
       </div>
     </header>
   )
