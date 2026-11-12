@@ -31,7 +31,7 @@ const fr: Translations = {
   game: {
     title: 'Partie',
     back: 'Retour aux parties',
-    surrender: 'Se rendre',
+    surrender: 'Abandonner',
     surrenderTitle: 'Abandonner cette partie ?',
     surrenderDescription: 'Les pièces cachées seront révélées et le tir sera désactivé.',
     surrenderFailed: 'Abandon impossible',
