@@ -8,6 +8,11 @@ const en = {
   language: {
     switch: 'Passer en français',
   },
+  keyboard: {
+    switch: 'Switch keyboard layout',
+    azerty: 'AZERTY',
+    qwerty: 'QWERTY',
+  },
   login: {
     description: 'Sign in to find your games.',
     login: 'Login',

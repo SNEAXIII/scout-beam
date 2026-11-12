@@ -6,16 +6,26 @@ import { ConfirmationDialog } from '@/components/confirmation-dialog'
 import LanguageSwitcher from '@/components/language-switcher'
 import GameStatusBadge from '@/app/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
+import type { KeyboardLayout } from '@/app/lib/keyboard'
 import type { GameStatus } from '@/app/services/games'
+import KeyboardLayoutToggle from './keyboard-layout-toggle'
 
 interface GameHeaderProps {
   readonly status: GameStatus | null
   /** Shown only while the game is in progress. */
   readonly onSurrender: () => void
   readonly surrendering: boolean
+  readonly keyboardLayout: KeyboardLayout
+  readonly onToggleKeyboardLayout: () => void
 }
 
-export default function GameHeader({ status, onSurrender, surrendering }: GameHeaderProps) {
+export default function GameHeader({
+  status,
+  onSurrender,
+  surrendering,
+  keyboardLayout,
+  onToggleKeyboardLayout,
+}: GameHeaderProps) {
   const { t } = useI18n()
   const [confirming, setConfirming] = useState(false)
   return (
@@ -48,6 +58,12 @@ export default function GameHeader({ status, onSurrender, surrendering }: GameHe
             <Flag />
             {t.game.surrender}
           </Button>
+        )}
+        {status === 'in_progress' && (
+          <KeyboardLayoutToggle
+            keyboardLayout={keyboardLayout}
+            onToggle={onToggleKeyboardLayout}
+          />
         )}
         <LanguageSwitcher />
       </div>

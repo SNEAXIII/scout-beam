@@ -10,6 +10,11 @@ const fr: Translations = {
   language: {
     switch: 'Switch to English',
   },
+  keyboard: {
+    switch: 'Changer la disposition du clavier',
+    azerty: 'AZERTY',
+    qwerty: 'QWERTY',
+  },
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
     login: 'Identifiant',
