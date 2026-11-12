@@ -87,14 +87,15 @@ Today a left click on a placed piece removes it (`draft.remove`, which picks it 
 - A long press of about 500 ms on a placed piece, with a touch pointer, removes it too (iOS fires
   no `contextmenu`; on Android, make sure one press does not remove twice). Moving or lifting
   the finger before then cancels it.
-- A left mouse click on a placed piece no longer does anything. Keyboard activation (Enter or
-  Space on a focused cell, recognisable by `event.detail === 0`) still removes, so the grid stays
-  usable without a mouse.
+- A click on a placed piece no longer does anything, whatever triggers it (mouse, Enter). Space
+  on a focused cell it covers removes it, so the grid stays usable without a mouse: handle it on
+  `keydown` and prevent its default, so the page does not scroll and no synthetic click follows.
+  Enter on a covered cell does nothing.
 - `GridSvg`'s `onPieceClick` prop becomes `onPieceRemove`, wired to `contextmenu` and the long
   press. Texts: `game.removePiece` becomes `'Right-click to remove the {{shape}} piece'` /
   `'Clic droit pour retirer la pièce « {{shape}} »'`; `draft.cellRemove` keeps its wording (it is
   the keyboard path).
 
 **Done when:** a right click on a placed piece removes it and selects its shape, rotation and
-colour, with no browser menu; a left click on it does nothing; Enter on a focused covered cell
-removes it; with touch emulation a 500 ms press removes it once and a short tap does nothing.
+colour, with no browser menu; a left click or Enter on it does nothing; Space on a focused
+covered cell removes it without scrolling the page; with touch emulation a 500 ms press removes it once and a short tap does nothing.
