@@ -36,14 +36,6 @@ export const SHAPES: readonly Shape[] = ['square', 'bar', 'spike', 'corner', 'di
 export const PIECE_COLOURS: readonly PieceColour[] = ['red', 'blue', 'yellow', 'white']
 
 /** The names the API uses in its messages. */
-export const SHAPE_NAMES: Record<Shape, string> = {
-  square: 'carré',
-  bar: 'barre',
-  spike: 'pointe',
-  corner: 'coin',
-  diamond: 'losange',
-}
-
 const BASE_CELLS: Record<Shape, readonly PieceCell[]> = {
   square: [{ x: 0, y: 0, fill: 'full' }],
   bar: [

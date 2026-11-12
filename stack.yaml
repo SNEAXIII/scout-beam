@@ -1,0 +1,96 @@
+# Swarm stack, behind the Traefik of the Mawster stack:
+#   SCOUT_BEAM_HOST=scout-beam.example.com docker stack deploy -c stack.yaml scout-beam
+networks:
+  traefik-public:
+    external: true
+  backend:
+
+secrets:
+  scout_beam_db_password:
+    external: true
+  scout_beam_jwt_secret:
+    external: true
+
+services:
+  postgres:
+    image: postgres:17
+    networks:
+      - backend
+    environment:
+      POSTGRES_DB: scout_beam
+      POSTGRES_USER: scout_beam
+      POSTGRES_PASSWORD_FILE: /run/secrets/scout_beam_db_password
+    secrets:
+      - scout_beam_db_password
+    volumes:
+      - data_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U scout_beam -d scout_beam']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+
+  api:
+    image: sneaxiii/scout-beam-api:latest
+    networks:
+      - backend
+      - traefik-public
+    environment:
+      ENV: dev
+      BIND_ADDR: 0.0.0.0:8002
+    secrets:
+      - scout_beam_db_password
+      - scout_beam_jwt_secret
+    # The binary reads plain env vars, so the secret files are exported here.
+    entrypoint:
+      - sh
+      - -c
+      - |
+        export JWT_SECRET="$$(cat /run/secrets/scout_beam_jwt_secret)"
+        export DATABASE_URL="postgres://scout_beam:$$(cat /run/secrets/scout_beam_db_password)@postgres:5432/scout_beam"
+        exec scout-beam
+    deploy:
+      # No depends_on in Swarm: it restarts until postgres answers.
+      restart_policy:
+        condition: any
+        delay: 5s
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.scout-beam-api.rule=Host(`${SCOUT_BEAM_HOST:?}`) && PathPrefix(`/api`)
+        - traefik.http.routers.scout-beam-api.entrypoints=websecure
+        - traefik.http.routers.scout-beam-api.tls.certresolver=letsencrypt
+        - traefik.http.routers.scout-beam-api.middlewares=scout-beam-api-strip
+        - traefik.http.middlewares.scout-beam-api-strip.stripprefix.prefixes=/api
+        - traefik.http.services.scout-beam-api.loadbalancer.server.port=8002
+    logging: *logging
+
+  front:
+    image: sneaxiii/scout-beam-front:latest
+    networks:
+      - traefik-public
+    deploy:
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.scout-beam-front.rule=Host(`${SCOUT_BEAM_HOST:?}`)
+        - traefik.http.routers.scout-beam-front.entrypoints=websecure
+        - traefik.http.routers.scout-beam-front.tls.certresolver=letsencrypt
+        - traefik.http.services.scout-beam-front.loadbalancer.server.port=3000
+    logging: *logging
+
+volumes:
+  data_db:

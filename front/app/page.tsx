@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/app/i18n'
 import { getAccessToken } from '@/app/lib/session'
 import { listGames, type GameSummary } from '@/app/services/games'
 import GameList from './_components/game-list'
 import HomeHeader from './_components/home-header'
 
 export default function HomePage() {
+  const { t } = useI18n()
   const router = useRouter()
   const [games, setGames] = useState<GameSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -17,9 +19,9 @@ export default function HomePage() {
       setError(null)
       setGames(await listGames())
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Chargement impossible')
+      setError(caught instanceof Error ? caught.message : t.common.loadFailed)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -30,7 +32,7 @@ export default function HomePage() {
   }, [router, load])
 
   return (
-    <main className='mx-auto flex max-w-2xl flex-col gap-6 p-4 md:p-8'>
+    <main className='mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8'>
       <HomeHeader />
       {error && (
         <p

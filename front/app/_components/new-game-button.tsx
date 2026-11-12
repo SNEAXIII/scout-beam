@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/app/i18n'
 import { createGame } from '@/app/services/games'
 
 export default function NewGameButton() {
+  const { t } = useI18n()
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export default function NewGameButton() {
       const game = await createGame()
       router.push(`/games/${game.id}`)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Création impossible')
+      setError(caught instanceof Error ? caught.message : t.home.createFailed)
       setPending(false)
     }
   }
@@ -31,7 +33,7 @@ export default function NewGameButton() {
         data-cy='new-game'
       >
         <Plus />
-        Nouvelle partie
+        {t.home.newGame}
       </Button>
       {error && (
         <p

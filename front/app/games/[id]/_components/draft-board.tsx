@@ -1,15 +1,9 @@
 import { useMemo, useState } from 'react'
-import {
-  fitsGrid,
-  GRID_COLUMNS,
-  GRID_ROWS,
-  pieceCells,
-  SHAPE_NAMES,
-  type Shape,
-} from '@/app/lib/pieces'
+import { fitsGrid, GRID_COLUMNS, GRID_ROWS, pieceCells, type Shape } from '@/app/lib/pieces'
+import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import GridSvg from './grid-svg'
-import type { Draft } from './use-draft'
+import type { Draft } from '../_viewmodels/use-draft'
 
 interface DraftBoardProps {
   readonly draft: Draft
@@ -21,6 +15,7 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
 
 /** The draft grid: a click places the picked shape with its top-left there, or removes a piece. */
 export default function DraftBoard({ draft }: DraftBoardProps) {
+  const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
   const owners = useMemo(() => {
     const owner = new Map<string, Shape>()
@@ -36,9 +31,10 @@ export default function DraftBoard({ draft }: DraftBoardProps) {
       : undefined
 
   const describe = (x: number, y: number, owner: Shape | undefined) => {
-    if (owner) return `Case ${x + 1}, ${y + 1} : retirer la pièce « ${SHAPE_NAMES[owner]} »`
-    if (!draft.shape) return `Case ${x + 1}, ${y + 1}`
-    return `Case ${x + 1}, ${y + 1} : placer la pièce « ${SHAPE_NAMES[draft.shape]} »`
+    const cell = { x: x + 1, y: y + 1 }
+    if (owner) return fill(t.draft.cellRemove, { ...cell, shape: t.shapes[owner] })
+    if (!draft.shape) return fill(t.draft.cell, cell)
+    return fill(t.draft.cellPlace, { ...cell, shape: t.shapes[draft.shape] })
   }
 
   return (
@@ -80,7 +76,7 @@ export default function DraftBoard({ draft }: DraftBoardProps) {
         layout={{ pieces: [...draft.pieces] }}
         className='pointer-events-none absolute inset-0 bg-transparent'
         cy='draft-grid'
-        label='Brouillon'
+        label={t.draft.title}
         piecePrefix='draft-piece'
         preview={preview}
         onPieceClick={draft.remove}

@@ -61,7 +61,7 @@ pub(crate) async fn refresh(
     ValidatedJson(body): ValidatedJson<RefreshTokenRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
     let claims = state.jwt.decode_refresh(&body.refresh_token)?;
-    let user = service::load_active(&state.pool, claims.subject()?).await?;
+    let user = service::load_active(&state.pool, claims.sub).await?;
 
     Ok(Json(LoginResponse::bearer(
         state.jwt.access_token(user.id, user.role)?,
