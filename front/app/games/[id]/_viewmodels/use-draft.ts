@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { loadDraft, saveDraft } from '@/app/lib/draft'
+import { KEYMAPS, type KeyboardLayout } from '@/app/lib/keyboard'
 import {
   fitsGrid,
   overlaps,
+  PIECE_COLOURS,
   SHAPES,
   type Piece,
   type PieceColour,
@@ -12,6 +14,19 @@ import {
 
 const nextFree = (pieces: readonly Piece[]): Shape | null =>
   SHAPES.find((shape) => !pieces.some((piece) => piece.shape === shape)) ?? null
+
+const wrap = <T>(items: readonly T[], index: number): T =>
+  items[((index % items.length) + items.length) % items.length]
+
+/** The next free shape from `from` in `step` direction, wrapping; `from` itself if none is free. */
+const walkShape = (from: Shape, step: 1 | -1, pieces: readonly Piece[]): Shape => {
+  const start = SHAPES.indexOf(from)
+  for (let offset = 1; offset < SHAPES.length; offset++) {
+    const candidate = wrap(SHAPES, start + step * offset)
+    if (!pieces.some((piece) => piece.shape === candidate)) return candidate
+  }
+  return from
+}
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -34,8 +49,8 @@ export interface Draft {
   readonly remove: (shape: Shape) => void
 }
 
-/** The player's draft of a game, kept in storage; `R` rotates the picked shape. */
-export function useDraft(gameId: string): Draft {
+/** The player's draft of a game, kept in storage; `R` rotates, the keymap walks shapes and colours. */
+export function useDraft(gameId: string, keyboardLayout: KeyboardLayout): Draft {
   // Mounted once the game has loaded, so never during prerender: storage is readable here.
   const [pieces, setPieces] = useState<readonly Piece[]>(() => loadDraft(gameId))
   const [shape, setShape] = useState<Shape | null>(() => nextFree(pieces))
@@ -45,14 +60,24 @@ export function useDraft(gameId: string): Draft {
   const rotate = useCallback(() => setRotation((turns) => ((turns + 1) % 4) as Rotation), [])
 
   useEffect(() => {
+    const keys = KEYMAPS[keyboardLayout]
     const onKey = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'r' || event.ctrlKey || event.metaKey || event.altKey) return
-      if (shape === null || typing(event.target)) return
-      rotate()
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || typing(event.target))
+        return
+      const key = event.key.toLowerCase()
+      if (key === keys.colourPrevious || key === keys.colourNext) {
+        const step = key === keys.colourNext ? 1 : -1
+        setColour((current) => wrap(PIECE_COLOURS, PIECE_COLOURS.indexOf(current) + step))
+        return
+      }
+      if (shape === null) return
+      if (key === 'r') rotate()
+      else if (key === keys.shapePrevious || key === keys.shapeNext)
+        setShape(walkShape(shape, key === keys.shapeNext ? 1 : -1, pieces))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [rotate, shape])
+  }, [keyboardLayout, pieces, rotate, shape])
 
   const update = (next: readonly Piece[]) => {
     setPieces(next)

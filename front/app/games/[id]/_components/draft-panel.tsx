@@ -3,14 +3,17 @@ import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fill, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
+import type { KeyboardLayout } from '@/app/lib/keyboard'
 import { SHAPES } from '@/app/lib/pieces'
 import { submitProposition } from '@/app/services/games'
 import DraftToolbar from './draft-toolbar'
+import HotkeyLegend from './hotkey-legend'
 import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
 import { useDraft } from '../_viewmodels/use-draft'
 
 interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'disabled'> {
   readonly gameId: string
+  readonly keyboardLayout: KeyboardLayout
   /** Called once the game is solved, by this proposition or meanwhile elsewhere; the page clears the draft. */
   readonly onSolved: () => void
 }
@@ -22,9 +25,14 @@ interface Verdict {
 }
 
 /** The game board with the draft on its grid, the tools to build it and the proposition. */
-export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelProps) {
+export default function DraftPanel({
+  gameId,
+  keyboardLayout,
+  onSolved,
+  ...board
+}: DraftPanelProps) {
   const { t } = useI18n()
-  const draft = useDraft(gameId)
+  const draft = useDraft(gameId, keyboardLayout)
   const [pending, setPending] = useState(false)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const current = JSON.stringify(draft.pieces)
@@ -55,7 +63,10 @@ export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelPro
       style={BOARD_COLUMN}
       data-cy='draft-panel'
     >
-      <DraftToolbar draft={draft} />
+      <DraftToolbar
+        draft={draft}
+        keyboardLayout={keyboardLayout}
+      />
       <GameBoard
         {...board}
         draft={draft}
@@ -78,6 +89,7 @@ export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelPro
           {fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })}
         </span>
       </div>
+      <HotkeyLegend keyboardLayout={keyboardLayout} />
       {shown?.error && (
         <p
           className='rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground'

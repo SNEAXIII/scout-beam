@@ -10,6 +10,20 @@ const fr: Translations = {
   language: {
     switch: 'Switch to English',
   },
+  keyboard: {
+    switch: 'Changer la disposition du clavier',
+    azerty: 'AZERTY',
+    qwerty: 'QWERTY',
+  },
+  hotkeys: {
+    legend: 'Raccourcis clavier',
+    shape: 'forme',
+    colour: 'couleur',
+    rotate: 'tourner',
+    remove: 'retirer',
+    rightClick: 'Clic droit',
+    space: 'Espace',
+  },
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
     login: 'Identifiant',
@@ -40,7 +54,7 @@ const fr: Translations = {
     surrendered: 'Partie abandonnée : voici les pièces cachées. Le tir est désactivé.',
     grid: 'Grille',
     gridRevealed: 'Grille et pièces cachées',
-    removePiece: 'Retirer la pièce « {{shape}} »',
+    removePiece: 'Clic droit ou Espace pour retirer la pièce « {{shape}} »',
     entry: 'Entrée {{entry}}',
     entryShot: 'Entrée {{entry}}, rayon {{label}} : {{entry}} → {{other}}, {{colour}}',
   },
@@ -59,8 +73,10 @@ const fr: Translations = {
     rotate: 'Tourner',
     rotateHint: 'Tourner d’un quart de tour (R)',
     colour: 'Couleur',
+    shapeHint: '{{shape}} ({{previous}} / {{next}})',
+    colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Case {{x}}, {{y}}',
-    cellRemove: 'Case {{x}}, {{y}} : retirer la pièce « {{shape}} »',
+    cellPiece: 'Case {{x}}, {{y}} : pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
   },
   shapes: {

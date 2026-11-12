@@ -18,7 +18,7 @@ export default function LanguageSwitcher() {
       data-cy='language-switcher'
     >
       <Languages />
-      {next.toUpperCase()}
+      {locale.toUpperCase()}
     </Button>
   )
 }

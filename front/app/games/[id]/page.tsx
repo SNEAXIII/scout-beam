@@ -9,12 +9,14 @@ import GameHeader from './_components/game-header'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
+import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useI18n()
   const { game, error, surrendering, load, fire, surrender } = useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
+  const { keyboardLayout, toggle } = useKeyboardLayout()
 
   const shots = useMemo(() => game?.shots ?? [], [game])
   const paths = useMemo(() => shotPaths(shots), [shots])
@@ -31,6 +33,8 @@ export default function GamePage() {
         status={game?.status ?? null}
         onSurrender={() => void surrender()}
         surrendering={surrendering}
+        keyboardLayout={keyboardLayout}
+        onToggleKeyboardLayout={toggle}
       />
       {error && (
         <p
@@ -67,6 +71,7 @@ export default function GamePage() {
             <DraftPanel
               {...board}
               gameId={id}
+              keyboardLayout={keyboardLayout}
               onSolved={() => void load()}
             />
           )}

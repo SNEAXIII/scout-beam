@@ -10,6 +10,7 @@ import {
 } from '@/app/lib/pieces'
 import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
+import { useLongPress } from '../_viewmodels/use-long-press'
 
 interface GridSvgProps {
   readonly layout?: Layout
@@ -22,7 +23,10 @@ interface GridSvgProps {
   readonly piecePrefix?: string
   /** Drawn translucent, outlined when it does not fit. */
   readonly preview?: { readonly piece: Piece; readonly fits: boolean }
-  readonly onPieceClick?: (shape: Shape) => void
+  /** Called on a right click or a touch long press on a piece. */
+  readonly onPieceRemove?: (shape: Shape) => void
+  /** The piece under the mouse, or null once it leaves. */
+  readonly onPieceHover?: (shape: Shape | null) => void
 }
 
 const COLUMN_LINES = Array.from({ length: GRID_COLUMNS + 1 }, (_, i) => i)
@@ -46,9 +50,11 @@ export default function GridSvg({
   label,
   piecePrefix = 'piece',
   preview,
-  onPieceClick,
+  onPieceRemove,
+  onPieceHover,
 }: GridSvgProps) {
   const { t } = useI18n()
+  const pieceHandlers = useLongPress(onPieceRemove)
   return (
     <svg
       viewBox={`0 0 ${GRID_COLUMNS} ${GRID_ROWS}`}
@@ -84,12 +90,16 @@ export default function GridSvg({
         <g
           key={piece.shape}
           fill={PIECE_SWATCHES[piece.colour].fill}
-          className={cn(onPieceClick && 'pointer-events-auto cursor-pointer hover:opacity-70')}
-          onClick={onPieceClick && (() => onPieceClick(piece.shape))}
+          className={cn(
+            onPieceRemove && 'pointer-events-auto cursor-context-menu hover:opacity-70'
+          )}
+          {...(onPieceRemove && pieceHandlers(piece.shape))}
+          onPointerEnter={(event) => event.pointerType === 'mouse' && onPieceHover?.(piece.shape)}
+          onPointerLeave={() => onPieceHover?.(null)}
           data-cy={`${piecePrefix}-${piece.shape}`}
           data-colour={piece.colour}
         >
-          {onPieceClick && (
+          {onPieceRemove && (
             <title>{fill(t.game.removePiece, { shape: t.shapes[piece.shape] })}</title>
           )}
           {cells(piece)}

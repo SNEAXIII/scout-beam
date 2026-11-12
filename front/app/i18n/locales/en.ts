@@ -8,6 +8,20 @@ const en = {
   language: {
     switch: 'Passer en français',
   },
+  keyboard: {
+    switch: 'Switch keyboard layout',
+    azerty: 'AZERTY',
+    qwerty: 'QWERTY',
+  },
+  hotkeys: {
+    legend: 'Keyboard shortcuts',
+    shape: 'shape',
+    colour: 'colour',
+    rotate: 'rotate',
+    remove: 'remove',
+    rightClick: 'Right-click',
+    space: 'Space',
+  },
   login: {
     description: 'Sign in to find your games.',
     login: 'Login',
@@ -38,7 +52,7 @@ const en = {
     surrendered: 'Game surrendered: here are the hidden pieces. Firing is disabled.',
     grid: 'Grid',
     gridRevealed: 'Grid and hidden pieces',
-    removePiece: 'Remove the {{shape}} piece',
+    removePiece: 'Right-click or Space to remove the {{shape}} piece',
     entry: 'Entry {{entry}}',
     entryShot: 'Entry {{entry}}, beam {{label}}: {{entry}} → {{other}}, {{colour}}',
   },
@@ -57,8 +71,10 @@ const en = {
     rotate: 'Rotate',
     rotateHint: 'Rotate a quarter turn (R)',
     colour: 'Colour',
+    shapeHint: '{{shape}} ({{previous}} / {{next}})',
+    colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Cell {{x}}, {{y}}',
-    cellRemove: 'Cell {{x}}, {{y}}: remove the {{shape}} piece',
+    cellPiece: 'Cell {{x}}, {{y}}: {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',
   },
   shapes: {

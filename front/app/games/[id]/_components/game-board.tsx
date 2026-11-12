@@ -28,7 +28,7 @@ const GRID_AREA = { gridColumn: `2 / span ${GRID_COLUMNS}`, gridRow: `2 / span $
 
 /** Caps the left column (toolbar, board, proposition) so it fits one screen height. */
 export const BOARD_COLUMN: React.CSSProperties = {
-  maxWidth: `max(20rem, calc((100dvh - 12rem) * ${RATIO}))`,
+  maxWidth: `max(20rem, calc((100dvh - 13.5rem) * ${RATIO}))`,
 }
 
 /** CSS grid lines (1-based) of an entry in the ring around the grid. */
