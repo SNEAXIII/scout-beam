@@ -1,7 +1,8 @@
 import { Check, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
-import { useI18n } from '@/app/i18n'
+import { fill, useI18n } from '@/app/i18n'
+import { KEYMAPS, type KeyboardLayout } from '@/app/lib/keyboard'
 import { PIECE_COLOURS, SHAPES } from '@/app/lib/pieces'
 import { cn } from '@/app/lib/utils'
 import ShapeIcon from './shape-icon'
@@ -9,12 +10,22 @@ import type { Draft } from '../_viewmodels/use-draft'
 
 interface DraftToolbarProps {
   readonly draft: Draft
+  readonly keyboardLayout: KeyboardLayout
 }
 
 /** Picks the shape the next click places, its rotation and its colour. */
-export default function DraftToolbar({ draft }: DraftToolbarProps) {
+export default function DraftToolbar({ draft, keyboardLayout }: DraftToolbarProps) {
   const { t } = useI18n()
-  const fill = PIECE_SWATCHES[draft.colour].fill
+  const swatch = PIECE_SWATCHES[draft.colour]
+  const keys = KEYMAPS[keyboardLayout]
+  const shapeKeys = {
+    previous: keys.shapePrevious.toUpperCase(),
+    next: keys.shapeNext.toUpperCase(),
+  }
+  const colourKeys = {
+    previous: keys.colourPrevious.toUpperCase(),
+    next: keys.colourNext.toUpperCase(),
+  }
   return (
     <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5'>
       <div
@@ -35,14 +46,14 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
               onClick={() => draft.selectShape(shape)}
               aria-pressed={picked}
               aria-label={`${t.shapes[shape]}${placed ? t.draft.placedSuffix : ''}`}
-              title={t.shapes[shape]}
+              title={fill(t.draft.shapeHint, { shape: t.shapes[shape], ...shapeKeys })}
               data-cy={`draft-shape-${shape}`}
               data-placed={placed}
             >
               <ShapeIcon
                 shape={shape}
                 rotation={picked ? draft.rotation : 0}
-                fill={picked ? fill : 'currentColor'}
+                fill={picked ? swatch.fill : 'currentColor'}
               />
               {placed && (
                 <Check className='absolute -top-1 -right-1 size-3.5! rounded-full bg-card' />
@@ -84,7 +95,7 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
             onClick={() => draft.selectColour(colour)}
             aria-pressed={draft.colour === colour}
             aria-label={t.colours[colour]}
-            title={t.colours[colour]}
+            title={fill(t.draft.colourHint, { colour: t.colours[colour], ...colourKeys })}
             data-cy={`draft-colour-${colour}`}
           />
         ))}

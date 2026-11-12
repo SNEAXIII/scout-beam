@@ -71,6 +71,7 @@ export default function GamePage() {
             <DraftPanel
               {...board}
               gameId={id}
+              keyboardLayout={keyboardLayout}
               onSolved={() => void load()}
             />
           )}

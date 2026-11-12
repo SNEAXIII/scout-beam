@@ -62,6 +62,8 @@ const en = {
     rotate: 'Rotate',
     rotateHint: 'Rotate a quarter turn (R)',
     colour: 'Colour',
+    shapeHint: '{{shape}} ({{previous}} / {{next}})',
+    colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Cell {{x}}, {{y}}',
     cellRemove: 'Cell {{x}}, {{y}}: remove the {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',

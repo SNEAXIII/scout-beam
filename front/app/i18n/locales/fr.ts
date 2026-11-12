@@ -64,6 +64,8 @@ const fr: Translations = {
     rotate: 'Tourner',
     rotateHint: 'Tourner d’un quart de tour (R)',
     colour: 'Couleur',
+    shapeHint: '{{shape}} ({{previous}} / {{next}})',
+    colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Case {{x}}, {{y}}',
     cellRemove: 'Case {{x}}, {{y}} : retirer la pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
