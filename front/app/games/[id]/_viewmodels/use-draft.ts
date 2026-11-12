@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { loadDraft, saveDraft } from '@/app/lib/draft'
 import {
   fitsGrid,
+  overlaps,
   SHAPES,
   type Piece,
   type PieceColour,
@@ -24,6 +25,8 @@ export interface Draft {
   readonly colour: PieceColour
   /** The piece a click at `(x, y)` would place, if a shape is picked. */
   readonly pieceAt: (x: number, y: number) => Piece | null
+  /** Whether `piece` lies inside the grid, clear of the placed pieces. */
+  readonly fits: (piece: Piece) => boolean
   readonly selectShape: (shape: Shape) => void
   readonly rotate: () => void
   readonly selectColour: (colour: PieceColour) => void
@@ -58,9 +61,11 @@ export function useDraft(gameId: string): Draft {
 
   const pieceAt = (x: number, y: number): Piece | null => shape && { shape, colour, x, y, rotation }
 
+  const fits = (piece: Piece) => fitsGrid(piece) && !overlaps(piece, pieces)
+
   const place = (x: number, y: number) => {
     const piece = pieceAt(x, y)
-    if (!piece || !fitsGrid(piece) || pieces.some((placed) => placed.shape === piece.shape)) return
+    if (!piece || !fits(piece) || pieces.some((placed) => placed.shape === piece.shape)) return
     const next = [...pieces, piece]
     update(next)
     setShape(nextFree(next))
@@ -86,6 +91,7 @@ export function useDraft(gameId: string): Draft {
     rotation,
     colour,
     pieceAt,
+    fits,
     selectShape,
     rotate,
     selectColour: setColour,

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { fitsGrid, GRID_COLUMNS, GRID_ROWS, pieceCells, type Shape } from '@/app/lib/pieces'
+import { GRID_COLUMNS, GRID_ROWS, pieceCells, type Shape } from '@/app/lib/pieces'
 import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import GridSvg from './grid-svg'
@@ -27,7 +27,7 @@ export default function DraftBoard({ draft }: DraftBoardProps) {
   const previewPiece = hovered && draft.pieceAt(hovered.x, hovered.y)
   const preview =
     previewPiece && !owners.has(`${hovered.x},${hovered.y}`)
-      ? { piece: previewPiece, fits: fitsGrid(previewPiece) }
+      ? { piece: previewPiece, fits: draft.fits(previewPiece) }
       : undefined
 
   const describe = (x: number, y: number, owner: Shape | undefined) => {
