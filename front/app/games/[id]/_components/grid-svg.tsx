@@ -25,6 +25,8 @@ interface GridSvgProps {
   readonly preview?: { readonly piece: Piece; readonly fits: boolean }
   /** Called on a right click or a touch long press on a piece. */
   readonly onPieceRemove?: (shape: Shape) => void
+  /** The piece under the mouse, or null once it leaves. */
+  readonly onPieceHover?: (shape: Shape | null) => void
 }
 
 const COLUMN_LINES = Array.from({ length: GRID_COLUMNS + 1 }, (_, i) => i)
@@ -49,6 +51,7 @@ export default function GridSvg({
   piecePrefix = 'piece',
   preview,
   onPieceRemove,
+  onPieceHover,
 }: GridSvgProps) {
   const { t } = useI18n()
   const pieceHandlers = useLongPress(onPieceRemove)
@@ -91,6 +94,8 @@ export default function GridSvg({
             onPieceRemove && 'pointer-events-auto cursor-context-menu hover:opacity-70'
           )}
           {...(onPieceRemove && pieceHandlers(piece.shape))}
+          onPointerEnter={(event) => event.pointerType === 'mouse' && onPieceHover?.(piece.shape)}
+          onPointerLeave={() => onPieceHover?.(null)}
           data-cy={`${piecePrefix}-${piece.shape}`}
           data-colour={piece.colour}
         >

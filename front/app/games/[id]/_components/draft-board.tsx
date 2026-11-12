@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GRID_COLUMNS, GRID_ROWS, pieceCells, type Shape } from '@/app/lib/pieces'
 import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
@@ -14,10 +14,12 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
   Array.from({ length: GRID_COLUMNS }, (_, x) => ({ x, y }))
 ).flat()
 
-/** The draft grid: a click places the picked shape; a right click or Space removes a piece. */
+/** The draft grid: a click places the picked shape; a right click, or Space over it, removes a piece. */
 export default function DraftBoard({ draft, style }: DraftBoardProps) {
   const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
+  // A ref, not state: Space right after the mouse lands must already see the piece.
+  const hoveredPiece = useRef<Shape | null>(null)
   const owners = useMemo(() => {
     const owner = new Map<string, Shape>()
     for (const piece of draft.pieces)
@@ -31,16 +33,35 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
       ? { piece: previewPiece, fits: draft.fits(previewPiece) }
       : undefined
 
-  // Space removes on keydown so no click follows: it would place the piece just picked back up.
-  const onCellKey = (event: React.KeyboardEvent, owner: Shape | undefined) => {
-    if (event.key !== ' ' || (!owner && !event.repeat)) return
-    event.preventDefault()
-    if (owner) draft.remove(owner)
-  }
+  const { remove } = draft
+  // Prevented on keydown so the focused button does not click too, which could place a piece.
+  // Its repeats stay prevented until Space is released, the piece being gone by then.
+  const removing = useRef(false)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const piece = hoveredPiece.current
+      if (event.key !== ' ' || event.ctrlKey || event.metaKey || event.altKey) return
+      if (!piece && !(event.repeat && removing.current)) return
+      event.preventDefault()
+      if (!piece || event.repeat) return
+      hoveredPiece.current = null
+      removing.current = true
+      remove(piece)
+    }
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === ' ') removing.current = false
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [remove])
 
   const describe = (x: number, y: number, owner: Shape | undefined) => {
     const cell = { x: x + 1, y: y + 1 }
-    if (owner) return fill(t.draft.cellRemove, { ...cell, shape: t.shapes[owner] })
+    if (owner) return fill(t.draft.cellPiece, { ...cell, shape: t.shapes[owner] })
     if (!draft.shape) return fill(t.draft.cell, cell)
     return fill(t.draft.cellPlace, { ...cell, shape: t.shapes[draft.shape] })
   }
@@ -70,14 +91,12 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
                 !owner && draft.shape ? 'hover:bg-accent/60' : !owner && 'cursor-default'
               )}
               onClick={owner ? undefined : () => draft.place(x, y)}
-              onKeyDown={(event) => onCellKey(event, owner)}
               onContextMenu={owner ? () => draft.remove(owner) : undefined}
               onMouseEnter={() => setHovered({ x, y })}
               onMouseLeave={() => setHovered(null)}
               onFocus={() => setHovered({ x, y })}
               onBlur={() => setHovered(null)}
               aria-label={describe(x, y, owner)}
-              aria-keyshortcuts={owner ? 'Space' : undefined}
               data-cy={`draft-cell-${x}-${y}`}
               data-piece={owner}
             />
@@ -92,6 +111,7 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
         piecePrefix='draft-piece'
         preview={preview}
         onPieceRemove={draft.remove}
+        onPieceHover={(shape) => (hoveredPiece.current = shape)}
       />
     </div>
   )
