@@ -52,3 +52,8 @@ _Avoid_: notes, sketch
 A draft submitted as the answer; it is correct when it gives the same shot result as the hidden
 layout on all 36 entries.
 _Avoid_: guess, solution, answer
+
+**Surrender**:
+The player ending a game without solving it: the hidden layout is revealed and no more shots can be
+fired.
+_Avoid_: forfeit, give up

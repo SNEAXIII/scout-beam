@@ -19,7 +19,17 @@ export interface GameBoardProps {
 
 const RING_COLUMNS = GRID_COLUMNS + 2
 const RING_ROWS = GRID_ROWS + 2
+/** The ring of entries is thinner than a cell, as a fraction of one. */
+const RING = 0.6
+const RATIO = (GRID_COLUMNS + 2 * RING) / (GRID_ROWS + 2 * RING)
+const tracks = (cells: number) =>
+  `minmax(0, ${RING}fr) repeat(${cells}, minmax(0, 1fr)) minmax(0, ${RING}fr)`
 const GRID_AREA = { gridColumn: `2 / span ${GRID_COLUMNS}`, gridRow: `2 / span ${GRID_ROWS}` }
+
+/** Caps the left column (toolbar, board, proposition) so it fits one screen height. */
+export const BOARD_COLUMN: React.CSSProperties = {
+  maxWidth: `max(20rem, calc((100dvh - 12rem) * ${RATIO}))`,
+}
 
 /** CSS grid lines (1-based) of an entry in the ring around the grid. */
 function ringCell(entry: number): React.CSSProperties {
@@ -47,11 +57,11 @@ export default function GameBoard({
 }: GameBoardProps) {
   return (
     <div
-      className='grid w-full'
+      className='mx-auto grid w-full'
       style={{
-        gridTemplateColumns: `repeat(${RING_COLUMNS}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${RING_ROWS}, minmax(0, 1fr))`,
-        aspectRatio: `${RING_COLUMNS} / ${RING_ROWS}`,
+        gridTemplateColumns: tracks(GRID_COLUMNS),
+        gridTemplateRows: tracks(GRID_ROWS),
+        aspectRatio: RATIO,
       }}
       data-cy='game-board'
     >
@@ -76,6 +86,7 @@ export default function GameBoard({
           disabled={disabled}
           onFire={onFire}
           onHighlight={onHighlight}
+          inline={['top', 'bottom'].includes(entryPlace(entry).edge)}
           style={ringCell(entry)}
         />
       ))}

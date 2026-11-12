@@ -11,6 +11,8 @@ interface EntryButtonProps {
   readonly disabled: boolean
   readonly onFire: (entry: number) => void
   readonly onHighlight: (key: string | null) => void
+  /** Number and marker side by side, for the top and bottom edges where the ring is short. */
+  readonly inline: boolean
   readonly style: React.CSSProperties
 }
 
@@ -30,6 +32,7 @@ export default function EntryButton({
   disabled,
   onFire,
   onHighlight,
+  inline,
   style,
 }: EntryButtonProps) {
   const { t } = useI18n()
@@ -42,7 +45,8 @@ export default function EntryButton({
       type='button'
       style={style}
       className={cn(
-        'm-px flex flex-col items-center justify-center rounded-md text-[9px] leading-none text-muted-foreground transition-colors md:m-0.5 md:gap-0.5 md:text-xs',
+        'm-px flex min-h-0 min-w-0 items-center justify-center gap-0.5 rounded-md text-[9px] leading-none text-muted-foreground transition-colors md:text-xs',
+        inline ? 'flex-row' : 'flex-col',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
         !fired && !disabled && 'hover:bg-accent hover:text-accent-foreground',
         fired && 'text-foreground',
@@ -68,7 +72,7 @@ export default function EntryButton({
       {path && (
         <BeamMarker
           path={path}
-          className='size-3.5 text-[8px] md:size-5 md:text-[10px]'
+          className='size-3.5 text-[8px] md:size-4.5 md:text-[10px]'
         />
       )}
     </button>

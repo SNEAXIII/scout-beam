@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
 import DraftPanel from './_components/draft-panel'
-import GameBoard from './_components/game-board'
+import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
@@ -26,7 +26,7 @@ export default function GamePage() {
   }
 
   return (
-    <main className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8'>
+    <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <GameHeader
         status={game?.status ?? null}
         onSurrender={() => void surrender()}
@@ -45,9 +45,12 @@ export default function GamePage() {
         <p className='text-sm text-muted-foreground'>{t.common.loading}</p>
       )}
       {game && (
-        <div className='grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_16rem]'>
+        <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>
           {game.status !== 'in_progress' ? (
-            <div className='flex flex-col gap-3'>
+            <div
+              className='mx-auto flex w-full flex-col gap-3'
+              style={BOARD_COLUMN}
+            >
               <GameBoard
                 {...board}
                 layout={game.layout}
@@ -67,12 +70,15 @@ export default function GamePage() {
               onSolved={() => void load()}
             />
           )}
-          <ShotList
-            shots={shots}
-            paths={paths}
-            highlighted={highlighted}
-            onHighlight={setHighlighted}
-          />
+          {/* Takes the row's height without adding to it, so the shots scroll instead of growing the row. */}
+          <div className='flex min-h-0 flex-col md:h-0 md:min-h-full md:self-stretch'>
+            <ShotList
+              shots={shots}
+              paths={paths}
+              highlighted={highlighted}
+              onHighlight={setHighlighted}
+            />
+          </div>
         </div>
       )}
     </main>

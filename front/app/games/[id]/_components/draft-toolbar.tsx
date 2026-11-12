@@ -16,7 +16,7 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
   const { t } = useI18n()
   const fill = PIECE_SWATCHES[draft.colour].fill
   return (
-    <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
+    <div className='flex flex-wrap items-center gap-x-3 gap-y-1.5'>
       <div
         className='flex gap-1'
         role='group'
@@ -30,7 +30,7 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
               key={shape}
               variant='outline'
               size='icon'
-              className={cn('relative [&_svg]:size-6', picked && 'bg-accent ring-2 ring-ring')}
+              className={cn('relative [&_svg]:size-5', picked && 'bg-accent ring-2 ring-ring')}
               disabled={placed}
               onClick={() => draft.selectShape(shape)}
               aria-pressed={picked}
@@ -65,7 +65,7 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
         <kbd className='rounded border border-border px-1 text-[10px] text-muted-foreground'>R</kbd>
       </Button>
       <div
-        className='flex gap-1.5'
+        className='flex gap-1'
         role='group'
         aria-label={t.draft.colour}
       >
@@ -75,9 +75,9 @@ export default function DraftToolbar({ draft }: DraftToolbarProps) {
             variant='outline'
             size='icon'
             className={cn(
-              'rounded-full transition-transform',
+              'size-7 rounded-full transition-transform',
               draft.colour === colour
-                ? 'ring-2 ring-ring ring-offset-2 ring-offset-card'
+                ? 'ring-2 ring-ring ring-offset-1 ring-offset-background'
                 : 'hover:scale-110'
             )}
             style={{ backgroundColor: PIECE_SWATCHES[colour].fill }}
