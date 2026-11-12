@@ -7,6 +7,7 @@ import type { KeyboardLayout } from '@/app/lib/keyboard'
 import { SHAPES } from '@/app/lib/pieces'
 import { submitProposition } from '@/app/services/games'
 import DraftToolbar from './draft-toolbar'
+import HotkeyLegend from './hotkey-legend'
 import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
 import { useDraft } from '../_viewmodels/use-draft'
 
@@ -88,6 +89,7 @@ export default function DraftPanel({
           {fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })}
         </span>
       </div>
+      <HotkeyLegend keyboardLayout={keyboardLayout} />
       {shown?.error && (
         <p
           className='rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground'

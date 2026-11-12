@@ -13,6 +13,15 @@ const en = {
     azerty: 'AZERTY',
     qwerty: 'QWERTY',
   },
+  hotkeys: {
+    legend: 'Keyboard shortcuts',
+    shape: 'shape',
+    colour: 'colour',
+    rotate: 'rotate',
+    remove: 'remove',
+    rightClick: 'Right-click',
+    space: 'Space',
+  },
   login: {
     description: 'Sign in to find your games.',
     login: 'Login',

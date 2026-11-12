@@ -15,6 +15,15 @@ const fr: Translations = {
     azerty: 'AZERTY',
     qwerty: 'QWERTY',
   },
+  hotkeys: {
+    legend: 'Raccourcis clavier',
+    shape: 'forme',
+    colour: 'couleur',
+    rotate: 'tourner',
+    remove: 'retirer',
+    rightClick: 'Clic droit',
+    space: 'Espace',
+  },
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
     login: 'Identifiant',
