@@ -32,15 +32,16 @@ keys of each layout, lower-case, same physical positions:
 - `azerty`: `shapePrevious: 'q'`, `shapeNext: 'd'`, `colourPrevious: 'a'`, `colourNext: 'e'`
 - `qwerty`: `shapePrevious: 'a'`, `shapeNext: 'd'`, `colourPrevious: 'q'`, `colourNext: 'e'`
 
-The hook `useKeyboardLayout()` returns `{ layout, toggle }`. Until the player picks one, the
-layout follows the interface language (`fr` → AZERTY, `en` → QWERTY, from `useI18n().locale`);
+The hook `useKeyboardLayout()` returns `{ keyboardLayout, toggle }`. Until the player picks one,
+it follows the interface language (`fr` → AZERTY, `en` → QWERTY, from `useI18n().locale`);
 once toggled, the choice is stored in localStorage under `scout-beam.keyboard-layout` and wins.
 Read storage in an effect and guard it with try/catch, as `app/i18n/index.tsx` does for the locale.
 
-`page.tsx` calls the hook once and passes `layout` down (Task 2 will hand it to `DraftPanel`) and
-`layout` + `toggle` to `GameHeader`. `KeyboardLayoutToggle` looks like `LanguageSwitcher`
+`page.tsx` calls the hook once and passes `keyboardLayout` down (Task 2 will hand it to
+`DraftPanel`) and `keyboardLayout` + `onToggleKeyboardLayout` to `GameHeader`. Never a bare
+`layout`: in `CONTEXT.md` a Layout is the set of pieces. `KeyboardLayoutToggle` looks like `LanguageSwitcher`
 (ghost, `sm`, lucide `Keyboard` icon + `AZERTY` or `QWERTY`), `data-cy='keyboard-layout'`,
-`data-layout={layout}`, and sits just before `LanguageSwitcher` in the header's right-hand group,
+`data-keyboard-layout`, and sits just before `LanguageSwitcher` in the header's right-hand group,
 only while the game is in progress. i18n keys: `keyboard.switch` (aria-label and title:
 `'Switch keyboard layout'` / `'Changer la disposition du clavier'`), `keyboard.azerty`
 (`'AZERTY'`), `keyboard.qwerty` (`'QWERTY'`).
@@ -55,9 +56,9 @@ choice survives a reload and a language change; the game header still fits at 39
 `front/app/games/[id]/_components/draft-toolbar.tsx`, `front/app/games/[id]/page.tsx`,
 `front/app/i18n/locales/en.ts`, `front/app/i18n/locales/fr.ts`
 
-`useDraft(gameId, layout)` takes the `KeyboardLayout` from `@/app/lib/keyboard` (Task 1); the page
-passes it to `DraftPanel` as a `layout` prop, which hands it to `useDraft` and to `DraftToolbar`.
-Extend the existing keydown listener with the `KEYMAPS[layout]` keys:
+`useDraft(gameId, keyboardLayout)` takes the `KeyboardLayout` from `@/app/lib/keyboard` (Task 1);
+the page passes it to `DraftPanel` as a `keyboardLayout` prop, which hands it to `useDraft` and to `DraftToolbar`.
+Extend the existing keydown listener with the `KEYMAPS[keyboardLayout]` keys:
 
 - `shapePrevious` / `shapeNext`: move to the previous / next shape in `SHAPES` order, skipping
   placed ones, wrapping around; nothing when no shape is picked (all five placed). Picking a
