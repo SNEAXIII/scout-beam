@@ -6,7 +6,7 @@ import { ApiError } from '@/app/lib/api'
 import { SHAPES } from '@/app/lib/pieces'
 import { submitProposition } from '@/app/services/games'
 import DraftToolbar from './draft-toolbar'
-import GameBoard, { type GameBoardProps } from './game-board'
+import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
 import { useDraft } from '../_viewmodels/use-draft'
 
 interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'disabled'> {
@@ -51,7 +51,8 @@ export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelPro
 
   return (
     <div
-      className='flex flex-col gap-2'
+      className='mx-auto flex w-full flex-col gap-2'
+      style={BOARD_COLUMN}
       data-cy='draft-panel'
     >
       <DraftToolbar draft={draft} />

@@ -26,6 +26,11 @@ const tracks = (cells: number) =>
   `minmax(0, ${RING}fr) repeat(${cells}, minmax(0, 1fr)) minmax(0, ${RING}fr)`
 const GRID_AREA = { gridColumn: `2 / span ${GRID_COLUMNS}`, gridRow: `2 / span ${GRID_ROWS}` }
 
+/** Caps the left column (toolbar, board, proposition) so it fits one screen height. */
+export const BOARD_COLUMN: React.CSSProperties = {
+  maxWidth: `max(20rem, calc((100dvh - 12rem) * ${RATIO}))`,
+}
+
 /** CSS grid lines (1-based) of an entry in the ring around the grid. */
 function ringCell(entry: number): React.CSSProperties {
   const { edge, index } = entryPlace(entry)
@@ -57,8 +62,6 @@ export default function GameBoard({
         gridTemplateColumns: tracks(GRID_COLUMNS),
         gridTemplateRows: tracks(GRID_ROWS),
         aspectRatio: RATIO,
-        // Keeps the board, the toolbar and the proposition within one screen height.
-        maxWidth: `max(20rem, calc((100dvh - 13rem) * ${RATIO}))`,
       }}
       data-cy='game-board'
     >
