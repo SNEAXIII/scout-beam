@@ -54,3 +54,15 @@ pnpm dev                     # http://localhost:3001 — sign in on /login: 3–
 
 `pnpm exec tsc --noEmit` and `pnpm exec oxlint --type-aware` check a change; `pnpm build` builds it.
 The API's `CORS_ALLOWED_ORIGIN` must be `http://localhost:3001`.
+
+## Deploy
+
+`stack.yaml` is a Swarm stack that plugs into the Traefik of the Mawster stack (network
+`traefik-public`, resolver `letsencrypt`). The front is served on `SCOUT_BEAM_HOST` and the API
+under `/api` on the same host. Create the secrets once, on the manager:
+
+```bash
+openssl rand -hex 32 | docker secret create scout_beam_db_password -
+openssl rand -hex 32 | docker secret create scout_beam_jwt_secret -
+make deploy SCOUT_BEAM_HOST=scout-beam.example.com   # builds both images locally, then deploys
+```
