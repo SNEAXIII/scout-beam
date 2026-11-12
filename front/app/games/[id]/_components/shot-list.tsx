@@ -17,10 +17,10 @@ export default function ShotList({ shots, paths, highlighted, onHighlight }: Sho
   const { t } = useI18n()
   return (
     <Card className='flex min-h-0 flex-col'>
-      <CardHeader>
-        <CardTitle>{t.shots.title}</CardTitle>
+      <CardHeader className='p-3'>
+        <CardTitle className='text-sm'>{t.shots.title}</CardTitle>
       </CardHeader>
-      <CardContent className='min-h-0 overflow-y-auto'>
+      <CardContent className='min-h-0 overflow-y-auto p-2 pt-0'>
         {shots.length === 0 ? (
           <p
             className='text-sm text-muted-foreground'
@@ -41,7 +41,7 @@ export default function ShotList({ shots, paths, highlighted, onHighlight }: Sho
                   <button
                     type='button'
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-md px-2 py-1 text-left text-sm transition-colors',
+                      'flex w-full items-center gap-2 rounded-md px-1.5 py-0.5 text-left text-sm transition-colors',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       highlighted === path.key && 'bg-accent'
                     )}

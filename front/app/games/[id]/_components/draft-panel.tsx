@@ -51,7 +51,7 @@ export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelPro
 
   return (
     <div
-      className='flex flex-col gap-3'
+      className='flex flex-col gap-2'
       data-cy='draft-panel'
     >
       <DraftToolbar draft={draft} />
@@ -60,8 +60,9 @@ export default function DraftPanel({ gameId, onSolved, ...board }: DraftPanelPro
         draft={draft}
         disabled={false}
       />
-      <div className='flex flex-wrap items-center gap-3'>
+      <div className='flex flex-wrap items-center gap-2'>
         <Button
+          size='sm'
           onClick={() => void propose()}
           disabled={!complete || pending}
           data-cy='propose'

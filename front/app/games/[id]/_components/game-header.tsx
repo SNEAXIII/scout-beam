@@ -18,7 +18,7 @@ export default function GameHeader({ status, onSurrender, surrendering }: GameHe
   const { t } = useI18n()
   const [confirming, setConfirming] = useState(false)
   return (
-    <header className='flex items-center gap-3'>
+    <header className='flex items-center gap-2'>
       <Button
         asChild
         variant='ghost'
@@ -33,11 +33,12 @@ export default function GameHeader({ status, onSurrender, surrendering }: GameHe
           <ArrowLeft />
         </Link>
       </Button>
-      <h1 className='text-2xl font-semibold tracking-tight'>{t.game.title}</h1>
+      <h1 className='text-xl font-semibold tracking-tight'>{t.game.title}</h1>
       {status && <GameStatusBadge status={status} />}
       {status === 'in_progress' && (
         <Button
           variant='outline'
+          size='sm'
           className='ml-auto'
           onClick={() => setConfirming(true)}
           disabled={surrendering}

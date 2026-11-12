@@ -26,7 +26,7 @@ export default function GamePage() {
   }
 
   return (
-    <main className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8'>
+    <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <GameHeader
         status={game?.status ?? null}
         onSurrender={() => void surrender()}
@@ -45,7 +45,7 @@ export default function GamePage() {
         <p className='text-sm text-muted-foreground'>{t.common.loading}</p>
       )}
       {game && (
-        <div className='grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_16rem]'>
+        <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>
           {game.status !== 'in_progress' ? (
             <div className='flex flex-col gap-3'>
               <GameBoard
