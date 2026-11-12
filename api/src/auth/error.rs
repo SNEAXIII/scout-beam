@@ -13,12 +13,6 @@ pub enum AuthError {
     #[error("Le token fourni a expiré")]
     ExpiredToken,
 
-    #[error("Le token ne contient pas d'utilisateur")]
-    MissingSubject,
-
-    #[error("Le rôle du token est invalide")]
-    InvalidRole,
-
     /// A refresh token was presented where an access token is required, or the other way round.
     #[error("Le type de token est invalide")]
     WrongTokenType,

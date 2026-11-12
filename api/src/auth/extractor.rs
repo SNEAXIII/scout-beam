@@ -26,16 +26,20 @@ where
 {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let codec = JwtCodec::from_ref(state);
-        let token = bearer_token(parts)?;
-
-        let claims = codec.decode(token)?;
-        Ok(Self {
-            user_id: claims.subject()?,
-            role: claims.access_role()?,
-        })
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &S,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        std::future::ready(identity(parts, &JwtCodec::from_ref(state)).map_err(ApiError::from))
     }
+}
+
+fn identity(parts: &Parts, codec: &JwtCodec) -> Result<Identity, AuthError> {
+    let claims = codec.decode_access(bearer_token(parts)?)?;
+    Ok(Identity {
+        user_id: claims.sub,
+        role: claims.role,
+    })
 }
 
 fn bearer_token(parts: &Parts) -> Result<&str, AuthError> {

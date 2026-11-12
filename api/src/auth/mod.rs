@@ -9,4 +9,4 @@ pub mod jwt;
 
 pub use error::AuthError;
 pub use extractor::Identity;
-pub use jwt::{Claims, JwtCodec, TokenType};
+pub use jwt::{AccessClaims, JwtCodec, RefreshClaims};
