@@ -14,7 +14,7 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
   Array.from({ length: GRID_COLUMNS }, (_, x) => ({ x, y }))
 ).flat()
 
-/** The draft grid: a click places the picked shape with its top-left there, or removes a piece. */
+/** The draft grid: a click places the picked shape; a right click or Space removes a piece. */
 export default function DraftBoard({ draft, style }: DraftBoardProps) {
   const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
@@ -31,6 +31,13 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
       ? { piece: previewPiece, fits: draft.fits(previewPiece) }
       : undefined
 
+  // Space removes on keydown so no click follows: it would place the piece just picked back up.
+  const onCellKey = (event: React.KeyboardEvent, owner: Shape | undefined) => {
+    if (event.key !== ' ' || (!owner && !event.repeat)) return
+    event.preventDefault()
+    if (owner) draft.remove(owner)
+  }
+
   const describe = (x: number, y: number, owner: Shape | undefined) => {
     const cell = { x: x + 1, y: y + 1 }
     if (owner) return fill(t.draft.cellRemove, { ...cell, shape: t.shapes[owner] })
@@ -42,6 +49,7 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
     <div
       className='relative size-full'
       style={style}
+      onContextMenu={(event) => event.preventDefault()}
       data-cy='draft-board'
     >
       <div
@@ -61,12 +69,15 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                 !owner && draft.shape ? 'hover:bg-accent/60' : !owner && 'cursor-default'
               )}
-              onClick={() => (owner ? draft.remove(owner) : draft.place(x, y))}
+              onClick={owner ? undefined : () => draft.place(x, y)}
+              onKeyDown={(event) => onCellKey(event, owner)}
+              onContextMenu={owner ? () => draft.remove(owner) : undefined}
               onMouseEnter={() => setHovered({ x, y })}
               onMouseLeave={() => setHovered(null)}
               onFocus={() => setHovered({ x, y })}
               onBlur={() => setHovered(null)}
               aria-label={describe(x, y, owner)}
+              aria-keyshortcuts={owner ? 'Space' : undefined}
               data-cy={`draft-cell-${x}-${y}`}
               data-piece={owner}
             />
@@ -80,7 +91,7 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
         label={t.draft.title}
         piecePrefix='draft-piece'
         preview={preview}
-        onPieceClick={draft.remove}
+        onPieceRemove={draft.remove}
       />
     </div>
   )

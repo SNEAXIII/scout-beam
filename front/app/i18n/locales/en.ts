@@ -43,7 +43,7 @@ const en = {
     surrendered: 'Game surrendered: here are the hidden pieces. Firing is disabled.',
     grid: 'Grid',
     gridRevealed: 'Grid and hidden pieces',
-    removePiece: 'Remove the {{shape}} piece',
+    removePiece: 'Right-click to remove the {{shape}} piece',
     entry: 'Entry {{entry}}',
     entryShot: 'Entry {{entry}}, beam {{label}}: {{entry}} → {{other}}, {{colour}}',
   },
@@ -65,7 +65,7 @@ const en = {
     shapeHint: '{{shape}} ({{previous}} / {{next}})',
     colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Cell {{x}}, {{y}}',
-    cellRemove: 'Cell {{x}}, {{y}}: remove the {{shape}} piece',
+    cellRemove: 'Cell {{x}}, {{y}}: press Space to remove the {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',
   },
   shapes: {

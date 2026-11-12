@@ -45,7 +45,7 @@ const fr: Translations = {
     surrendered: 'Partie abandonnée : voici les pièces cachées. Le tir est désactivé.',
     grid: 'Grille',
     gridRevealed: 'Grille et pièces cachées',
-    removePiece: 'Retirer la pièce « {{shape}} »',
+    removePiece: 'Clic droit pour retirer la pièce « {{shape}} »',
     entry: 'Entrée {{entry}}',
     entryShot: 'Entrée {{entry}}, rayon {{label}} : {{entry}} → {{other}}, {{colour}}',
   },
@@ -67,7 +67,7 @@ const fr: Translations = {
     shapeHint: '{{shape}} ({{previous}} / {{next}})',
     colourHint: '{{colour}} ({{previous}} / {{next}})',
     cell: 'Case {{x}}, {{y}}',
-    cellRemove: 'Case {{x}}, {{y}} : retirer la pièce « {{shape}} »',
+    cellRemove: 'Case {{x}}, {{y}} : Espace pour retirer la pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
   },
   shapes: {
