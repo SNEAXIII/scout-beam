@@ -33,10 +33,8 @@ const send = (path: string, { method = 'GET', body, anonymous }: RequestOptions)
   })
 }
 
-/** The API answers `{detail}`: a message, or a list of `{msg}` for a failed validation. */
-async function errorMessage(response: Response): Promise<string> {
-  const payload = (await response.json().catch(() => null)) as { detail?: unknown } | null
-  const detail = payload?.detail
+/** The API's `detail`: a message, or a list of `{msg}` for a failed validation. */
+export function detailMessage(detail: unknown): string | null {
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
     const messages = detail
@@ -44,7 +42,12 @@ async function errorMessage(response: Response): Promise<string> {
       .filter((msg): msg is string => typeof msg === 'string')
     if (messages.length > 0) return messages.join(' ')
   }
-  return `Erreur ${response.status}`
+  return null
+}
+
+async function errorMessage(response: Response): Promise<string> {
+  const payload = (await response.json().catch(() => null)) as { detail?: unknown } | null
+  return detailMessage(payload?.detail) ?? `Erreur ${response.status}`
 }
 
 /** False only when the refresh token is missing or refused; any other failure throws. */
@@ -66,6 +69,11 @@ function toLogin(): never {
   clearTokens()
   if (window.location.pathname !== '/login') window.location.assign('/login')
   throw new ApiError(401, 'Session expirée')
+}
+
+/** For a refused socket: new tokens, or off to /login, which throws a 401 `ApiError`. */
+export async function renewSession(): Promise<void> {
+  if (!(await refreshTokens())) toLogin()
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {

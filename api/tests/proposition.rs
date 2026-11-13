@@ -1,5 +1,5 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! `POST /games/{id}/propositions` end to end: checking a layout against the hidden one.
+//! `propose` on `/games/{id}/ws` end to end: checking a layout against the hidden one.
 
 mod common;
 
@@ -218,11 +218,14 @@ async fn a_malformed_piece_is_refused_and_not_stored(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
-    let uri = format!("/games/{game_id}/propositions");
-    let piece = |shape: &str, rotation: i64| json!({ "pieces": [{ "shape": shape, "colour": "red", "x": 0, "y": 0, "rotation": rotation }] });
+    let piece = |shape: &str, rotation: i64| json!({ "type": "propose", "pieces": [{ "shape": shape, "colour": "red", "x": 0, "y": 0, "rotation": rotation }] });
 
-    for body in [piece("triangle", 0), piece("square", 4), json!({})] {
-        app.post(&uri, Some(&token), body.clone())
+    for message in [
+        piece("triangle", 0),
+        piece("square", 4),
+        json!({ "type": "propose" }),
+    ] {
+        app.play(game_id, Some(&token), message)
             .await
             .assert_status(StatusCode::UNPROCESSABLE_ENTITY);
     }
