@@ -64,8 +64,16 @@ Everything below runs from `front/`, with the API up on `localhost:8002`.
 ```bash
 cp .env.example .env.local   # NEXT_PUBLIC_API_URL, defaults to http://localhost:8002
 pnpm install
-pnpm dev                     # http://localhost:3001 — sign in on /login: 3–30 ASCII letters or digits
+pnpm dev                     # http://localhost:3001 — sign in on /login, sign up on /register
 ```
+
+`/login` signs in with a login and password, offers a button per provider the API has configured
+(`GET /auth/providers`), and shows the dev-login form only when the API runs with `ENV=dev`. A
+provider button stores a random `state` for the session and sends the browser to the provider,
+which comes back on `/login/callback/discord` or `/login/callback/google`: a missing or different
+`state` is refused there before anything is sent. To try the providers locally, create the apps as
+described above with the redirect URIs on `http://localhost:3001`. Signing up or signing in with a
+provider from a guest session turns that guest into the account.
 
 `pnpm exec tsc --noEmit` and `pnpm exec oxlint --type-aware` check a change; `pnpm build` builds it.
 The API's `CORS_ALLOWED_ORIGIN` must be `http://localhost:3001`.

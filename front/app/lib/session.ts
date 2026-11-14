@@ -1,5 +1,6 @@
 const ACCESS_KEY = 'scout-beam.access-token'
 const REFRESH_KEY = 'scout-beam.refresh-token'
+const GUEST_KEY = 'scout-beam.guest'
 
 export interface TokenPair {
   access_token: string
@@ -31,7 +32,20 @@ export function clearTokens(): void {
   try {
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
+    localStorage.removeItem(GUEST_KEY)
   } catch {
     // Unreadable storage holds no token either.
   }
 }
+
+/** Set on every sign-in, apart from token refreshes: a guest's bearer is what converts it on sign-up. */
+export function markGuest(guest: boolean): void {
+  try {
+    if (guest) localStorage.setItem(GUEST_KEY, '1')
+    else localStorage.removeItem(GUEST_KEY)
+  } catch {
+    // Without storage there is no stored bearer to send either.
+  }
+}
+
+export const isGuestSession = (): boolean => read(GUEST_KEY) === '1'

@@ -17,12 +17,14 @@ interface RequestOptions {
   body?: unknown
   /** Sign-in calls carry no token and must not bounce to /login on a 401. */
   anonymous?: boolean
+  /** A token an anonymous call still sends: a guest's, so signing up converts that guest. */
+  bearer?: string | null
 }
 
-const send = (path: string, { method = 'GET', body, anonymous }: RequestOptions) => {
+const send = (path: string, { method = 'GET', body, anonymous, bearer }: RequestOptions) => {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
-  const token = anonymous ? null : getAccessToken()
+  const token = anonymous ? (bearer ?? null) : getAccessToken()
   if (token) headers.Authorization = `Bearer ${token}`
   return fetch(`${API_URL}${path}`, {
     method,
@@ -69,6 +71,15 @@ function toLogin(): never {
   clearTokens()
   if (window.location.pathname !== '/login') window.location.assign('/login')
   throw new ApiError(401, 'Session expirée')
+}
+
+/** A just-refreshed access token, or null when the session cannot be renewed: never a stale one. */
+export async function freshAccessToken(): Promise<string | null> {
+  try {
+    return (await refreshTokens()) ? getAccessToken() : null
+  } catch {
+    return null
+  }
 }
 
 /** For a refused socket: new tokens, or off to /login, which throws a 401 `ApiError`. */

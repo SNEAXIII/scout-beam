@@ -27,8 +27,38 @@ const fr: Translations = {
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
     login: 'Identifiant',
+    password: 'Mot de passe',
     submit: 'Se connecter',
     failed: 'Connexion impossible',
+    or: 'ou',
+    continueWith: 'Continuer avec {{provider}}',
+    noAccount: 'Pas encore de compte ?',
+    createAccount: 'En créer un',
+    devTitle: 'Connexion développeur',
+    devDescription:
+      'Uniquement en développement : le compte est créé à la première connexion, sans mot de passe.',
+    devSubmit: 'Se connecter sans mot de passe',
+  },
+  providers: {
+    discord: 'Discord',
+    google: 'Google',
+  },
+  register: {
+    title: 'Créer un compte',
+    description:
+      'Un identifiant de 3 à 30 lettres ou chiffres, et un mot de passe de 8 à 128 caractères.',
+    confirm: 'Confirmez le mot de passe',
+    submit: 'Créer le compte',
+    mismatch: 'Les deux mots de passe ne correspondent pas',
+    failed: 'Impossible de créer le compte',
+    haveAccount: 'Déjà un compte ?',
+    signIn: 'Se connecter',
+  },
+  callback: {
+    pending: 'Connexion en cours…',
+    invalid: 'Ce lien de connexion est invalide ou a expiré. Recommencez.',
+    failed: 'Connexion impossible avec ce fournisseur',
+    back: 'Retour à la connexion',
   },
   home: {
     title: 'Mes parties',
