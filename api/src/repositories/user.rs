@@ -5,7 +5,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domains::user::model::User;
+use crate::models::user::User;
 use crate::shared::role::Role;
 
 pub async fn find_by_id(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Option<User>> {

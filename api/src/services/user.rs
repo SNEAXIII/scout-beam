@@ -3,10 +3,10 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domains::user::error::UserError;
-use crate::domains::user::login_generator;
-use crate::domains::user::model::User;
-use crate::domains::user::repository;
+use crate::errors::user::UserError;
+use crate::models::user::User;
+use crate::repositories::user as repository;
+use crate::services::login_generator;
 use crate::shared::role::Role;
 
 /// Load the account behind a token: "the token decodes" does not prove the row still exists.

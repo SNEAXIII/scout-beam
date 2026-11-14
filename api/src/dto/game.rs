@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::domains::game::model::{Game, GameStatus, GameSummary, Shot, ShotColour};
-use crate::domains::game::service::Verdict;
 use crate::engine::{Layout, Piece};
+use crate::models::game::{Game, GameStatus, GameSummary, Shot, ShotColour};
+use crate::services::game::Verdict;
 
 /// A game as its player sees it.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]

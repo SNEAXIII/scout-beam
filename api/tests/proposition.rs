@@ -5,8 +5,9 @@ mod common;
 
 use common::TestApp;
 use http::StatusCode;
-use scout_beam::domains::game::{GameError, service};
 use scout_beam::engine::Layout;
+use scout_beam::errors::game::GameError;
+use scout_beam::services::game as service;
 use scout_beam::shared::role::Role;
 use serde_json::{Value, json};
 use sqlx::PgPool;

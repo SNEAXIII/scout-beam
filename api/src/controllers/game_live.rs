@@ -14,13 +14,13 @@ use tokio::time::{Instant, sleep_until};
 use uuid::Uuid;
 
 use crate::auth::AuthError;
-use crate::domains::game::Game;
-use crate::domains::game::dto::{Action, ClientMessage, GameView, ServerMessage};
-use crate::domains::game::error::GameError;
-use crate::domains::game::hub::Push;
-use crate::domains::game::service::{self, Firing, Verdict};
-use crate::domains::user::CurrentUser;
+use crate::dto::game::{Action, ClientMessage, GameView, ServerMessage};
 use crate::engine::Layout;
+use crate::errors::game::GameError;
+use crate::extractors::user::CurrentUser;
+use crate::models::game::Game;
+use crate::services::game::{self as service, Firing, Verdict};
+use crate::services::game_hub::Push;
 use crate::shared::error::ApiError;
 use crate::state::AppState;
 

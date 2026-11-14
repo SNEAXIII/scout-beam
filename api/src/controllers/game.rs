@@ -6,9 +6,9 @@ use axum::{Json, Router};
 use http::StatusCode;
 use uuid::Uuid;
 
-use crate::domains::game::dto::{GameSummaryResponse, GameView};
-use crate::domains::game::service;
-use crate::domains::user::CurrentUser;
+use crate::dto::game::{GameSummaryResponse, GameView};
+use crate::extractors::user::CurrentUser;
+use crate::services::game as service;
 use crate::shared::error::ApiResult;
 #[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;

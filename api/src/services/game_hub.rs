@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::domains::game::dto::ServerMessage;
+use crate::dto::game::ServerMessage;
 
 /// A socket further behind than this gets a fresh snapshot instead of the events it missed.
 const CAPACITY: usize = 64;

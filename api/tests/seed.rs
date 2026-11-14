@@ -6,8 +6,8 @@
 mod common;
 
 use common::TestApp;
-use scout_beam::domains::user::UserError;
-use scout_beam::domains::user::service::{self, SeedOutcome};
+use scout_beam::errors::user::UserError;
+use scout_beam::services::user::{self as service, SeedOutcome};
 use scout_beam::shared::role::Role;
 use serde_json::json;
 use sqlx::PgPool;

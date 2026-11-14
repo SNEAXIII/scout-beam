@@ -1,4 +1,4 @@
-//! Router assembly: mount each domain, then wrap the whole thing in the middleware stack.
+//! Router assembly: mount the controllers, then wrap the whole thing in the middleware stack.
 //!
 //! Kept apart from `main.rs` so tests call the very same router in-process.
 
@@ -18,13 +18,14 @@ use serde::Serialize;
 use utoipa::{OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::domains;
+use crate::controllers::{self, auth, game, game_live};
 use crate::shared::openapi::SecurityAddon;
 use crate::state::AppState;
+use crate::{dto, models};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-/// Root of the OpenAPI document; every endpoint comes from a domain, merged in below.
+/// The OpenAPI document: every endpoint and the schemas they carry.
 #[derive(OpenApi)]
 #[openapi(
     info(
@@ -32,20 +33,38 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
         description = "Scout Beam API: fire beams, deduce the hidden layout",
         version = "0.1.0",
     ),
-    paths(health),
-    components(schemas(HealthResponse)),
-    tags((name = "Service", description = "Process-level endpoints")),
+    paths(
+        health,
+        auth::dev_login,
+        auth::read_session,
+        auth::refresh,
+        game::create_game,
+        game::list_games,
+        game::read_game,
+        game_live::open_socket,
+    ),
+    components(schemas(
+        HealthResponse,
+        dto::user::UserProfile,
+        dto::user::DevLoginRequest,
+        crate::auth::dto::LoginResponse,
+        crate::auth::dto::RefreshTokenRequest,
+        crate::shared::role::Role,
+        crate::shared::openapi::ErrorResponse,
+        dto::game::GameView,
+        dto::game::GameSummaryResponse,
+        dto::game::ShotResponse,
+        models::game::GameStatus,
+        models::game::ShotColour,
+    )),
+    tags(
+        (name = "Service", description = "Process-level endpoints"),
+        (name = "Auth", description = "Sessions and tokens"),
+        (name = "Games", description = "Games against the bot, the shots fired at them and the propositions"),
+    ),
     modifiers(&SecurityAddon),
 )]
 struct ApiDoc;
-
-/// Assemble the document from each domain's own description.
-fn openapi() -> utoipa::openapi::OpenApi {
-    let mut document = ApiDoc::openapi();
-    document.merge(domains::user::openapi());
-    document.merge(domains::game::openapi());
-    document
-}
 
 pub fn build_app(state: AppState) -> Result<Router> {
     let cors = cors_layer(&state.config.cors_allowed_origin)?;
@@ -53,8 +72,7 @@ pub fn build_app(state: AppState) -> Result<Router> {
 
     let router = Router::new()
         .route("/health", get(health))
-        .merge(domains::user::router(is_dev))
-        .merge(domains::game::router())
+        .merge(controllers::router(is_dev))
         .with_state(state)
         .merge(docs_router());
 
@@ -76,7 +94,7 @@ pub fn build_app(state: AppState) -> Result<Router> {
 /// Swagger UI plus the document it reads, `no-store` so a new route never looks missing.
 fn docs_router() -> Router {
     let swagger: Router = SwaggerUi::new("/docs")
-        .url("/api-docs/openapi.json", openapi())
+        .url("/api-docs/openapi.json", ApiDoc::openapi())
         .into();
 
     swagger.layer(SetResponseHeaderLayer::overriding(

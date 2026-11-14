@@ -1,14 +1,14 @@
 //! Handler arguments that guarantee an authenticated account that still exists.
 //!
-//! In the user domain, not in `auth`, because reading the `user` table is this domain's job.
+//! Apart from `auth`, which touches no table: this one reads the `user` table.
 
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use uuid::Uuid;
 
 use crate::auth::Identity;
-use crate::domains::user::model::User;
-use crate::domains::user::service;
+use crate::models::user::User;
+use crate::services::user as service;
 use crate::shared::error::ApiError;
 use crate::state::AppState;
 

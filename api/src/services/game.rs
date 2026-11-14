@@ -1,12 +1,12 @@
-//! Rules of the game domain — the only door other domains may use.
+//! Rules of a game: controllers never reach its repository but through here.
 
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domains::game::error::GameError;
-use crate::domains::game::model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::domains::game::repository;
 use crate::engine::{self, Entry, Layout};
+use crate::errors::game::GameError;
+use crate::models::game::{Game, GameStatus, GameSummary, SealedLayout, Shot};
+use crate::repositories::game as repository;
 
 /// Whether a shot was just fired or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

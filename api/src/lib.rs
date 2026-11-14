@@ -5,8 +5,14 @@
 pub mod app;
 pub mod auth;
 pub mod config;
-pub mod domains;
+pub mod controllers;
+pub mod dto;
 pub mod engine;
+pub mod errors;
+pub mod extractors;
+pub mod models;
+pub mod repositories;
+pub mod services;
 pub mod shared;
 pub mod state;
 

@@ -7,7 +7,7 @@ use common::{TestApp, login_body};
 use http::StatusCode;
 use scout_beam::Config;
 use scout_beam::config::Environment;
-use scout_beam::domains::user::repository;
+use scout_beam::repositories::user as repository;
 use scout_beam::shared::role::Role;
 use serde_json::json;
 use sqlx::PgPool;

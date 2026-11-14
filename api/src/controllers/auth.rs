@@ -1,6 +1,6 @@
 //! `/auth/*` — turning an account into tokens, and back.
 //!
-//! In the user domain because each route reads the `user` table; `auth` stays a pure mechanism.
+//! Here rather than in `auth`: each route reads the `user` table, and `auth` stays a pure mechanism.
 
 use axum::Json;
 use axum::Router;
@@ -8,9 +8,9 @@ use axum::extract::State;
 use axum::routing::{get, post};
 
 use crate::auth::dto::{LoginResponse, RefreshTokenRequest};
-use crate::domains::user::dto::{DevLoginRequest, UserProfile};
-use crate::domains::user::extractor::CurrentUser;
-use crate::domains::user::service;
+use crate::dto::user::{DevLoginRequest, UserProfile};
+use crate::extractors::user::CurrentUser;
+use crate::services::user as service;
 use crate::shared::error::ApiResult;
 #[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;

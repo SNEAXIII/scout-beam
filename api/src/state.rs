@@ -9,7 +9,7 @@ use sqlx::PgPool;
 
 use crate::auth::jwt::JwtCodec;
 use crate::config::Config;
-use crate::domains::game::hub::GameHub;
+use crate::services::game_hub::GameHub;
 
 #[derive(Clone)]
 pub struct AppState {

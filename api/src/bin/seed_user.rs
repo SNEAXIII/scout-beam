@@ -5,7 +5,7 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use scout_beam::Config;
-use scout_beam::domains::user::service::{self, SeedOutcome};
+use scout_beam::services::user::{self as service, SeedOutcome};
 use scout_beam::shared::db;
 use scout_beam::shared::role::Role;
 

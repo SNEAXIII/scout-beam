@@ -3,7 +3,7 @@
 use rand::RngExt;
 use sqlx::PgPool;
 
-use crate::domains::user::repository;
+use crate::repositories::user as repository;
 
 const ADJECTIVES: [&str; 10] = [
     "cosmic", "mighty", "iron", "shadow", "storm", "silver", "golden", "dark", "thunder", "mystic",
