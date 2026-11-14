@@ -43,11 +43,19 @@ impl Config {
         Ok(Self {
             database_url: required(&get, "DATABASE_URL")?,
             jwt_secret: required(&get, "JWT_SECRET")?,
-            access_token_ttl: Duration::from_secs(
-                60 * parse_or(&get, "ACCESS_TOKEN_EXPIRE_MINUTES", 30)?,
-            ),
-            refresh_token_ttl: Duration::from_secs(
-                60 * 60 * 24 * parse_or(&get, "REFRESH_TOKEN_EXPIRE_DAYS", 30)?,
+            access_token_ttl: Duration::from_mins(parse_ttl(
+                &get,
+                "ACCESS_TOKEN_EXPIRE_MINUTES",
+                30,
+                MAX_ACCESS_TOKEN_MINUTES,
+            )?),
+            refresh_token_ttl: Duration::from_hours(
+                24 * parse_ttl(
+                    &get,
+                    "REFRESH_TOKEN_EXPIRE_DAYS",
+                    30,
+                    MAX_REFRESH_TOKEN_DAYS,
+                )?,
             ),
             bind_addr: get("BIND_ADDR")
                 .unwrap_or_else(|| "0.0.0.0:8002".to_owned())
@@ -88,11 +96,25 @@ fn required(get: &impl Fn(&str) -> Option<String>, key: &str) -> Result<String> 
     get(key).with_context(|| format!("missing environment variable {key}"))
 }
 
-fn parse_or(get: &impl Fn(&str) -> Option<String>, key: &str, default: u64) -> Result<u64> {
-    get(key).map_or(Ok(default), |raw| {
+const MAX_ACCESS_TOKEN_MINUTES: u64 = 24 * 60;
+const MAX_REFRESH_TOKEN_DAYS: u64 = 365;
+
+/// A token lifetime, refused at boot when zero or beyond `max`.
+fn parse_ttl(
+    get: &impl Fn(&str) -> Option<String>,
+    key: &str,
+    default: u64,
+    max: u64,
+) -> Result<u64> {
+    let value = get(key).map_or(Ok(default), |raw| {
         raw.parse()
             .with_context(|| format!("{key} must be a positive integer, got {raw:?}"))
-    })
+    })?;
+    anyhow::ensure!(
+        (1..=max).contains(&value),
+        "{key} must be between 1 and {max}, got {value}"
+    );
+    Ok(value)
 }
 
 #[cfg(test)]
@@ -165,6 +187,26 @@ mod tests {
         .to_string();
 
         assert!(error.contains("ACCESS_TOKEN_EXPIRE_MINUTES"));
+    }
+
+    #[test]
+    fn a_ttl_out_of_bounds_fails_at_boot() {
+        for days in ["0", "366", "99999999999999999"] {
+            let error = Config::from_source(|key| match key {
+                "DATABASE_URL" => Some("postgres://localhost/db".to_owned()),
+                "JWT_SECRET" => Some("secret".to_owned()),
+                "ENV" => Some("dev".to_owned()),
+                "REFRESH_TOKEN_EXPIRE_DAYS" => Some(days.to_owned()),
+                _ => None,
+            })
+            .unwrap_err()
+            .to_string();
+
+            assert!(
+                error.contains("REFRESH_TOKEN_EXPIRE_DAYS"),
+                "{days}: {error}"
+            );
+        }
     }
 
     #[test]

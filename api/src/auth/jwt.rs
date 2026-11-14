@@ -62,12 +62,12 @@ impl JwtCodec {
     }
 
     pub fn access_token(&self, sub: Uuid, role: Role) -> Result<String, AuthError> {
-        let exp = expires_in(self.access_ttl);
+        let exp = expires_in(self.access_ttl)?;
         self.encode(&Claims::Access(AccessClaims { sub, role, exp }))
     }
 
     pub fn refresh_token(&self, sub: Uuid) -> Result<String, AuthError> {
-        let exp = expires_in(self.refresh_ttl);
+        let exp = expires_in(self.refresh_ttl)?;
         self.encode(&Claims::Refresh(RefreshClaims { sub, exp }))
     }
 
@@ -100,10 +100,12 @@ impl JwtCodec {
     }
 }
 
-fn expires_in(ttl: Duration) -> i64 {
-    // Saturating beats wrapping into a past timestamp, which would mint an expired token.
-    let seconds = i64::try_from(ttl.as_secs()).unwrap_or(i64::MAX);
-    Utc::now().timestamp().saturating_add(seconds)
+/// Refuses to mint rather than fall back on a token that never expires; the config bounds the TTL.
+fn expires_in(ttl: Duration) -> Result<i64, AuthError> {
+    i64::try_from(ttl.as_secs())
+        .ok()
+        .and_then(|seconds| Utc::now().timestamp().checked_add(seconds))
+        .ok_or(AuthError::InvalidToken)
 }
 
 #[cfg(test)]
