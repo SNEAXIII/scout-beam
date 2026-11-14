@@ -324,7 +324,11 @@ fn build(
     token: Option<&str>,
     body: Option<Value>,
 ) -> Request<Body> {
-    let mut builder = Request::builder().method(method).uri(uri);
+    // Rate limiting keys on the client address: `oneshot` has none, so every request names one.
+    let mut builder = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header("x-forwarded-for", "203.0.113.7");
 
     if let Some(token) = token {
         builder = builder.header(http::header::AUTHORIZATION, format!("Bearer {token}"));

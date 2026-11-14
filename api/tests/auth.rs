@@ -270,3 +270,157 @@ async fn a_supplied_login_is_still_validated(pool: PgPool) {
         .await
         .assert_status(StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+fn credentials(login: &str, password: &str) -> serde_json::Value {
+    json!({ "login": login, "password": password })
+}
+
+#[sqlx::test]
+async fn register_then_login_returns_a_working_token_pair(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    let registered = app
+        .post(
+            "/auth/register",
+            None,
+            credentials("Sneaxiii", "correct horse"),
+        )
+        .await;
+    registered.assert_status(StatusCode::CREATED);
+
+    let logged = app
+        .post(
+            "/auth/login",
+            None,
+            credentials("Sneaxiii", "correct horse"),
+        )
+        .await;
+    logged.assert_status(StatusCode::OK);
+    let access = logged.body["access_token"].as_str().unwrap();
+    app.get("/auth/session", Some(access))
+        .await
+        .assert_status(StatusCode::OK);
+}
+
+#[sqlx::test]
+async fn a_wrong_password_and_an_unknown_login_get_the_same_answer(pool: PgPool) {
+    let app = TestApp::new(pool);
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await;
+
+    let wrong = app
+        .post(
+            "/auth/login",
+            None,
+            credentials("Sneaxiii", "battery staple"),
+        )
+        .await;
+    let unknown = app
+        .post("/auth/login", None, credentials("Nobody", "battery staple"))
+        .await;
+
+    wrong.assert_status(StatusCode::UNAUTHORIZED);
+    unknown.assert_status(StatusCode::UNAUTHORIZED);
+    assert_eq!(wrong.body, unknown.body);
+}
+
+#[sqlx::test]
+async fn an_account_without_a_password_cannot_be_signed_into_by_password(pool: PgPool) {
+    let app = TestApp::new(pool);
+    app.seed("Sneaxiii", Role::User).await;
+
+    app.post(
+        "/auth/login",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
+async fn a_taken_login_answers_409(pool: PgPool) {
+    let app = TestApp::new(pool);
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::CREATED);
+
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "another one"),
+    )
+    .await
+    .assert_status(StatusCode::CONFLICT);
+}
+
+#[sqlx::test]
+async fn a_seven_character_password_answers_400(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    app.post("/auth/register", None, credentials("Sneaxiii", "1234567"))
+        .await
+        .assert_status(StatusCode::BAD_REQUEST);
+}
+
+#[sqlx::test]
+async fn the_password_hash_is_stored_and_never_the_password(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::CREATED);
+
+    let stored: Option<String> =
+        sqlx::query_scalar(r#"SELECT password_hash FROM "user" WHERE login = $1"#)
+            .bind("Sneaxiii")
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    let stored = stored.unwrap();
+    assert!(
+        stored.starts_with("$argon2id$"),
+        "not an Argon2id hash: {stored}"
+    );
+    assert!(!stored.contains("correct horse"));
+}
+
+#[sqlx::test]
+async fn a_sixth_sign_in_attempt_within_a_minute_answers_429(pool: PgPool) {
+    let app = TestApp::new(pool);
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await;
+
+    for _ in 0..4 {
+        app.post(
+            "/auth/login",
+            None,
+            credentials("Sneaxiii", "battery staple"),
+        )
+        .await
+        .assert_status(StatusCode::UNAUTHORIZED);
+    }
+    app.post(
+        "/auth/login",
+        None,
+        credentials("Sneaxiii", "battery staple"),
+    )
+    .await
+    .assert_status(StatusCode::TOO_MANY_REQUESTS);
+}

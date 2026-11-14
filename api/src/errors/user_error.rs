@@ -15,6 +15,17 @@ pub enum UserError {
     )]
     InvalidLogin,
 
+    #[error("Le mot de passe doit faire entre 8 et 128 caractères")]
+    InvalidPassword,
+
+    /// The same answer for an unknown login, an account without a password and a wrong password.
+    #[error("Identifiants incorrects")]
+    InvalidCredentials,
+
+    /// A hashing failure: nothing the caller can act on.
+    #[error(transparent)]
+    Internal(#[from] anyhow::Error),
+
     /// Kept only so services can `?` on repository calls; handed straight back to `ApiError`.
     #[error(transparent)]
     Database(#[from] sqlx::Error),
@@ -51,9 +62,10 @@ impl From<UserError> for ApiError {
         match error {
             UserError::Database(cause) => Self::Database(cause),
             // The caller's own account cannot be used: an authentication answer.
-            UserError::DoesNotExist => Self::Unauthorized(message),
+            UserError::DoesNotExist | UserError::InvalidCredentials => Self::Unauthorized(message),
             UserError::LoginAlreadyTaken => Self::Conflict(message),
-            UserError::InvalidLogin => Self::BadRequest(message),
+            UserError::InvalidLogin | UserError::InvalidPassword => Self::BadRequest(message),
+            UserError::Internal(cause) => Self::Internal(cause),
         }
     }
 }

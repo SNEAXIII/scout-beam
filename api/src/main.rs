@@ -39,10 +39,13 @@ async fn main() -> Result<()> {
         tracing::info!("openapi:    http://{host}/api-docs/openapi.json");
     }
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("server error")
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .context("server error")
 }
 
 /// `0.0.0.0` is a bind address, not somewhere a browser can go.

@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::errors::user_error::UserError;
 use crate::models::user_model::User;
 use crate::repositories::user_repository;
-use crate::services::login_generator;
+use crate::services::{login_generator, password};
 use crate::shared::role::Role;
 
 /// Load the account behind a token: "the token decodes" does not prove the row still exists.
@@ -51,6 +51,42 @@ pub async fn login_or_create(
     Ok(user)
 }
 
+/// Create a password account and sign it in. The login rules are the DTO's; the password's live here.
+pub async fn register_with_password(
+    pool: &PgPool,
+    login: &str,
+    password: &str,
+) -> Result<User, UserError> {
+    validate_password(password)?;
+    let password_hash = password::hash(password.to_owned()).await?;
+
+    let user = user_repository::insert_with_password(pool, login, &password_hash)
+        .await
+        .map_err(UserError::from_write)?;
+
+    user_repository::touch_last_login(pool, user.id).await?;
+    Ok(user)
+}
+
+/// Every failure answers the same `InvalidCredentials`: an unknown login is not for the caller to learn.
+pub async fn login_with_password(
+    pool: &PgPool,
+    login: &str,
+    password: &str,
+) -> Result<User, UserError> {
+    let account = user_repository::find_by_login(pool, login).await?;
+    let stored = account.as_ref().and_then(|user| user.password_hash.clone());
+    let matched = password::matches(password.to_owned(), stored).await?;
+
+    let user = match account {
+        Some(user) if matched => user,
+        _ => return Err(UserError::InvalidCredentials),
+    };
+
+    user_repository::touch_last_login(pool, user.id).await?;
+    Ok(user)
+}
+
 /// What `seed` actually did, so a caller can report it instead of guessing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeedOutcome {
@@ -83,6 +119,14 @@ pub async fn seed(
     let updated = user_repository::set_role(pool, existing.id, role).await?;
 
     Ok((updated, SeedOutcome::RoleChanged { from: previous }))
+}
+
+fn validate_password(password: &str) -> Result<(), UserError> {
+    if (8..=128).contains(&password.chars().count()) {
+        Ok(())
+    } else {
+        Err(UserError::InvalidPassword)
+    }
 }
 
 /// The DTO's rule, applied before the CHECK constraint can turn a typo into an opaque error.

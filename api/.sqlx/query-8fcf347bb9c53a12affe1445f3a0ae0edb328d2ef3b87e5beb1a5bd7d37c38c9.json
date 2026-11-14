@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, login, role as \"role: Role\", last_login_date, created_at, updated_at\n           FROM \"user\"\n           WHERE login = $1",
+  "query": "UPDATE \"user\"\n           SET role = $2\n           WHERE id = $1\n           RETURNING id, login, role as \"role: Role\", password_hash, last_login_date, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -49,6 +49,17 @@
       },
       {
         "ordinal": 3,
+        "name": "password_hash",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "password_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "last_login_date",
         "type_info": "Timestamptz",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -83,7 +94,19 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Uuid",
+        {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "super_admin",
+                "admin",
+                "user"
+              ]
+            }
+          }
+        }
       ]
     },
     "nullable": [
@@ -91,9 +114,10 @@
       false,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "5a49ee6bafa02f53ce1302155918b37c55233945178f4c6d5e99c9103db17895"
+  "hash": "8fcf347bb9c53a12affe1445f3a0ae0edb328d2ef3b87e5beb1a5bd7d37c38c9"
 }

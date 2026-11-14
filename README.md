@@ -33,6 +33,8 @@ with `ENV=dev`; an omitted login is generated server-side.
 
 | Method | Route | Who |
 | --- | --- | --- |
+| POST | `/auth/register` | anyone — creates a password account and signs it in; 5 sign-in attempts a minute per IP |
+| POST | `/auth/login` | anyone with a password account; same rate limit as `/auth/register` |
 | POST | `/auth/dev-login` | anyone (dev builds only) — creates the account on first sight |
 | GET | `/auth/session` | any signed-in user |
 | POST | `/auth/refresh` | holder of a refresh token |

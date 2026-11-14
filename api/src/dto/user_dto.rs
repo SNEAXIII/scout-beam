@@ -47,6 +47,30 @@ pub struct DevLoginRequest {
     pub role: Option<Role>,
 }
 
+/// Creates a password account. No `Debug`: the body carries a password.
+#[derive(Deserialize, Validate, utoipa::ToSchema)]
+pub struct RegisterRequest {
+    #[validate(
+        length(
+            min = 3,
+            max = 30,
+            message = "Le nom d'utilisateur doit faire entre 3 et 30 caractères"
+        ),
+        custom(function = "validate_alphanumeric")
+    )]
+    pub login: String,
+
+    /// Its length is checked by the service, so a short one answers 400 rather than 422.
+    pub password: String,
+}
+
+/// Signs in with a login and password. No `Debug`: the body carries a password.
+#[derive(Deserialize, Validate, utoipa::ToSchema)]
+pub struct LoginRequest {
+    pub login: String,
+    pub password: String,
+}
+
 /// `^[a-zA-Z0-9]+$` without pulling in a regex engine for one rule.
 fn validate_alphanumeric(value: &str) -> Result<(), ValidationError> {
     if value
