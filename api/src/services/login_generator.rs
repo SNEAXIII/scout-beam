@@ -30,7 +30,7 @@ pub fn random_base() -> String {
 }
 
 /// Strip anything the `login` column would reject, and pad a too-short result.
-pub fn normalize(candidate: &str) -> String {
+fn normalize(candidate: &str) -> String {
     let mut normalized: String = candidate
         .chars()
         .filter(char::is_ascii_alphanumeric)

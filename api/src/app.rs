@@ -81,9 +81,9 @@ fn docs_router(openapi: utoipa::openapi::OpenApi) -> Router {
 
 /// Answer of `GET /health`.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct HealthResponse {
+struct HealthResponse {
     #[schema(example = "ok")]
-    pub status: &'static str,
+    status: &'static str,
 }
 
 /// Liveness only — it must not depend on the database.

@@ -47,7 +47,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         (status = 101, description = "Switched to the game's WebSocket"),
     ),
 )]
-pub(crate) async fn get_game_websocket(
+async fn get_game_websocket(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
     upgrade: WebSocketUpgrade,

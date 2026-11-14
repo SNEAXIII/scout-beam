@@ -11,7 +11,6 @@ use crate::dto::game_dto::{GameSummaryResponse, GameView};
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::game_service;
 use crate::shared::error::ApiResult;
-#[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;
 use crate::state::AppState;
 
@@ -33,7 +32,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn post_game(
+async fn post_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<(StatusCode, Json<GameView>)> {
@@ -52,7 +51,7 @@ pub(crate) async fn post_game(
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn get_games(
+async fn get_games(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<Json<Vec<GameSummaryResponse>>> {
@@ -73,7 +72,7 @@ pub(crate) async fn get_games(
         (status = 404, description = "No such game among the caller's", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn get_game(
+async fn get_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(game_id): Path<Uuid>,

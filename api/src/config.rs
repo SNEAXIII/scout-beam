@@ -37,7 +37,7 @@ impl Config {
     }
 
     /// Same, from an arbitrary lookup: the process environment is shared by every test in a binary.
-    pub fn from_source(lookup: impl Fn(&str) -> Option<String>) -> Result<Self> {
+    fn from_source(lookup: impl Fn(&str) -> Option<String>) -> Result<Self> {
         let get = |key: &str| lookup(key).filter(|value| !value.is_empty());
 
         Ok(Self {

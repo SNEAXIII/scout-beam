@@ -12,7 +12,6 @@ use crate::dto::user_dto::{DevLoginRequest, UserProfile};
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::user_service;
 use crate::shared::error::ApiResult;
-#[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;
 use crate::shared::validation::ValidatedJson;
 use crate::state::AppState;
@@ -41,7 +40,7 @@ pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn get_session(CurrentUser(user): CurrentUser) -> Json<UserProfile> {
+async fn get_session(CurrentUser(user): CurrentUser) -> Json<UserProfile> {
     Json(user.into())
 }
 
@@ -56,7 +55,7 @@ pub(crate) async fn get_session(CurrentUser(user): CurrentUser) -> Json<UserProf
         (status = 401, description = "Not a valid refresh token, or unknown account", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn post_refresh_token(
+async fn post_refresh_token(
     State(state): State<AppState>,
     ValidatedJson(body): ValidatedJson<RefreshTokenRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
@@ -80,7 +79,7 @@ pub(crate) async fn post_refresh_token(
         (status = 422, description = "Login does not pass validation", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn post_dev_login(
+async fn post_dev_login(
     State(state): State<AppState>,
     ValidatedJson(body): ValidatedJson<DevLoginRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
