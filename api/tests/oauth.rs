@@ -143,7 +143,7 @@ async fn a_first_sign_in_creates_an_account_with_a_generated_login_and_no_plaint
     let signed = app.sign_in("discord", &verified("d1"), None).await;
 
     signed.assert_status(StatusCode::OK);
-    let token = signed.body["access_token"].as_str().unwrap();
+    let token = &signed.access_token();
     let session = app.get("/auth/session", Some(token)).await;
     session.assert_status(StatusCode::OK);
     let login = session.body["login"].as_str().unwrap();
@@ -169,12 +169,7 @@ async fn a_second_sign_in_returns_the_same_account(pool: PgPool) {
 
     second.assert_status(StatusCode::OK);
     assert_eq!(app.user_count().await, 1);
-    let sub = |response: &Response| {
-        app.jwt
-            .decode_access(response.body["access_token"].as_str().unwrap())
-            .unwrap()
-            .sub
-    };
+    let sub = |response: &Response| app.jwt.decode_access(&response.access_token()).unwrap().sub;
     assert_eq!(sub(&first), sub(&second));
 }
 

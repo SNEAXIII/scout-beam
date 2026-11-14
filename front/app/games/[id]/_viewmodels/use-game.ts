@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
 import { ApiError, detailMessage } from '@/app/lib/api'
 import { clearDraft } from '@/app/lib/draft'
 import type { Piece } from '@/app/lib/pieces'
-import { getAccessToken } from '@/app/lib/session'
 import { openGameSocket, type GameSocket, type ServerMessage } from '@/app/services/game-socket'
 import { getGame, type GameView, type PropositionVerdict } from '@/app/services/games'
 
@@ -19,7 +17,6 @@ interface PendingVerdict {
 /** A game over its socket: its shots, and the player's three actions on it. */
 export function useGame(id: string) {
   const { t } = useI18n()
-  const router = useRouter()
   const [game, setGame] = useState<GameView | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [connected, setConnected] = useState(false)
@@ -84,18 +81,15 @@ export function useGame(id: string) {
     verdict.current = null
   })
 
+  // Signed out, the socket is closed with 4401: it renews the session, else goes to /login.
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace('/login')
-      return
-    }
     const opened = openGameSocket(id, { onMessage: receive, onConnected: connection })
     socket.current = opened
     return () => {
       opened.close()
       socket.current = null
     }
-  }, [id, router])
+  }, [id])
 
   const fire = useCallback(
     (entry: number) => {

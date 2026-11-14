@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use common::{TestApp, answered};
 use http::StatusCode;
+use http::header::{COOKIE, ORIGIN};
 use scout_beam::Config;
 use scout_beam::engine::Layout;
 use scout_beam::shared::role::Role;
@@ -119,11 +120,6 @@ async fn an_unreadable_message_is_refused_and_the_socket_stays_open(pool: PgPool
         refused.assert_status(StatusCode::UNPROCESSABLE_ENTITY);
         assert_eq!(refused.body["action"], "message");
     }
-    let again = socket
-        .request(json!({ "type": "auth", "token": token }))
-        .await;
-    again.assert_status(StatusCode::BAD_REQUEST);
-
     socket
         .request(json!({ "type": "fire", "entry": 7 }))
         .await
@@ -169,6 +165,47 @@ async fn the_socket_closes_when_its_token_expires(pool: PgPool) {
     expired.assert_status(StatusCode::UNAUTHORIZED);
     assert_eq!(expired.body["action"], "connect");
     assert_eq!(socket.next().await, Err(Some(4401)));
+}
+
+#[sqlx::test]
+async fn a_socket_opened_from_a_foreign_origin_is_refused_before_the_upgrade(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+
+    let refused = app
+        .join_with(
+            game_id,
+            [
+                (ORIGIN, "https://evil.example".to_owned()),
+                (COOKIE, format!("scout_beam_access={token}")),
+            ],
+        )
+        .await;
+
+    assert_eq!(refused.err(), Some(StatusCode::FORBIDDEN));
+}
+
+#[sqlx::test]
+async fn the_fronts_origin_and_the_access_cookie_alone_open_the_socket(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+
+    let mut socket = app
+        .join_with(
+            game_id,
+            [
+                (ORIGIN, "http://localhost:3001".to_owned()),
+                (COOKIE, format!("scout_beam_access={token}")),
+            ],
+        )
+        .await
+        .unwrap();
+
+    let joined = answered(socket.next().await.unwrap());
+    joined.assert_status(StatusCode::OK);
+    assert_eq!(joined.body["id"], game_id.to_string());
 }
 
 /// Recolouring the square changes the beams it sends back: a wrong proposition, for sure.

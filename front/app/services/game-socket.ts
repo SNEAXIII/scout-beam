@@ -1,6 +1,5 @@
 import { API_URL, ApiError, renewSession } from '@/app/lib/api'
 import type { Piece } from '@/app/lib/pieces'
-import { getAccessToken } from '@/app/lib/session'
 import type { GameView, PropositionVerdict, Shot } from './games'
 
 /** The client message an error answers; `connect` errors close the socket. */
@@ -58,9 +57,9 @@ export function openGameSocket(id: string, handlers: GameSocketHandlers): GameSo
 
   function connect() {
     if (closed) return
+    // The browser sends the session cookie with the upgrade: no token goes through a script.
     const opened = new WebSocket(`${SOCKET_URL}/games/${id}/ws`)
     socket = opened
-    opened.onopen = () => opened.send(JSON.stringify({ type: 'auth', token: getAccessToken() }))
     opened.onmessage = (event: MessageEvent<string>) => {
       const message = JSON.parse(event.data) as ServerMessage
       if (message.type === 'error' && message.action === 'connect') refusal = message.status

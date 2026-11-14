@@ -1,5 +1,13 @@
-import { apiRequest, freshAccessToken } from '@/app/lib/api'
-import { isGuestSession, markGuest, saveTokens, type TokenPair } from '@/app/lib/session'
+import { apiRequest, refreshSession } from '@/app/lib/api'
+
+/** `GET /auth/session` and the body of every sign-in: who is signed in, never their tokens. */
+export interface UserProfile {
+  login: string
+  role: 'super_admin' | 'admin' | 'user'
+  guest: boolean
+  last_login_date: string | null
+  created_at: string
+}
 
 export type ProviderName = 'discord' | 'google'
 
@@ -14,44 +22,34 @@ export interface Providers {
   providers: ProviderLink[]
 }
 
-interface SignInOptions {
-  /** The account signed into is a guest. */
-  asGuest?: boolean
-  /** The route turns a guest bearer into the account: register and the provider sign-ins. */
-  convertsGuest?: boolean
-}
+/** The API sets the session cookies; a sign-in's 401 is an answer to show, not a bounce to /login. */
+const signIn = (path: string, body?: unknown) =>
+  apiRequest<UserProfile>(path, { method: 'POST', body, noRedirect: true })
 
-/** A sign-in never bounces to /login: its 401 is an answer to show, not an expired session. */
-async function signIn(
-  path: string,
-  body?: unknown,
-  { asGuest = false, convertsGuest = false }: SignInOptions = {}
-): Promise<void> {
-  // The API ignores an expired bearer: a stale one would make a new account and lose the guest's games.
-  const bearer = convertsGuest && isGuestSession() ? await freshAccessToken() : null
-  const tokens = await apiRequest<TokenPair>(path, {
-    method: 'POST',
-    body,
-    anonymous: true,
-    bearer,
-  })
-  saveTokens(tokens)
-  markGuest(asGuest)
+/** The API ignores an expired access cookie: renewed first, so a guest is converted, not left behind. */
+async function convertingSignIn(path: string, body: unknown): Promise<UserProfile> {
+  await refreshSession().catch(() => false)
+  return signIn(path, body)
 }
 
 export const login = (login: string, password: string) => signIn('/auth/login', { login, password })
 
 export const register = (login: string, password: string) =>
-  signIn('/auth/register', { login, password }, { convertsGuest: true })
+  convertingSignIn('/auth/register', { login, password })
 
-export const guestLogin = () => signIn('/auth/guest', undefined, { asGuest: true })
+export const guestLogin = () => signIn('/auth/guest')
 
 export const oauthLogin = (provider: ProviderName, code: string) =>
-  signIn(`/auth/${provider}`, { code }, { convertsGuest: true })
+  convertingSignIn(`/auth/${provider}`, { code })
 
 export const devLogin = (login: string) => signIn('/auth/dev-login', { login })
 
-export const listProviders = () => apiRequest<Providers>('/auth/providers', { anonymous: true })
+export const getSession = () => apiRequest<UserProfile>('/auth/session')
+
+export const logout = () =>
+  apiRequest<undefined>('/auth/logout', { method: 'POST', noRedirect: true })
+
+export const listProviders = () => apiRequest<Providers>('/auth/providers', { noRedirect: true })
 
 export const isProviderName = (name: string): name is ProviderName =>
   name === 'discord' || name === 'google'

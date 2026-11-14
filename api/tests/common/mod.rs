@@ -22,7 +22,8 @@ use scout_beam::{AppState, Config, build_app};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tokio::net::TcpStream;
-use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::{self, Message};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -75,22 +76,39 @@ impl TestApp {
         }
     }
 
-    /// The socket right after its first message, its answer still unread.
+    /// The socket right after the upgrade, its first message still unread. The token goes in a
+    /// bearer header: a browser sends the access cookie instead.
     pub async fn join_raw(&self, game_id: Uuid, token: Option<&str>) -> GameSocket {
-        let url = format!("ws://{}/games/{game_id}/ws", self.addr);
-        let (stream, _) = tokio_tungstenite::connect_async(url)
+        let headers = token
+            .map(|token| (http::header::AUTHORIZATION, format!("Bearer {token}")))
+            .into_iter();
+        self.join_with(game_id, headers)
             .await
-            .expect("the socket opens");
-        let mut socket = GameSocket {
-            stream,
-            joined: Value::Null,
-        };
-        let first = token.map_or_else(
-            || json!({ "type": "fire", "entry": 7 }),
-            |token| json!({ "type": "auth", "token": token }),
-        );
-        socket.send(first).await;
-        socket
+            .expect("the socket opens")
+    }
+
+    /// The socket opened with these headers, or the HTTP status that refused the upgrade.
+    pub async fn join_with(
+        &self,
+        game_id: Uuid,
+        headers: impl IntoIterator<Item = (http::HeaderName, String)>,
+    ) -> Result<GameSocket, StatusCode> {
+        let mut request = format!("ws://{}/games/{game_id}/ws", self.addr)
+            .into_client_request()
+            .expect("the URL is a request");
+        for (name, value) in headers {
+            request
+                .headers_mut()
+                .insert(name, value.parse().expect("a valid header"));
+        }
+        match tokio_tungstenite::connect_async(request).await {
+            Ok((stream, _)) => Ok(GameSocket {
+                stream,
+                joined: Value::Null,
+            }),
+            Err(tungstenite::Error::Http(response)) => Err(response.status()),
+            Err(other) => panic!("the socket did not open: {other}"),
+        }
     }
 
     /// One message on a fresh socket, answered as an HTTP endpoint would have.
@@ -110,6 +128,12 @@ impl TestApp {
             .expect("router answers");
 
         let status = response.status();
+        let cookies = response
+            .headers()
+            .get_all(http::header::SET_COOKIE)
+            .iter()
+            .map(|value| value.to_str().expect("a readable cookie").to_owned())
+            .collect();
         let bytes = response
             .into_body()
             .collect()
@@ -123,7 +147,21 @@ impl TestApp {
             serde_json::from_slice(&bytes).unwrap_or(Value::Null)
         };
 
-        Response { status, body }
+        Response {
+            status,
+            body,
+            cookies,
+        }
+    }
+
+    /// A request carrying only a `Cookie` header, as the browser sends it.
+    pub async fn with_cookie(&self, method: http::Method, uri: &str, cookie: &str) -> Response {
+        let mut request = build(method, uri, None, None);
+        request.headers_mut().insert(
+            http::header::COOKIE,
+            cookie.parse().expect("a valid cookie header"),
+        );
+        self.send(request).await
     }
 
     pub async fn get(&self, uri: &str, token: Option<&str>) -> Response {
@@ -217,10 +255,7 @@ impl TestApp {
     pub async fn guest(&self) -> (Uuid, String) {
         let created = self.post("/auth/guest", None, json!({})).await;
         created.assert_status(StatusCode::CREATED);
-        let token = created.body["access_token"]
-            .as_str()
-            .expect("a token is returned")
-            .to_owned();
+        let token = created.access_token();
         let id = self
             .jwt
             .decode_access(&token)
@@ -241,6 +276,8 @@ impl TestApp {
 pub struct Response {
     pub status: StatusCode,
     pub body: Value,
+    /// Every `Set-Cookie` header, verbatim.
+    pub cookies: Vec<String>,
 }
 
 pub struct GameSocket {
@@ -312,10 +349,36 @@ pub fn answered(mut message: Value) -> Response {
         }
         other => panic!("unknown message type {other}"),
     };
-    Response { status, body }
+    Response {
+        status,
+        body,
+        cookies: Vec::new(),
+    }
 }
 
 impl Response {
+    /// The full `Set-Cookie` header of one cookie.
+    pub fn set_cookie(&self, name: &str) -> Option<&str> {
+        let prefix = format!("{name}=");
+        self.cookies
+            .iter()
+            .map(String::as_str)
+            .find(|cookie| cookie.starts_with(&prefix))
+    }
+
+    /// The value of one cookie the response sets.
+    pub fn cookie(&self, name: &str) -> Option<String> {
+        let header = self.set_cookie(name)?;
+        let pair = header.split(';').next()?;
+        Some(pair.split_once('=')?.1.to_owned())
+    }
+
+    /// The access token a sign-in set, to use as a bearer.
+    pub fn access_token(&self) -> String {
+        self.cookie("scout_beam_access")
+            .expect("the access cookie is set")
+    }
+
     /// The `detail` field of an error payload, as text.
     pub fn detail(&self) -> String {
         self.body

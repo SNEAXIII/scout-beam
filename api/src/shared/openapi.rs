@@ -26,7 +26,9 @@ impl Modify for SecurityAddon {
                 HttpBuilder::new()
                     .scheme(HttpAuthScheme::Bearer)
                     .bearer_format("JWT")
-                    .description(Some("Access token returned by /auth/dev-login"))
+                    .description(Some(
+                        "The value of the scout_beam_access cookie a sign-in sets; browsers send the cookie itself",
+                    ))
                     .build(),
             ),
         );

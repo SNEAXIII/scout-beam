@@ -101,13 +101,10 @@ impl From<Verdict> for PropositionResponse {
     }
 }
 
-/// What a player sends on a game's socket; the first message must be `auth`.
+/// What a player sends on a game's socket, once the upgrade has authenticated it.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WebSocketClientMessage {
-    Auth {
-        token: String,
-    },
     /// Bounds are checked by the service through `Entry::new`.
     Fire {
         entry: u8,

@@ -61,6 +61,14 @@ impl JwtCodec {
         }
     }
 
+    pub const fn access_ttl(&self) -> Duration {
+        self.access_ttl
+    }
+
+    pub const fn refresh_ttl(&self) -> Duration {
+        self.refresh_ttl
+    }
+
     pub fn access_token(&self, sub: Uuid, role: Role) -> Result<String, AuthError> {
         let exp = expires_in(self.access_ttl)?;
         self.encode_claims(&Claims::Access(AccessClaims { sub, role, exp }))

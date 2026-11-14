@@ -1,5 +1,3 @@
-import { clearTokens, getAccessToken, getRefreshToken, saveTokens, type TokenPair } from './session'
-
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8002'
 
 export class ApiError extends Error {
@@ -15,20 +13,18 @@ export class ApiError extends Error {
 interface RequestOptions {
   method?: 'GET' | 'POST'
   body?: unknown
-  /** Sign-in calls carry no token and must not bounce to /login on a 401. */
-  anonymous?: boolean
-  /** A token an anonymous call still sends: a guest's, so signing up converts that guest. */
-  bearer?: string | null
+  /** A sign-in's 401 is an answer to show, not an expired session: no refresh, no /login. */
+  noRedirect?: boolean
 }
 
-const send = (path: string, { method = 'GET', body, anonymous, bearer }: RequestOptions) => {
+/** The session lives in `HttpOnly` cookies the browser sends itself: no script ever sees a token. */
+const send = (path: string, { method = 'GET', body }: RequestOptions) => {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
-  const token = anonymous ? (bearer ?? null) : getAccessToken()
-  if (token) headers.Authorization = `Bearer ${token}`
   return fetch(`${API_URL}${path}`, {
     method,
     headers,
+    credentials: 'include',
     body: body === undefined ? undefined : JSON.stringify(body),
   }).catch((cause: unknown) => {
     throw new ApiError(0, 'Serveur injoignable', { cause })
@@ -52,48 +48,32 @@ async function errorMessage(response: Response): Promise<string> {
   return detailMessage(payload?.detail) ?? `Erreur ${response.status}`
 }
 
-/** False only when the refresh token is missing or refused; any other failure throws. */
-async function refreshTokens(): Promise<boolean> {
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) return false
-  const response = await send('/auth/refresh', {
-    method: 'POST',
-    body: { refresh_token: refreshToken },
-    anonymous: true,
-  })
+/** New session cookies from the refresh cookie; false when it is missing or refused, any other failure throws. */
+export async function refreshSession(): Promise<boolean> {
+  const response = await send('/auth/refresh', { method: 'POST' })
   if (response.status === 401) return false
   if (!response.ok) throw new ApiError(response.status, await errorMessage(response))
-  saveTokens((await response.json()) as TokenPair)
   return true
 }
 
 function toLogin(): never {
-  clearTokens()
   if (window.location.pathname !== '/login') window.location.assign('/login')
   throw new ApiError(401, 'Session expirée')
 }
 
-/** A just-refreshed access token, or null when the session cannot be renewed: never a stale one. */
-export async function freshAccessToken(): Promise<string | null> {
-  try {
-    return (await refreshTokens()) ? getAccessToken() : null
-  } catch {
-    return null
-  }
-}
-
-/** For a refused socket: new tokens, or off to /login, which throws a 401 `ApiError`. */
+/** For a refused socket: new cookies, or off to /login, which throws a 401 `ApiError`. */
 export async function renewSession(): Promise<void> {
-  if (!(await refreshTokens())) toLogin()
+  if (!(await refreshSession())) toLogin()
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   let response = await send(path, options)
-  if (response.status === 401 && !options.anonymous) {
-    if (!(await refreshTokens())) toLogin()
+  if (response.status === 401 && !options.noRedirect) {
+    if (!(await refreshSession())) toLogin()
     response = await send(path, options)
     if (response.status === 401) toLogin()
   }
   if (!response.ok) throw new ApiError(response.status, await errorMessage(response))
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }

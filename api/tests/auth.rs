@@ -36,9 +36,9 @@ async fn dev_login_creates_the_account_on_first_sight(pool: PgPool) {
         .await;
 
     response.assert_status(StatusCode::OK);
-    assert_eq!(response.body["token_type"], "bearer");
-    assert!(response.body["access_token"].is_string());
-    assert!(response.body["refresh_token"].is_string());
+    assert_eq!(response.body["login"], "Sneaxiii");
+    assert!(response.cookie("scout_beam_access").is_some());
+    assert!(response.cookie("scout_beam_refresh").is_some());
 }
 
 #[sqlx::test]
@@ -160,20 +160,37 @@ async fn session_refuses_a_refresh_token(pool: PgPool) {
 }
 
 #[sqlx::test]
-async fn refresh_returns_a_new_pair(pool: PgPool) {
+async fn refresh_works_from_the_refresh_cookie_alone(pool: PgPool) {
     let app = TestApp::new(pool);
     let id = app.seed("Sneaxiii", Role::User).await;
     let refresh = app.jwt.refresh_token(id).unwrap();
 
     let response = app
-        .post("/auth/refresh", None, json!({ "refresh_token": refresh }))
+        .with_cookie(
+            http::Method::POST,
+            "/auth/refresh",
+            &format!("scout_beam_refresh={refresh}"),
+        )
         .await;
 
     response.assert_status(StatusCode::OK);
-    let access = response.body["access_token"].as_str().unwrap().to_owned();
+    assert_eq!(response.body["login"], "Sneaxiii");
+    assert!(response.body.get("access_token").is_none());
+    assert!(response.cookie("scout_beam_refresh").is_some());
+    let access = response.access_token();
     app.get("/auth/session", Some(&access))
         .await
         .assert_status(StatusCode::OK);
+}
+
+#[sqlx::test]
+async fn refresh_without_its_cookie_is_refused(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, access) = app.seed_with_token("Sneaxiii", Role::User).await;
+
+    app.post("/auth/refresh", Some(&access), json!({}))
+        .await
+        .assert_status(StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
@@ -181,9 +198,13 @@ async fn refresh_refuses_an_access_token(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, access) = app.seed_with_token("Sneaxiii", Role::User).await;
 
-    app.post("/auth/refresh", None, json!({ "refresh_token": access }))
-        .await
-        .assert_status(StatusCode::UNAUTHORIZED);
+    app.with_cookie(
+        http::Method::POST,
+        "/auth/refresh",
+        &format!("scout_beam_refresh={access}"),
+    )
+    .await
+    .assert_status(StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
@@ -192,11 +213,101 @@ async fn refresh_refuses_an_unknown_account(pool: PgPool) {
     let refresh = app.jwt.refresh_token(Uuid::new_v4()).unwrap();
 
     let response = app
-        .post("/auth/refresh", None, json!({ "refresh_token": refresh }))
+        .with_cookie(
+            http::Method::POST,
+            "/auth/refresh",
+            &format!("scout_beam_refresh={refresh}"),
+        )
         .await;
 
     response.assert_status(StatusCode::UNAUTHORIZED);
     assert!(response.detail().contains("n'existe pas"));
+}
+
+#[sqlx::test]
+async fn a_sign_in_answers_the_profile_and_sets_both_cookies_out_of_scripts_reach(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    let signed = app
+        .post(
+            "/auth/register",
+            None,
+            credentials("Sneaxiii", "correct horse"),
+        )
+        .await;
+
+    signed.assert_status(StatusCode::CREATED);
+    let body = signed.body.to_string();
+    assert!(
+        !body.contains("token"),
+        "a token leaked into the body: {body}"
+    );
+    assert_eq!(signed.body["login"], "Sneaxiii");
+    for name in ["scout_beam_access", "scout_beam_refresh"] {
+        let cookie = signed.set_cookie(name).unwrap();
+        for part in ["HttpOnly", "SameSite=Strict", "Path=/", "Max-Age="] {
+            assert!(cookie.contains(part), "{part} missing from {cookie}");
+        }
+        assert!(
+            !cookie.contains("Secure"),
+            "dev serves plain HTTP: {cookie}"
+        );
+    }
+}
+
+#[sqlx::test]
+async fn cookies_are_secure_outside_dev(pool: PgPool) {
+    let config = Config {
+        environment: Environment::Prod,
+        ..Config::for_tests()
+    };
+    let app = TestApp::with_config(pool, config);
+
+    let signed = app
+        .post(
+            "/auth/register",
+            None,
+            credentials("Sneaxiii", "correct horse"),
+        )
+        .await;
+
+    assert!(
+        signed
+            .set_cookie("scout_beam_access")
+            .unwrap()
+            .contains("Secure")
+    );
+}
+
+#[sqlx::test]
+async fn a_cookie_only_request_reaches_the_session(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, access) = app.seed_with_token("Sneaxiii", Role::User).await;
+
+    let session = app
+        .with_cookie(
+            http::Method::GET,
+            "/auth/session",
+            &format!("theme=dark; scout_beam_access={access}"),
+        )
+        .await;
+
+    session.assert_status(StatusCode::OK);
+    assert_eq!(session.body["login"], "Sneaxiii");
+}
+
+#[sqlx::test]
+async fn logout_clears_both_cookies(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    let out = app.post("/auth/logout", None, json!({})).await;
+
+    out.assert_status(StatusCode::NO_CONTENT);
+    for name in ["scout_beam_access", "scout_beam_refresh"] {
+        let cookie = out.set_cookie(name).unwrap();
+        assert!(cookie.starts_with(&format!("{name}=;")), "{cookie}");
+        assert!(cookie.contains("Max-Age=0"), "{cookie}");
+    }
 }
 
 #[sqlx::test]
@@ -216,7 +327,7 @@ async fn dev_login_without_a_login_invents_one(pool: PgPool) {
     let response = app.post("/auth/dev-login", None, json!({})).await;
 
     response.assert_status(StatusCode::OK);
-    let token = response.body["access_token"].as_str().unwrap();
+    let token = &response.access_token();
     let profile = app.get("/auth/session", Some(token)).await;
 
     let login = profile.body["login"].as_str().unwrap();
@@ -253,7 +364,7 @@ async fn a_role_can_be_requested_without_naming_the_account(pool: PgPool) {
         .await;
 
     response.assert_status(StatusCode::OK);
-    let token = response.body["access_token"].as_str().unwrap();
+    let token = &response.access_token();
     let profile = app.get("/auth/session", Some(token)).await;
     assert_eq!(profile.body["role"], "super_admin");
 }
@@ -296,7 +407,7 @@ async fn register_then_login_returns_a_working_token_pair(pool: PgPool) {
         )
         .await;
     logged.assert_status(StatusCode::OK);
-    let access = logged.body["access_token"].as_str().unwrap();
+    let access = &logged.access_token();
     app.get("/auth/session", Some(access))
         .await
         .assert_status(StatusCode::OK);
@@ -473,7 +584,7 @@ async fn registering_with_a_guest_bearer_converts_that_guest_and_keeps_its_games
         .unwrap();
     assert_eq!(owner, guest_id);
 
-    let access = registered.body["access_token"].as_str().unwrap();
+    let access = &registered.access_token();
     let session = app.get("/auth/session", Some(access)).await;
     assert_eq!(session.body["guest"], false);
     app.post(

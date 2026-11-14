@@ -2,7 +2,7 @@
 //!
 //! A leaf: it touches no table and knows no domain, so any domain may depend on it.
 
-pub mod dto;
+pub mod cookie;
 pub mod error;
 pub mod extractor;
 pub mod jwt;
