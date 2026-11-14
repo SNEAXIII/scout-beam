@@ -1,7 +1,7 @@
 # Scout Beam
 
-A solo deduction game: a bot hides pieces on a grid, the player fires beams from the edges and
-deduces the hidden layout from where each beam leaves and which colour it picked up.
+A deduction game: a bot or an opponent hides pieces on a grid, the player fires beams from the
+edges and deduces the hidden layout from where each beam leaves and which colour it picked up.
 
 ## Language
 
@@ -52,6 +52,36 @@ _Avoid_: notes, sketch
 A draft submitted as the answer; it is correct when it gives the same shot result as the hidden
 layout on all 36 entries.
 _Avoid_: guess, solution, answer
+
+**Guest**:
+A player without credentials, who may only play the daily; signing up turns the guest into that
+account and keeps its games.
+_Avoid_: anonymous, visitor
+
+**Daily**:
+The game of the day: one layout drawn by the bot for every player, one attempt each, no surrender.
+_Avoid_: puzzle of the day, challenge
+
+**Score**:
+The time a daily took to solve, plus one minute per wrong proposition; lower is better. It ranks
+the players of that day.
+
+**Points**:
+What a solved daily earns, decreasing with its score; the global ranking sums them over every
+daily a player solved, on its day or later.
+
+**Race**:
+Two players hunting the same layout drawn by the bot; the first correct proposition wins.
+
+**Duel**:
+Two players each hiding a layout for the other to find; the first correct proposition wins.
+After a shot or a proposition, the opponent has priority for a delay that grows with the entries
+already fired, up to 10 seconds.
+
+**Room**:
+Where two players meet before a game against each other, identified by a 6-character code that is
+also its invitation link.
+_Avoid_: lobby, lounge, session
 
 **Surrender**:
 The player ending a game without solving it: the hidden layout is revealed and no more shots can be

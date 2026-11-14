@@ -7,6 +7,22 @@ Scout Beam — solo deduction game against a bot. Setup and commands: [`README.m
 
 **Domain vocabulary lives in `CONTEXT.md`** — read it before naming or modelling anything.
 
+## Backend (`api/src/`)
+
+Layered by technical role, not by domain: one file per domain inside each layer
+(`services/game_service.rs`, `repositories/game_repository.rs`…).
+
+- `controllers/` — routes with their `#[utoipa::path]`, full paths, nothing nested; call services only
+- `services/` — the rules; a pool plus plain values in, `Result<_, <Domain>Error>` out
+- `repositories/` — every SQL statement and nothing else, `query!`/`query_as!` checked at compile time
+- `models/` — rows; `dto/` — wire shapes with `validator`; `errors/` — domain errors, mapped to
+  `ApiError` at the bottom of each file
+- `extractors/` — handler arguments that read tables (`CurrentUser`)
+- `engine/` — pure game rules: no HTTP, no database
+- `auth/` — JWT mechanism, a leaf that touches no table; `shared/` — used by all, knows none
+- Migrations forward-only in `api/migrations/`; a changed query needs `make prepare` in the same
+  commit. Integration tests in `api/tests/` with `#[sqlx::test]`. Check with `make check`.
+
 ## Frontend (`front/app/`)
 
 Same conventions as Mawster's front.
