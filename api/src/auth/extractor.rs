@@ -2,7 +2,7 @@
 //!
 //! Database-free on purpose: whether the account still exists is the user domain's business.
 
-use axum::extract::{FromRef, FromRequestParts};
+use axum::extract::FromRequestParts;
 use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
 use uuid::Uuid;
@@ -11,6 +11,7 @@ use crate::auth::error::AuthError;
 use crate::auth::jwt::JwtCodec;
 use crate::shared::error::ApiError;
 use crate::shared::role::Role;
+use crate::state::AppState;
 
 /// A verified access token, reduced to what authorization needs.
 #[derive(Debug, Clone, Copy)]
@@ -19,18 +20,18 @@ pub struct Identity {
     pub role: Role,
 }
 
-impl<S> FromRequestParts<S> for Identity
-where
-    JwtCodec: FromRef<S>,
-    S: Send + Sync,
-{
+impl FromRequestParts<AppState> for Identity {
     type Rejection = ApiError;
 
-    fn from_request_parts(
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "axum's trait is async; checking a JWT awaits nothing"
+    )]
+    async fn from_request_parts(
         parts: &mut Parts,
-        state: &S,
-    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
-        std::future::ready(identity(parts, &JwtCodec::from_ref(state)).map_err(ApiError::from))
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        identity(parts, &state.jwt).map_err(ApiError::from)
     }
 }
 

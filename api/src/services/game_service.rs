@@ -1,12 +1,12 @@
-//! Rules of the game domain — the only door other domains may use.
+//! Rules of a game: controllers never reach its repository but through here.
 
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domains::game::error::GameError;
-use crate::domains::game::model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::domains::game::repository;
 use crate::engine::{self, Entry, Layout};
+use crate::errors::game_error::GameError;
+use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
+use crate::repositories::game_repository;
 
 /// Whether a shot was just fired or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,23 +26,23 @@ pub enum Verdict {
 pub async fn create(pool: &PgPool, user_id: Uuid) -> Result<Game, GameError> {
     // The thread-local rng is not `Send`: it must be gone before the first await.
     let layout = engine::draw_layout(&mut rand::rng())?;
-    Ok(repository::insert(pool, user_id, &SealedLayout::new(layout)).await?)
+    Ok(game_repository::insert(pool, user_id, &SealedLayout::new(layout)).await?)
 }
 
 pub async fn list(pool: &PgPool, user_id: Uuid) -> Result<Vec<GameSummary>, GameError> {
-    Ok(repository::list_for_user(pool, user_id).await?)
+    Ok(game_repository::list_for_user(pool, user_id).await?)
 }
 
 /// The caller's game; another player's answers `NotFound`, exactly like a missing one.
 pub async fn get_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> Result<Game, GameError> {
-    repository::find_owned(pool, game_id, user_id)
+    game_repository::find_owned(pool, game_id, user_id)
         .await?
         .ok_or(GameError::NotFound)
 }
 
 /// Shots in firing order.
 pub async fn shots_of(pool: &PgPool, game: &Game) -> Result<Vec<Shot>, GameError> {
-    Ok(repository::shots_of(pool, game.id).await?)
+    Ok(game_repository::shots_of(pool, game.id).await?)
 }
 
 /// Trace a beam from `entry` and store it, unless that entry was already fired.
@@ -57,10 +57,10 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
         colour: traced.beam_colour.into(),
     };
 
-    if let Some(stored) = repository::insert_shot_if_absent(pool, game.id, &shot).await? {
+    if let Some(stored) = game_repository::insert_shot_if_absent(pool, game.id, &shot).await? {
         return Ok((stored, Firing::New));
     }
-    repository::find_shot(pool, game.id, shot.entry)
+    game_repository::find_shot(pool, game.id, shot.entry)
         .await?
         .map(|stored| (stored, Firing::Replayed))
         .ok_or(GameError::NotFound)
@@ -74,14 +74,14 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
 
     let mut tx = pool.begin().await?;
     // The lock holds a racing proposition or surrender until this one commits; it then reads the end.
-    let status = repository::lock_status(&mut *tx, game.id).await?;
+    let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
     }
-    repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
+    game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
     let verdict = if correct {
-        Verdict::Correct(repository::mark_solved(&mut *tx, game.id).await?)
+        Verdict::Correct(game_repository::mark_solved(&mut *tx, game.id).await?)
     } else {
         Verdict::Wrong
     };
@@ -95,12 +95,12 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
 
     let mut tx = pool.begin().await?;
     // Same lock as `propose`: whichever of the two commits first ends the game.
-    let status = repository::lock_status(&mut *tx, game.id).await?;
+    let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
     }
-    let surrendered = repository::mark_surrendered(&mut *tx, game.id).await?;
+    let surrendered = game_repository::mark_surrendered(&mut *tx, game.id).await?;
     tx.commit().await?;
     Ok(surrendered)
 }

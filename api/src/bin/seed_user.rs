@@ -1,11 +1,11 @@
 //! `seed-user` — create a development account, or promote an existing one.
 //!
-//! Runs the very same `service::seed`, with no router, no state and no HTTP.
+//! Runs the very same `user_service::seed`, with no router, no state and no HTTP.
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use scout_beam::Config;
-use scout_beam::domains::user::service::{self, SeedOutcome};
+use scout_beam::services::user_service::{self, SeedOutcome};
 use scout_beam::shared::db;
 use scout_beam::shared::role::Role;
 
@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
     let config = Config::from_env()?;
     let pool = db::connect(&config.database_url).await?;
 
-    let (user, outcome) = service::seed(&pool, &args.login, args.role.into()).await?;
+    let (user, outcome) = user_service::seed(&pool, &args.login, args.role.into()).await?;
 
     // Plain ASCII, no tracing setup: a command a human reads.
     match outcome {

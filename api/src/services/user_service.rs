@@ -3,15 +3,15 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domains::user::error::UserError;
-use crate::domains::user::login_generator;
-use crate::domains::user::model::User;
-use crate::domains::user::repository;
+use crate::errors::user_error::UserError;
+use crate::models::user_model::User;
+use crate::repositories::user_repository;
+use crate::services::login_generator;
 use crate::shared::role::Role;
 
 /// Load the account behind a token: "the token decodes" does not prove the row still exists.
 pub async fn load_active(pool: &PgPool, user_id: Uuid) -> Result<User, UserError> {
-    repository::find_by_id(pool, user_id)
+    user_repository::find_by_id(pool, user_id)
         .await?
         .ok_or(UserError::DoesNotExist)
 }
@@ -24,13 +24,15 @@ pub async fn login_or_create(
 ) -> Result<User, UserError> {
     // A named account is looked up first, so a second call signs back into it.
     let user = if let Some(login) = login {
-        match repository::find_by_login(pool, login).await? {
+        match user_repository::find_by_login(pool, login).await? {
             Some(existing) => existing,
             None => {
-                match repository::insert_if_absent(pool, login, role.unwrap_or(Role::User)).await? {
+                match user_repository::insert_if_absent(pool, login, role.unwrap_or(Role::User))
+                    .await?
+                {
                     Some(created) => created,
                     // Two first sign-ins raced; both asked to sign in, so both do.
-                    None => repository::find_by_login(pool, login)
+                    None => user_repository::find_by_login(pool, login)
                         .await?
                         .ok_or(UserError::DoesNotExist)?,
                 }
@@ -39,13 +41,13 @@ pub async fn login_or_create(
     } else {
         let generated =
             login_generator::unique_login(pool, &login_generator::random_base()).await?;
-        repository::insert(pool, &generated, role.unwrap_or(Role::User))
+        user_repository::insert(pool, &generated, role.unwrap_or(Role::User))
             .await
             .map_err(UserError::from_write)?
     };
 
     // Not atomic with the creation: a failure in between leaves a null `last_login_date`, which no rule reads.
-    repository::touch_last_login(pool, user.id).await?;
+    user_repository::touch_last_login(pool, user.id).await?;
     Ok(user)
 }
 
@@ -66,8 +68,8 @@ pub async fn seed(
 ) -> Result<(User, SeedOutcome), UserError> {
     validate_login(login)?;
 
-    let Some(existing) = repository::find_by_login(pool, login).await? else {
-        let created = repository::insert(pool, login, role)
+    let Some(existing) = user_repository::find_by_login(pool, login).await? else {
+        let created = user_repository::insert(pool, login, role)
             .await
             .map_err(UserError::from_write)?;
         return Ok((created, SeedOutcome::Created));
@@ -78,7 +80,7 @@ pub async fn seed(
     }
 
     let previous = existing.role;
-    let updated = repository::set_role(pool, existing.id, role).await?;
+    let updated = user_repository::set_role(pool, existing.id, role).await?;
 
     Ok((updated, SeedOutcome::RoleChanged { from: previous }))
 }

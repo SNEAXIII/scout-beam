@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::domains::game::model::{Game, GameStatus, GameSummary, Shot, ShotColour};
-use crate::domains::game::service::Verdict;
 use crate::engine::{Layout, Piece};
+use crate::models::game_model::{Game, GameStatus, GameSummary, Shot, ShotColour};
+use crate::services::game_service::Verdict;
 
 /// A game as its player sees it.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
@@ -104,7 +104,7 @@ impl From<Verdict> for PropositionResponse {
 /// What a player sends on a game's socket; the first message must be `auth`.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum ClientMessage {
+pub enum WebSocketClientMessage {
     Auth {
         token: String,
     },
@@ -122,7 +122,7 @@ pub enum ClientMessage {
 /// One answer per client message, in order, plus what another socket on the game changed.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum ServerMessage {
+pub enum WebSocketServerMessage {
     /// On connecting, after a surrender, and pushed when the game ends elsewhere.
     Game {
         game: GameView,

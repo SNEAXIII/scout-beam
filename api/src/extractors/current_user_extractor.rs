@@ -1,14 +1,14 @@
 //! Handler arguments that guarantee an authenticated account that still exists.
 //!
-//! In the user domain, not in `auth`, because reading the `user` table is this domain's job.
+//! Apart from `auth`, which touches no table: this one reads the `user` table.
 
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use uuid::Uuid;
 
 use crate::auth::Identity;
-use crate::domains::user::model::User;
-use crate::domains::user::service;
+use crate::models::user_model::User;
+use crate::services::user_service;
 use crate::shared::error::ApiError;
 use crate::state::AppState;
 
@@ -31,6 +31,6 @@ impl FromRequestParts<AppState> for CurrentUser {
 impl CurrentUser {
     /// The account behind a token read outside the headers, as a WebSocket's first message.
     pub async fn of(state: &AppState, user_id: Uuid) -> Result<Self, ApiError> {
-        Ok(Self(service::load_active(&state.pool, user_id).await?))
+        Ok(Self(user_service::load_active(&state.pool, user_id).await?))
     }
 }

@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
-use crate::domains::user::model::User;
+use crate::models::user_model::User;
 use crate::shared::role::Role;
 
 /// What a user may see about themselves.
@@ -48,7 +48,7 @@ pub struct DevLoginRequest {
 }
 
 /// `^[a-zA-Z0-9]+$` without pulling in a regex engine for one rule.
-pub fn validate_alphanumeric(value: &str) -> Result<(), ValidationError> {
+fn validate_alphanumeric(value: &str) -> Result<(), ValidationError> {
     if value
         .chars()
         .all(|character| character.is_ascii_alphanumeric())

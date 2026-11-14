@@ -1,22 +1,21 @@
-//! What every handler is handed: the pool, the signing keys, the config, the game sockets' hub.
+//! What every handler is handed: the pool, the signing keys, the config, the games' WebSocket hub.
 //!
 //! Cloned per request, so each field is cheap to clone.
 
 use std::sync::Arc;
 
-use axum::extract::FromRef;
 use sqlx::PgPool;
 
 use crate::auth::jwt::JwtCodec;
 use crate::config::Config;
-use crate::domains::game::hub::GameHub;
+use crate::services::game_websocket_hub::GameWebSocketHub;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
     pub jwt: JwtCodec,
     pub config: Arc<Config>,
-    pub hub: GameHub,
+    pub websocket_hub: GameWebSocketHub,
 }
 
 impl AppState {
@@ -31,20 +30,7 @@ impl AppState {
             pool,
             jwt,
             config: Arc::new(config),
-            hub: GameHub::default(),
+            websocket_hub: GameWebSocketHub::default(),
         }
-    }
-}
-
-/// Lets `Identity` be extracted from any state that can produce a codec.
-impl FromRef<AppState> for JwtCodec {
-    fn from_ref(state: &AppState) -> Self {
-        state.jwt.clone()
-    }
-}
-
-impl FromRef<AppState> for PgPool {
-    fn from_ref(state: &AppState) -> Self {
-        state.pool.clone()
     }
 }

@@ -1,30 +1,29 @@
 //! `/auth/*` — turning an account into tokens, and back.
 //!
-//! In the user domain because each route reads the `user` table; `auth` stays a pure mechanism.
+//! Here rather than in `auth`: each route reads the `user` table, and `auth` stays a pure mechanism.
 
 use axum::Json;
-use axum::Router;
 use axum::extract::State;
-use axum::routing::{get, post};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::auth::dto::{LoginResponse, RefreshTokenRequest};
-use crate::domains::user::dto::{DevLoginRequest, UserProfile};
-use crate::domains::user::extractor::CurrentUser;
-use crate::domains::user::service;
+use crate::dto::user_dto::{DevLoginRequest, UserProfile};
+use crate::extractors::current_user_extractor::CurrentUser;
+use crate::services::user_service;
 use crate::shared::error::ApiResult;
-#[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;
 use crate::shared::validation::ValidatedJson;
 use crate::state::AppState;
 
-pub fn router(dev_login_enabled: bool) -> Router<AppState> {
-    let router = Router::new()
-        .route("/session", get(read_session))
-        .route("/refresh", post(refresh));
+pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
+    let router = OpenApiRouter::new()
+        .routes(routes!(get_session))
+        .routes(routes!(post_refresh_token));
 
     // Minting a token from nothing but a login must not exist in a production router.
     if dev_login_enabled {
-        router.route("/dev-login", post(dev_login))
+        router.routes(routes!(post_dev_login))
     } else {
         router
     }
@@ -41,7 +40,7 @@ pub fn router(dev_login_enabled: bool) -> Router<AppState> {
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn read_session(CurrentUser(user): CurrentUser) -> Json<UserProfile> {
+async fn get_session(CurrentUser(user): CurrentUser) -> Json<UserProfile> {
     Json(user.into())
 }
 
@@ -56,12 +55,12 @@ pub(crate) async fn read_session(CurrentUser(user): CurrentUser) -> Json<UserPro
         (status = 401, description = "Not a valid refresh token, or unknown account", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn refresh(
+async fn post_refresh_token(
     State(state): State<AppState>,
     ValidatedJson(body): ValidatedJson<RefreshTokenRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
     let claims = state.jwt.decode_refresh(&body.refresh_token)?;
-    let user = service::load_active(&state.pool, claims.sub).await?;
+    let user = user_service::load_active(&state.pool, claims.sub).await?;
 
     Ok(Json(LoginResponse::bearer(
         state.jwt.access_token(user.id, user.role)?,
@@ -80,11 +79,11 @@ pub(crate) async fn refresh(
         (status = 422, description = "Login does not pass validation", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn dev_login(
+async fn post_dev_login(
     State(state): State<AppState>,
     ValidatedJson(body): ValidatedJson<DevLoginRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
-    let user = service::login_or_create(&state.pool, body.login.as_deref(), body.role).await?;
+    let user = user_service::login_or_create(&state.pool, body.login.as_deref(), body.role).await?;
 
     Ok(Json(LoginResponse::bearer(
         state.jwt.access_token(user.id, user.role)?,

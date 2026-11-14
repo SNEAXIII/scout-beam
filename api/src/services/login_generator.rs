@@ -3,7 +3,7 @@
 use rand::RngExt;
 use sqlx::PgPool;
 
-use crate::domains::user::repository;
+use crate::repositories::user_repository;
 
 const ADJECTIVES: [&str; 10] = [
     "cosmic", "mighty", "iron", "shadow", "storm", "silver", "golden", "dark", "thunder", "mystic",
@@ -30,7 +30,7 @@ pub fn random_base() -> String {
 }
 
 /// Strip anything the `login` column would reject, and pad a too-short result.
-pub fn normalize(candidate: &str) -> String {
+fn normalize(candidate: &str) -> String {
     let mut normalized: String = candidate
         .chars()
         .filter(char::is_ascii_alphanumeric)
@@ -53,7 +53,10 @@ pub async fn unique_login(pool: &PgPool, candidate: &str) -> sqlx::Result<String
     let mut login = base.clone();
 
     for _ in 0..ATTEMPTS {
-        if repository::find_by_login(pool, &login).await?.is_none() {
+        if user_repository::find_by_login(pool, &login)
+            .await?
+            .is_none()
+        {
             return Ok(login);
         }
 

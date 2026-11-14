@@ -1,9 +1,8 @@
-//! Router assembly: mount each domain, then wrap the whole thing in the middleware stack.
+//! Router assembly: mount the controllers, then wrap the whole thing in the middleware stack.
 //!
 //! Kept apart from `main.rs` so tests call the very same router in-process.
 
 use anyhow::{Context, Result};
-use axum::routing::get;
 use axum::{Json, Router};
 use http::header::{AUTHORIZATION, CONTENT_TYPE};
 use http::{HeaderValue, Method};
@@ -16,15 +15,17 @@ use tower_http::trace::TraceLayer;
 
 use serde::Serialize;
 use utoipa::{OpenApi, ToSchema};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::domains;
+use crate::controllers;
 use crate::shared::openapi::SecurityAddon;
 use crate::state::AppState;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
-/// Root of the OpenAPI document; every endpoint comes from a domain, merged in below.
+/// What no route carries: title, tag descriptions, the bearer scheme. Routes add themselves.
 #[derive(OpenApi)]
 #[openapi(
     info(
@@ -32,31 +33,24 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
         description = "Scout Beam API: fire beams, deduce the hidden layout",
         version = "0.1.0",
     ),
-    paths(health),
-    components(schemas(HealthResponse)),
-    tags((name = "Service", description = "Process-level endpoints")),
+    tags(
+        (name = "Service", description = "Process-level endpoints"),
+        (name = "Auth", description = "Sessions and tokens"),
+        (name = "Games", description = "Games against the bot, the shots fired at them and the propositions"),
+    ),
     modifiers(&SecurityAddon),
 )]
 struct ApiDoc;
-
-/// Assemble the document from each domain's own description.
-fn openapi() -> utoipa::openapi::OpenApi {
-    let mut document = ApiDoc::openapi();
-    document.merge(domains::user::openapi());
-    document.merge(domains::game::openapi());
-    document
-}
 
 pub fn build_app(state: AppState) -> Result<Router> {
     let cors = cors_layer(&state.config.cors_allowed_origin)?;
     let is_dev = state.config.environment.is_dev();
 
-    let router = Router::new()
-        .route("/health", get(health))
-        .merge(domains::user::router(is_dev))
-        .merge(domains::game::router())
-        .with_state(state)
-        .merge(docs_router());
+    let (router, openapi) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .routes(routes!(get_health))
+        .merge(controllers::router(is_dev))
+        .split_for_parts();
+    let router = router.with_state(state).merge(docs_router(openapi));
 
     // Outermost first: an id is attached, the request is traced, CORS is answered, slow work is cut off.
     Ok(router
@@ -74,9 +68,9 @@ pub fn build_app(state: AppState) -> Result<Router> {
 }
 
 /// Swagger UI plus the document it reads, `no-store` so a new route never looks missing.
-fn docs_router() -> Router {
+fn docs_router(openapi: utoipa::openapi::OpenApi) -> Router {
     let swagger: Router = SwaggerUi::new("/docs")
-        .url("/api-docs/openapi.json", openapi())
+        .url("/api-docs/openapi.json", openapi)
         .into();
 
     swagger.layer(SetResponseHeaderLayer::overriding(
@@ -87,9 +81,9 @@ fn docs_router() -> Router {
 
 /// Answer of `GET /health`.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct HealthResponse {
+struct HealthResponse {
     #[schema(example = "ok")]
-    pub status: &'static str,
+    status: &'static str,
 }
 
 /// Liveness only — it must not depend on the database.
@@ -99,7 +93,7 @@ pub struct HealthResponse {
     tag = "Service",
     responses((status = 200, description = "The process is up", body = HealthResponse)),
 )]
-async fn health() -> Json<HealthResponse> {
+async fn get_health() -> Json<HealthResponse> {
     Json(HealthResponse { status: "ok" })
 }
 
