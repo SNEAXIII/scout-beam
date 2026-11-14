@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use chrono::Utc;
 use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -63,30 +63,30 @@ impl JwtCodec {
 
     pub fn access_token(&self, sub: Uuid, role: Role) -> Result<String, AuthError> {
         let exp = expires_in(self.access_ttl)?;
-        self.encode(&Claims::Access(AccessClaims { sub, role, exp }))
+        self.encode_claims(&Claims::Access(AccessClaims { sub, role, exp }))
     }
 
     pub fn refresh_token(&self, sub: Uuid) -> Result<String, AuthError> {
         let exp = expires_in(self.refresh_ttl)?;
-        self.encode(&Claims::Refresh(RefreshClaims { sub, exp }))
+        self.encode_claims(&Claims::Refresh(RefreshClaims { sub, exp }))
     }
 
     pub fn decode_access(&self, token: &str) -> Result<AccessClaims, AuthError> {
-        match self.decode(token)? {
+        match self.decode_claims(token)? {
             Claims::Access(claims) => Ok(claims),
             Claims::Refresh(_) => Err(AuthError::WrongTokenType),
         }
     }
 
     pub fn decode_refresh(&self, token: &str) -> Result<RefreshClaims, AuthError> {
-        match self.decode(token)? {
+        match self.decode_claims(token)? {
             Claims::Refresh(claims) => Ok(claims),
             Claims::Access(_) => Err(AuthError::WrongTokenType),
         }
     }
 
-    fn decode(&self, token: &str) -> Result<Claims, AuthError> {
-        decode::<Claims>(token, &self.decoding, &self.validation)
+    fn decode_claims(&self, token: &str) -> Result<Claims, AuthError> {
+        jsonwebtoken::decode::<Claims>(token, &self.decoding, &self.validation)
             .map(|data| data.claims)
             .map_err(|error| match error.kind() {
                 ErrorKind::ExpiredSignature => AuthError::ExpiredToken,
@@ -94,8 +94,8 @@ impl JwtCodec {
             })
     }
 
-    fn encode(&self, claims: &Claims) -> Result<String, AuthError> {
-        encode(&Header::new(Algorithm::HS256), claims, &self.encoding)
+    fn encode_claims(&self, claims: &Claims) -> Result<String, AuthError> {
+        jsonwebtoken::encode(&Header::new(Algorithm::HS256), claims, &self.encoding)
             .map_err(|_| AuthError::InvalidToken)
     }
 }
@@ -173,7 +173,7 @@ mod tests {
             role: Role::User,
             exp,
         });
-        let token = codec().encode(&claims).unwrap();
+        let token = codec().encode_claims(&claims).unwrap();
 
         assert!(matches!(
             codec().decode_access(&token),
