@@ -5,7 +5,7 @@ use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
 use crate::engine::Layout;
-use crate::models::game::{Game, GameStatus, GameSummary, SealedLayout, Shot, ShotColour};
+use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot, ShotColour};
 
 /// The caller's game, or nothing — another player's game is indistinguishable from a missing one.
 pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Result<Option<Game>> {

@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
-use crate::models::user::User;
+use crate::models::user_model::User;
 use crate::shared::role::Role;
 
 /// What a user may see about themselves.

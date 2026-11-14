@@ -6,8 +6,8 @@ mod common;
 use common::TestApp;
 use http::StatusCode;
 use scout_beam::engine::Layout;
-use scout_beam::errors::game::GameError;
-use scout_beam::services::game as service;
+use scout_beam::errors::game_error::GameError;
+use scout_beam::services::game_service;
 use scout_beam::shared::role::Role;
 use serde_json::{Value, json};
 use sqlx::PgPool;
@@ -260,12 +260,12 @@ async fn a_proposition_on_a_game_solved_since_it_was_read_is_a_conflict(pool: Pg
     let app = TestApp::new(pool);
     let (user_id, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.game_hiding(&token, &hidden()).await;
-    let read_before = service::get_owned(&app.pool, game_id, user_id)
+    let read_before = game_service::get_owned(&app.pool, game_id, user_id)
         .await
         .unwrap();
     app.solve(game_id, &token).await;
 
-    let late = service::propose(&app.pool, &read_before, &layout_with_square(7, "red")).await;
+    let late = game_service::propose(&app.pool, &read_before, &layout_with_square(7, "red")).await;
 
     assert!(matches!(late, Err(GameError::AlreadySolved)), "{late:?}");
     let stored = app.propositions(game_id).await;

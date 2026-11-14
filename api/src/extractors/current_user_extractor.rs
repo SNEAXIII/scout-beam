@@ -7,8 +7,8 @@ use axum::http::request::Parts;
 use uuid::Uuid;
 
 use crate::auth::Identity;
-use crate::models::user::User;
-use crate::services::user as service;
+use crate::models::user_model::User;
+use crate::services::user_service;
 use crate::shared::error::ApiError;
 use crate::state::AppState;
 
@@ -31,6 +31,6 @@ impl FromRequestParts<AppState> for CurrentUser {
 impl CurrentUser {
     /// The account behind a token read outside the headers, as a WebSocket's first message.
     pub async fn of(state: &AppState, user_id: Uuid) -> Result<Self, ApiError> {
-        Ok(Self(service::load_active(&state.pool, user_id).await?))
+        Ok(Self(user_service::load_active(&state.pool, user_id).await?))
     }
 }

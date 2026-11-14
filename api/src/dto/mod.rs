@@ -1,2 +1,2 @@
-pub mod game;
-pub mod user;
+pub mod game_dto;
+pub mod user_dto;

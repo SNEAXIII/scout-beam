@@ -1,2 +1,2 @@
-pub mod game;
-pub mod user;
+pub mod game_repository;
+pub mod user_repository;

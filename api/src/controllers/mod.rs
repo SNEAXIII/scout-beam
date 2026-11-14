@@ -2,9 +2,9 @@
 //!
 //! Paths are written in full in each `#[utoipa::path]`, which is what mounts them: nothing is nested.
 
-pub mod game;
-pub mod game_live;
-pub mod user;
+pub mod game_controller;
+pub mod game_websocket_controller;
+pub mod user_controller;
 
 use utoipa_axum::router::OpenApiRouter;
 
@@ -12,7 +12,7 @@ use crate::state::AppState;
 
 pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .merge(user::router(dev_login_enabled))
-        .merge(game::router())
-        .merge(game_live::router())
+        .merge(user_controller::router(dev_login_enabled))
+        .merge(game_controller::router())
+        .merge(game_websocket_controller::router())
 }

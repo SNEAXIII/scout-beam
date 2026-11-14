@@ -14,13 +14,13 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::auth::AuthError;
-use crate::dto::game::{Action, ClientMessage, GameView, ServerMessage};
+use crate::dto::game_dto::{Action, GameView, WebSocketClientMessage, WebSocketServerMessage};
 use crate::engine::Layout;
-use crate::errors::game::GameError;
-use crate::extractors::user::CurrentUser;
-use crate::models::game::Game;
-use crate::services::game::{self as service, Firing, Verdict};
-use crate::services::game_hub::Push;
+use crate::errors::game_error::GameError;
+use crate::extractors::current_user_extractor::CurrentUser;
+use crate::models::game_model::Game;
+use crate::services::game_service::{self, Firing, Verdict};
+use crate::services::game_websocket_hub::WebSocketPush;
 use crate::shared::error::ApiError;
 use crate::state::AppState;
 
@@ -28,7 +28,7 @@ use crate::state::AppState;
 const AUTH_DEADLINE: Duration = Duration::from_secs(10);
 
 pub fn router() -> OpenApiRouter<AppState> {
-    OpenApiRouter::new().routes(routes!(get_game_socket))
+    OpenApiRouter::new().routes(routes!(get_game_websocket))
 }
 
 /// `GET /games/{game_id}/ws` — the game's socket.
@@ -47,40 +47,47 @@ pub fn router() -> OpenApiRouter<AppState> {
         (status = 101, description = "Switched to the game's WebSocket"),
     ),
 )]
-pub(crate) async fn get_game_socket(
+pub(crate) async fn get_game_websocket(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
     upgrade: WebSocketUpgrade,
 ) -> Response {
-    upgrade.on_upgrade(move |socket| play(socket, state, game_id))
+    upgrade.on_upgrade(move |socket| run_websocket(socket, state, game_id))
 }
 
-async fn play(mut socket: WebSocket, state: AppState, game_id: Uuid) {
-    let (session, mut pushes, expires_at) = match join(&mut socket, state, game_id).await {
+async fn run_websocket(mut socket: WebSocket, state: AppState, game_id: Uuid) {
+    let (session, mut pushes, expires_at) = match join_game(&mut socket, state, game_id).await {
         Ok(joined) => joined,
-        Err(refusal) => return refuse(socket, refusal).await,
+        Err(refusal) => return close_with_error(socket, refusal).await,
     };
     let ended = session.serve(&mut socket, &mut pushes, expires_at).await;
     drop(pushes);
-    session.state.hub.release(game_id);
+    session.state.websocket_hub.release(game_id);
     if let Some(refusal) = ended {
-        refuse(socket, refusal).await;
+        close_with_error(socket, refusal).await;
     }
 }
 
 /// Authenticate the first message, check the game is the caller's, then send its snapshot.
-async fn join(
+async fn join_game(
     socket: &mut WebSocket,
     state: AppState,
     game_id: Uuid,
-) -> Result<(Session, broadcast::Receiver<Push>, Instant), ApiError> {
-    let claims = state.jwt.decode_access(&first_token(socket).await?)?;
+) -> Result<
+    (
+        WebSocketSession,
+        broadcast::Receiver<WebSocketPush>,
+        Instant,
+    ),
+    ApiError,
+> {
+    let claims = state.jwt.decode_access(&read_auth_token(socket).await?)?;
     let CurrentUser(user) = CurrentUser::of(&state, claims.sub).await?;
-    service::get_owned(&state.pool, game_id, user.id).await?;
+    game_service::get_owned(&state.pool, game_id, user.id).await?;
 
     // Subscribed before the snapshot is read, so no event falls between the two.
-    let pushes = state.hub.subscribe(game_id);
-    let session = Session {
+    let pushes = state.websocket_hub.subscribe(game_id);
+    let session = WebSocketSession {
         state,
         game_id,
         user_id: user.id,
@@ -89,30 +96,30 @@ async fn join(
     match session.snapshot().await {
         Ok(game) => {
             // A client already gone is seen by `serve` on its first read.
-            let _ = send(socket, &ServerMessage::Game { game }).await;
-            Ok((session, pushes, expiry(claims.exp)))
+            let _ = send_message(socket, &WebSocketServerMessage::Game { game }).await;
+            Ok((session, pushes, token_deadline(claims.exp)))
         }
         Err(error) => {
             drop(pushes);
-            session.state.hub.release(game_id);
+            session.state.websocket_hub.release(game_id);
             Err(error.into())
         }
     }
 }
 
-async fn first_token(socket: &mut WebSocket) -> Result<String, AuthError> {
-    let first = tokio::time::timeout(AUTH_DEADLINE, next_text(socket))
+async fn read_auth_token(socket: &mut WebSocket) -> Result<String, AuthError> {
+    let first = tokio::time::timeout(AUTH_DEADLINE, next_text_frame(socket))
         .await
         .ok()
         .flatten();
-    match first.and_then(|text| serde_json::from_str::<ClientMessage>(&text).ok()) {
-        Some(ClientMessage::Auth { token }) => Ok(token),
+    match first.and_then(|text| serde_json::from_str::<WebSocketClientMessage>(&text).ok()) {
+        Some(WebSocketClientMessage::Auth { token }) => Ok(token),
         _ => Err(AuthError::MissingToken),
     }
 }
 
 /// One authenticated socket on one game.
-struct Session {
+struct WebSocketSession {
     state: AppState,
     game_id: Uuid,
     user_id: Uuid,
@@ -120,70 +127,63 @@ struct Session {
     id: Uuid,
 }
 
-impl Session {
+impl WebSocketSession {
     /// Until the client leaves; `Some` when the server ends the connection.
     async fn serve(
         &self,
         socket: &mut WebSocket,
-        pushes: &mut broadcast::Receiver<Push>,
+        pushes: &mut broadcast::Receiver<WebSocketPush>,
         expires_at: Instant,
     ) -> Option<ApiError> {
         let expiry = sleep_until(expires_at);
         tokio::pin!(expiry);
         loop {
             let outgoing = tokio::select! {
-                text = next_text(socket) => self.answer(&text?).await,
-                event = pushes.recv() => match event {
-                    Ok(push) if push.origin == self.id => continue,
-                    Ok(push) => push.message,
-                    Err(RecvError::Lagged(_)) => match self.snapshot().await {
-                        Ok(game) => ServerMessage::Game { game },
-                        Err(error) => return Some(error.into()),
-                    },
-                    Err(RecvError::Closed) => return None,
-                },
+                text = next_text_frame(socket) => self.answer_client_message(&text?).await,
+                event = pushes.recv() => match event { Ok(push) if push.origin == self.id => continue, Ok(push) => push.message, Err(RecvError::Lagged(_)) => match self.snapshot().await { Ok(game) => WebSocketServerMessage::Game { game }, Err(error) => return Some(error.into()), }, Err(RecvError::Closed) => return None, },
                 () = &mut expiry => return Some(AuthError::ExpiredToken.into()),
             };
-            send(socket, &outgoing).await.ok()?;
+            send_message(socket, &outgoing).await.ok()?;
         }
     }
 
-    async fn answer(&self, text: &str) -> ServerMessage {
-        let message = match serde_json::from_str::<ClientMessage>(text) {
+    async fn answer_client_message(&self, text: &str) -> WebSocketServerMessage {
+        let message = match serde_json::from_str::<WebSocketClientMessage>(text) {
             Ok(message) => message,
             Err(cause) => {
-                return error(
+                return error_message(
                     Action::Message,
                     ApiError::UnprocessableBody(cause.to_string()),
                 );
             }
         };
         match message {
-            ClientMessage::Auth { .. } => error(
+            WebSocketClientMessage::Auth { .. } => error_message(
                 Action::Message,
                 ApiError::BadRequest("Cette connexion est déjà authentifiée".into()),
             ),
-            ClientMessage::Fire { entry } => self
+            WebSocketClientMessage::Fire { entry } => self
                 .fire(entry)
                 .await
-                .unwrap_or_else(|refusal| error(Action::Fire, refusal.into())),
-            ClientMessage::Propose { pieces } => self
+                .unwrap_or_else(|refusal| error_message(Action::Fire, refusal.into())),
+            WebSocketClientMessage::Propose { pieces } => self
                 .propose(&Layout { pieces })
                 .await
-                .unwrap_or_else(|refusal| error(Action::Propose, refusal.into())),
-            ClientMessage::Surrender => self
+                .unwrap_or_else(|refusal| error_message(Action::Propose, refusal.into())),
+            WebSocketClientMessage::Surrender => self
                 .surrender()
                 .await
-                .unwrap_or_else(|refusal| error(Action::Surrender, refusal.into())),
+                .unwrap_or_else(|refusal| error_message(Action::Surrender, refusal.into())),
         }
     }
 
     /// An entry already fired answers its stored shot, and tells no other socket.
-    async fn fire(&self, entry: u8) -> Result<ServerMessage, GameError> {
+    async fn fire(&self, entry: u8) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let (shot, firing) = service::fire(&self.state.pool, &game, service::entry(entry)?).await?;
+        let (shot, firing) =
+            game_service::fire(&self.state.pool, &game, game_service::entry(entry)?).await?;
         let replayed = firing == Firing::Replayed;
-        let message = ServerMessage::Shot {
+        let message = WebSocketServerMessage::Shot {
             shot: shot.into(),
             replayed,
         };
@@ -193,20 +193,20 @@ impl Session {
         Ok(message)
     }
 
-    async fn propose(&self, layout: &Layout) -> Result<ServerMessage, GameError> {
+    async fn propose(&self, layout: &Layout) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let verdict = service::propose(&self.state.pool, &game, layout).await?;
+        let verdict = game_service::propose(&self.state.pool, &game, layout).await?;
         if let Verdict::Correct(solved) = &verdict {
             self.publish_end(solved).await;
         }
-        Ok(ServerMessage::Verdict(verdict.into()))
+        Ok(WebSocketServerMessage::Verdict(verdict.into()))
     }
 
-    async fn surrender(&self) -> Result<ServerMessage, GameError> {
+    async fn surrender(&self) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let surrendered = service::surrender(&self.state.pool, &game).await?;
-        let shots = service::shots_of(&self.state.pool, &surrendered).await?;
-        let message = ServerMessage::Game {
+        let surrendered = game_service::surrender(&self.state.pool, &game).await?;
+        let shots = game_service::shots_of(&self.state.pool, &surrendered).await?;
+        let message = WebSocketServerMessage::Game {
             game: GameView::new(&surrendered, shots),
         };
         self.publish(message.clone());
@@ -215,31 +215,33 @@ impl Session {
 
     /// Re-read on every message: another socket may have ended the game meanwhile.
     async fn game(&self) -> Result<Game, GameError> {
-        service::get_owned(&self.state.pool, self.game_id, self.user_id).await
+        game_service::get_owned(&self.state.pool, self.game_id, self.user_id).await
     }
 
     async fn snapshot(&self) -> Result<GameView, GameError> {
         let game = self.game().await?;
-        let shots = service::shots_of(&self.state.pool, &game).await?;
+        let shots = game_service::shots_of(&self.state.pool, &game).await?;
         Ok(GameView::new(&game, shots))
     }
 
     /// The proposition is stored whatever happens here: a failure only leaves other tabs behind.
     async fn publish_end(&self, solved: &Game) {
-        match service::shots_of(&self.state.pool, solved).await {
-            Ok(shots) => self.publish(ServerMessage::Game {
+        match game_service::shots_of(&self.state.pool, solved).await {
+            Ok(shots) => self.publish(WebSocketServerMessage::Game {
                 game: GameView::new(solved, shots),
             }),
             Err(error) => {
-                tracing::warn!(%error, "a solved game was not pushed to its other sockets");
+                tracing::warn!(
+                    % error, "a solved game was not pushed to its other sockets"
+                );
             }
         }
     }
 
-    fn publish(&self, message: ServerMessage) {
-        self.state.hub.publish(
+    fn publish(&self, message: WebSocketServerMessage) {
+        self.state.websocket_hub.publish(
             self.game_id,
-            Push {
+            WebSocketPush {
                 origin: self.id,
                 message,
             },
@@ -248,7 +250,7 @@ impl Session {
 }
 
 /// The next text frame; `None` once the client is gone. axum answers pings itself.
-async fn next_text(socket: &mut WebSocket) -> Option<Utf8Bytes> {
+async fn next_text_frame(socket: &mut WebSocket) -> Option<Utf8Bytes> {
     loop {
         match socket.recv().await? {
             Ok(Message::Text(text)) => return Some(text),
@@ -258,14 +260,17 @@ async fn next_text(socket: &mut WebSocket) -> Option<Utf8Bytes> {
     }
 }
 
-async fn send(socket: &mut WebSocket, message: &ServerMessage) -> Result<(), axum::Error> {
+async fn send_message(
+    socket: &mut WebSocket,
+    message: &WebSocketServerMessage,
+) -> Result<(), axum::Error> {
     let text = serde_json::to_string(message).map_err(axum::Error::new)?;
     socket.send(Message::text(text)).await
 }
 
-fn error(action: Action, refusal: ApiError) -> ServerMessage {
+fn error_message(action: Action, refusal: ApiError) -> WebSocketServerMessage {
     let (status, detail) = refusal.into_parts();
-    ServerMessage::Error {
+    WebSocketServerMessage::Error {
         action,
         status: status.as_u16(),
         detail,
@@ -273,15 +278,15 @@ fn error(action: Action, refusal: ApiError) -> ServerMessage {
 }
 
 /// Say why, then close with 4000 + the status; the client may be gone already, hence no check.
-async fn refuse(mut socket: WebSocket, refusal: ApiError) {
+async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
     let (status, detail) = refusal.into_parts();
     let status = status.as_u16();
-    let message = ServerMessage::Error {
+    let message = WebSocketServerMessage::Error {
         action: Action::Connect,
         status,
         detail,
     };
-    let _ = send(&mut socket, &message).await;
+    let _ = send_message(&mut socket, &message).await;
     let _ = socket
         .send(Message::Close(Some(CloseFrame {
             code: 4000 + status,
@@ -291,7 +296,7 @@ async fn refuse(mut socket: WebSocket, refusal: ApiError) {
 }
 
 /// The token's `exp` as a deadline for the socket, capped so the addition cannot overflow.
-fn expiry(exp: i64) -> Instant {
+fn token_deadline(exp: i64) -> Instant {
     const CAP: Duration = Duration::from_hours(24 * 365);
     let left = u64::try_from(exp.saturating_sub(Utc::now().timestamp())).unwrap_or(0);
     Instant::now() + Duration::from_secs(left).min(CAP)

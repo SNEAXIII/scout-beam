@@ -7,9 +7,9 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::dto::game::{GameSummaryResponse, GameView};
-use crate::extractors::user::CurrentUser;
-use crate::services::game as service;
+use crate::dto::game_dto::{GameSummaryResponse, GameView};
+use crate::extractors::current_user_extractor::CurrentUser;
+use crate::services::game_service;
 use crate::shared::error::ApiResult;
 #[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;
@@ -37,7 +37,7 @@ pub(crate) async fn post_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<(StatusCode, Json<GameView>)> {
-    let game = service::create(&state.pool, user.id).await?;
+    let game = game_service::create(&state.pool, user.id).await?;
     Ok((StatusCode::CREATED, Json(GameView::new(&game, Vec::new()))))
 }
 
@@ -56,7 +56,7 @@ pub(crate) async fn get_games(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<Json<Vec<GameSummaryResponse>>> {
-    let games = service::list(&state.pool, user.id).await?;
+    let games = game_service::list(&state.pool, user.id).await?;
     Ok(Json(games.into_iter().map(Into::into).collect()))
 }
 
@@ -78,7 +78,7 @@ pub(crate) async fn get_game(
     CurrentUser(user): CurrentUser,
     Path(game_id): Path<Uuid>,
 ) -> ApiResult<Json<GameView>> {
-    let game = service::get_owned(&state.pool, game_id, user.id).await?;
-    let shots = service::shots_of(&state.pool, &game).await?;
+    let game = game_service::get_owned(&state.pool, game_id, user.id).await?;
+    let shots = game_service::shots_of(&state.pool, &game).await?;
     Ok(Json(GameView::new(&game, shots)))
 }

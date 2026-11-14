@@ -8,25 +8,25 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::dto::game::ServerMessage;
+use crate::dto::game_dto::WebSocketServerMessage;
 
 /// A socket further behind than this gets a fresh snapshot instead of the events it missed.
 const CAPACITY: usize = 64;
 
 /// An event, with the socket it came from: that one already had it as its answer.
 #[derive(Debug, Clone)]
-pub struct Push {
+pub struct WebSocketPush {
     pub origin: Uuid,
-    pub message: ServerMessage,
+    pub message: WebSocketServerMessage,
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct GameHub {
-    channels: Arc<Mutex<HashMap<Uuid, broadcast::Sender<Push>>>>,
+pub struct GameWebSocketHub {
+    channels: Arc<Mutex<HashMap<Uuid, broadcast::Sender<WebSocketPush>>>>,
 }
 
-impl GameHub {
-    pub fn subscribe(&self, game_id: Uuid) -> broadcast::Receiver<Push> {
+impl GameWebSocketHub {
+    pub fn subscribe(&self, game_id: Uuid) -> broadcast::Receiver<WebSocketPush> {
         self.lock()
             .entry(game_id)
             .or_insert_with(|| broadcast::channel(CAPACITY).0)
@@ -34,7 +34,7 @@ impl GameHub {
     }
 
     /// With no socket open on the game, nobody is told and nothing is kept.
-    pub fn publish(&self, game_id: Uuid, push: Push) {
+    pub fn publish(&self, game_id: Uuid, push: WebSocketPush) {
         if let Some(sender) = self.lock().get(&game_id) {
             // Fails only when every receiver is gone, which leaves nobody to tell.
             let _ = sender.send(push);
@@ -53,7 +53,7 @@ impl GameHub {
     }
 
     /// No code panics while holding the lock, so a poisoned map is still consistent.
-    fn lock(&self) -> MutexGuard<'_, HashMap<Uuid, broadcast::Sender<Push>>> {
+    fn lock(&self) -> MutexGuard<'_, HashMap<Uuid, broadcast::Sender<WebSocketPush>>> {
         self.channels.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }

@@ -8,9 +8,9 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::auth::dto::{LoginResponse, RefreshTokenRequest};
-use crate::dto::user::{DevLoginRequest, UserProfile};
-use crate::extractors::user::CurrentUser;
-use crate::services::user as service;
+use crate::dto::user_dto::{DevLoginRequest, UserProfile};
+use crate::extractors::current_user_extractor::CurrentUser;
+use crate::services::user_service;
 use crate::shared::error::ApiResult;
 #[allow(unused_imports)] // referenced by the utoipa annotations
 use crate::shared::openapi::ErrorResponse;
@@ -61,7 +61,7 @@ pub(crate) async fn post_refresh_token(
     ValidatedJson(body): ValidatedJson<RefreshTokenRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
     let claims = state.jwt.decode_refresh(&body.refresh_token)?;
-    let user = service::load_active(&state.pool, claims.sub).await?;
+    let user = user_service::load_active(&state.pool, claims.sub).await?;
 
     Ok(Json(LoginResponse::bearer(
         state.jwt.access_token(user.id, user.role)?,
@@ -84,7 +84,7 @@ pub(crate) async fn post_dev_login(
     State(state): State<AppState>,
     ValidatedJson(body): ValidatedJson<DevLoginRequest>,
 ) -> ApiResult<Json<LoginResponse>> {
-    let user = service::login_or_create(&state.pool, body.login.as_deref(), body.role).await?;
+    let user = user_service::login_or_create(&state.pool, body.login.as_deref(), body.role).await?;
 
     Ok(Json(LoginResponse::bearer(
         state.jwt.access_token(user.id, user.role)?,

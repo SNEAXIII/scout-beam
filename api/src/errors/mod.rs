@@ -1,2 +1,2 @@
-pub mod game;
-pub mod user;
+pub mod game_error;
+pub mod user_error;

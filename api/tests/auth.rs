@@ -7,7 +7,7 @@ use common::{TestApp, login_body};
 use http::StatusCode;
 use scout_beam::Config;
 use scout_beam::config::Environment;
-use scout_beam::repositories::user as repository;
+use scout_beam::repositories::user_repository;
 use scout_beam::shared::role::Role;
 use serde_json::json;
 use sqlx::PgPool;
@@ -19,7 +19,7 @@ async fn a_login_taken_between_the_lookup_and_the_insert_is_not_an_error(pool: P
     let app = TestApp::new(pool);
     app.seed("Sneaxiii", Role::User).await;
 
-    let outcome = repository::insert_if_absent(&app.pool, "Sneaxiii", Role::User).await;
+    let outcome = user_repository::insert_if_absent(&app.pool, "Sneaxiii", Role::User).await;
 
     assert!(
         matches!(outcome, Ok(None)),

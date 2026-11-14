@@ -3,7 +3,7 @@
 use rand::RngExt;
 use sqlx::PgPool;
 
-use crate::repositories::user as repository;
+use crate::repositories::user_repository;
 
 const ADJECTIVES: [&str; 10] = [
     "cosmic", "mighty", "iron", "shadow", "storm", "silver", "golden", "dark", "thunder", "mystic",
@@ -53,7 +53,10 @@ pub async fn unique_login(pool: &PgPool, candidate: &str) -> sqlx::Result<String
     let mut login = base.clone();
 
     for _ in 0..ATTEMPTS {
-        if repository::find_by_login(pool, &login).await?.is_none() {
+        if user_repository::find_by_login(pool, &login)
+            .await?
+            .is_none()
+        {
             return Ok(login);
         }
 
