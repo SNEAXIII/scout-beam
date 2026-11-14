@@ -4,7 +4,6 @@
 
 use std::sync::Arc;
 
-use axum::extract::FromRef;
 use sqlx::PgPool;
 
 use crate::auth::jwt::JwtCodec;
@@ -33,18 +32,5 @@ impl AppState {
             config: Arc::new(config),
             websocket_hub: GameWebSocketHub::default(),
         }
-    }
-}
-
-/// Lets `Identity` be extracted from any state that can produce a codec.
-impl FromRef<AppState> for JwtCodec {
-    fn from_ref(state: &AppState) -> Self {
-        state.jwt.clone()
-    }
-}
-
-impl FromRef<AppState> for PgPool {
-    fn from_ref(state: &AppState) -> Self {
-        state.pool.clone()
     }
 }
