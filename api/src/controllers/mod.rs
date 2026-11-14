@@ -1,15 +1,18 @@
-//! HTTP surface: each controller declares its routes, mounted here under their prefix.
+//! HTTP surface: each controller registers its routes with their OpenAPI description.
+//!
+//! Paths are written in full in each `#[utoipa::path]`, which is what mounts them: nothing is nested.
 
-pub mod auth;
 pub mod game;
 pub mod game_live;
+pub mod user;
 
-use axum::Router;
+use utoipa_axum::router::OpenApiRouter;
 
 use crate::state::AppState;
 
-pub fn router(dev_login_enabled: bool) -> Router<AppState> {
-    Router::new()
-        .nest("/auth", auth::router(dev_login_enabled))
-        .nest("/games", game::router().merge(game_live::router()))
+pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .merge(user::router(dev_login_enabled))
+        .merge(game::router())
+        .merge(game_live::router())
 }

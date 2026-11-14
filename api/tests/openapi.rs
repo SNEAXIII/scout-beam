@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! The published OpenAPI document.
 //!
-//! Hand-written in `#[utoipa::path]` attributes: these tests keep it from drifting from the router.
+//! A route mounted with a bare `.route()` instead of `routes!` would be served but undocumented.
 
 mod common;
 
@@ -34,22 +34,6 @@ async fn every_route_is_documented(pool: PgPool) {
             "{method} {path} is missing from the OpenAPI document"
         );
     }
-}
-
-#[sqlx::test]
-async fn the_document_declares_nothing_extra(pool: PgPool) {
-    let app = TestApp::new(pool);
-
-    let response = app.get("/api-docs/openapi.json", None).await;
-
-    let documented = response.body["paths"].as_object().unwrap().len();
-    let expected_paths: std::collections::BTreeSet<&str> =
-        EXPECTED_PATHS.iter().map(|(path, _)| *path).collect();
-    assert_eq!(
-        documented,
-        expected_paths.len(),
-        "a path was documented without being added to this test"
-    );
 }
 
 #[sqlx::test]

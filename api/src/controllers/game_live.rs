@@ -3,14 +3,14 @@
 
 use std::time::Duration;
 
-use axum::Router;
 use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
 use axum::response::Response;
-use axum::routing::get;
 use chrono::Utc;
 use tokio::sync::broadcast::{self, error::RecvError};
 use tokio::time::{Instant, sleep_until};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::auth::AuthError;
@@ -27,8 +27,8 @@ use crate::state::AppState;
 /// How long a fresh socket has to send its token.
 const AUTH_DEADLINE: Duration = Duration::from_secs(10);
 
-pub fn router() -> Router<AppState> {
-    Router::new().route("/{game_id}/ws", get(open_socket))
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new().routes(routes!(get_game_socket))
 }
 
 /// `GET /games/{game_id}/ws` — the game's socket.
@@ -47,7 +47,7 @@ pub fn router() -> Router<AppState> {
         (status = 101, description = "Switched to the game's WebSocket"),
     ),
 )]
-pub(crate) async fn open_socket(
+pub(crate) async fn get_game_socket(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
     upgrade: WebSocketUpgrade,

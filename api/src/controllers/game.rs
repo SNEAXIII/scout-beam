@@ -1,9 +1,10 @@
 //! `/games/*` over HTTP — starting games and reading them; playing one goes through its socket.
 
+use axum::Json;
 use axum::extract::{Path, State};
-use axum::routing::{get, post};
-use axum::{Json, Router};
 use http::StatusCode;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::dto::game::{GameSummaryResponse, GameView};
@@ -14,11 +15,11 @@ use crate::shared::error::ApiResult;
 use crate::shared::openapi::ErrorResponse;
 use crate::state::AppState;
 
-pub fn router() -> Router<AppState> {
-    Router::new()
-        // One call per path: registering the same path twice makes axum panic at startup.
-        .route("/", post(create_game).get(list_games))
-        .route("/{game_id}", get(read_game))
+/// One `routes!` per path: registering the same path twice makes axum panic at startup.
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(post_game, get_games))
+        .routes(routes!(get_game))
 }
 
 /// `POST /games` — the bot draws a hidden layout.
@@ -32,7 +33,7 @@ pub fn router() -> Router<AppState> {
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn create_game(
+pub(crate) async fn post_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<(StatusCode, Json<GameView>)> {
@@ -51,7 +52,7 @@ pub(crate) async fn create_game(
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn list_games(
+pub(crate) async fn get_games(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<Json<Vec<GameSummaryResponse>>> {
@@ -72,7 +73,7 @@ pub(crate) async fn list_games(
         (status = 404, description = "No such game among the caller's", body = ErrorResponse),
     ),
 )]
-pub(crate) async fn read_game(
+pub(crate) async fn get_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(game_id): Path<Uuid>,
