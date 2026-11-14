@@ -1,4 +1,4 @@
-//! What every handler is handed: the pool, the signing keys, the config.
+//! What every handler is handed: the pool, the signing keys, the config, the game sockets' hub.
 //!
 //! Cloned per request, so each field is cheap to clone.
 
@@ -9,12 +9,14 @@ use sqlx::PgPool;
 
 use crate::auth::jwt::JwtCodec;
 use crate::config::Config;
+use crate::domains::game::hub::GameHub;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
     pub jwt: JwtCodec,
     pub config: Arc<Config>,
+    pub hub: GameHub,
 }
 
 impl AppState {
@@ -29,6 +31,7 @@ impl AppState {
             pool,
             jwt,
             config: Arc::new(config),
+            hub: GameHub::default(),
         }
     }
 }

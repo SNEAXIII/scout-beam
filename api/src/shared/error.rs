@@ -50,7 +50,15 @@ struct ErrorBody<T> {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let (status, detail) = match self {
+        let (status, detail) = self.into_parts();
+        (status, Json(ErrorBody { detail })).into_response()
+    }
+}
+
+impl ApiError {
+    /// The status and `detail` an HTTP response carries; a WebSocket error carries them too.
+    pub fn into_parts(self) -> (StatusCode, serde_json::Value) {
+        match self {
             Self::Unauthorized(message) => (StatusCode::UNAUTHORIZED, json!(message)),
             Self::BadRequest(message) => (StatusCode::BAD_REQUEST, json!(message)),
             Self::NotFound(message) => (StatusCode::NOT_FOUND, json!(message)),
@@ -75,9 +83,7 @@ impl IntoResponse for ApiError {
                     json!("Erreur interne du serveur"),
                 )
             }
-        };
-
-        (status, Json(ErrorBody { detail })).into_response()
+        }
     }
 }
 

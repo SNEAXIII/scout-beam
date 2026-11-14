@@ -48,6 +48,8 @@ const en = {
     surrenderDescription: 'The hidden pieces will be revealed and firing will be disabled.',
     surrenderFailed: 'Could not surrender',
     shotFailed: 'Could not fire',
+    offline: 'Not connected to the game: try again in a moment',
+    reconnecting: 'Connection lost, reconnecting…',
     solved: 'Game solved: here are the hidden pieces. Firing is disabled.',
     surrendered: 'Game surrendered: here are the hidden pieces. Firing is disabled.',
     grid: 'Grid',

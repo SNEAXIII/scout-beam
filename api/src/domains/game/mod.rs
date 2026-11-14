@@ -5,6 +5,7 @@
 
 pub mod dto;
 pub mod error;
+pub mod hub;
 pub mod model;
 pub mod repository;
 pub mod routes;
@@ -19,7 +20,10 @@ use utoipa::OpenApi;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().nest("/games", routes::core::router())
+    Router::new().nest(
+        "/games",
+        routes::core::router().merge(routes::live::router()),
+    )
 }
 
 /// This domain's slice of the OpenAPI document.
@@ -29,17 +33,12 @@ pub fn router() -> Router<AppState> {
         routes::core::create_game,
         routes::core::list_games,
         routes::core::read_game,
-        routes::core::fire_shot,
-        routes::core::submit_proposition,
-        routes::core::surrender,
+        routes::live::open_socket,
     ),
     components(schemas(
         dto::GameView,
         dto::GameSummaryResponse,
-        dto::ShotRequest,
         dto::ShotResponse,
-        dto::PropositionRequest,
-        dto::PropositionResponse,
         model::GameStatus,
         model::ShotColour,
     )),

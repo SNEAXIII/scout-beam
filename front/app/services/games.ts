@@ -1,6 +1,6 @@
 import { apiRequest } from '@/app/lib/api'
 import type { BeamColour } from '@/app/lib/colours'
-import type { Layout, Piece } from '@/app/lib/pieces'
+import type { Layout } from '@/app/lib/pieces'
 
 export type GameStatus = 'in_progress' | 'solved' | 'surrendered'
 
@@ -31,26 +31,8 @@ export const createGame = (): Promise<GameView> =>
 
 export const getGame = (id: string): Promise<GameView> => apiRequest<GameView>(`/games/${id}`)
 
-/** Re-firing an entry answers the stored shot; a game over answers 409. */
-export const fireShot = (id: string, entry: number): Promise<Shot> =>
-  apiRequest<Shot>(`/games/${id}/shots`, { method: 'POST', body: { entry } })
-
 export interface PropositionVerdict {
   correct: boolean
   /** Only when correct. */
   layout?: Layout
 }
-
-/** A broken layout rule answers 422 naming it; a game over answers 409. */
-export const submitProposition = (
-  id: string,
-  pieces: readonly Piece[]
-): Promise<PropositionVerdict> =>
-  apiRequest<PropositionVerdict>(`/games/${id}/propositions`, {
-    method: 'POST',
-    body: { pieces },
-  })
-
-/** Give up: answers the game with its hidden layout; a game over answers 409. */
-export const surrenderGame = (id: string): Promise<GameView> =>
-  apiRequest<GameView>(`/games/${id}/surrender`, { method: 'POST' })

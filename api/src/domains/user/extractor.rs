@@ -4,6 +4,7 @@
 
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
+use uuid::Uuid;
 
 use crate::auth::Identity;
 use crate::domains::user::model::User;
@@ -23,8 +24,13 @@ impl FromRequestParts<AppState> for CurrentUser {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         let identity = Identity::from_request_parts(parts, state).await?;
-        Ok(Self(
-            service::load_active(&state.pool, identity.user_id).await?,
-        ))
+        Self::of(state, identity.user_id).await
+    }
+}
+
+impl CurrentUser {
+    /// The account behind a token read outside the headers, as a WebSocket's first message.
+    pub async fn of(state: &AppState, user_id: Uuid) -> Result<Self, ApiError> {
+        Ok(Self(service::load_active(&state.pool, user_id).await?))
     }
 }

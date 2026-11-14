@@ -2,12 +2,17 @@
 // Each test binary compiles this module on its own and uses only part of it.
 #![allow(dead_code)]
 
-//! Test harness: the real router, a throwaway database, no socket.
+//! Test harness: the real router, a throwaway database.
 //!
-//! `#[sqlx::test]` hands each test its own migrated database; the router is called through `oneshot`.
+//! `#[sqlx::test]` hands each test its own migrated database; HTTP calls go through `oneshot`, game
+//! sockets through the same router served on a local port.
+
+use std::net::SocketAddr;
+use std::time::Duration;
 
 use axum::Router;
 use axum::body::Body;
+use futures_util::{SinkExt, StreamExt};
 use http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use scout_beam::auth::JwtCodec;
@@ -16,6 +21,9 @@ use scout_beam::shared::role::Role;
 use scout_beam::{AppState, Config, build_app};
 use serde_json::{Value, json};
 use sqlx::PgPool;
+use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -23,6 +31,7 @@ pub struct TestApp {
     router: Router,
     pub pool: PgPool,
     pub jwt: JwtCodec,
+    addr: SocketAddr,
 }
 
 impl TestApp {
@@ -33,11 +42,62 @@ impl TestApp {
     pub fn with_config(pool: PgPool, config: Config) -> Self {
         let state = AppState::new(pool.clone(), config);
         let jwt = state.jwt.clone();
+        let router = build_app(state).expect("router builds");
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a local port is free");
+        listener
+            .set_nonblocking(true)
+            .expect("the listener is non-blocking");
+        let addr = listener.local_addr().expect("the port is known");
+        let listener =
+            tokio::net::TcpListener::from_std(listener).expect("tokio takes the listener");
+        let served = router.clone();
+        tokio::spawn(async move { axum::serve(listener, served).await });
 
         Self {
-            router: build_app(state).expect("router builds"),
+            router,
             pool,
             jwt,
+            addr,
+        }
+    }
+
+    /// A game's socket: authenticated with `token`, or sent a shot first when there is none.
+    /// `Ok` holds the socket and the game it answered; `Err` the refusal, as a response.
+    pub async fn join(&self, game_id: Uuid, token: Option<&str>) -> Result<GameSocket, Response> {
+        let mut socket = self.join_raw(game_id, token).await;
+        let answer = answered(socket.next().await.expect("the server answers"));
+        if answer.status == StatusCode::OK {
+            socket.joined = answer.body;
+            Ok(socket)
+        } else {
+            Err(answer)
+        }
+    }
+
+    /// The socket right after its first message, its answer still unread.
+    pub async fn join_raw(&self, game_id: Uuid, token: Option<&str>) -> GameSocket {
+        let url = format!("ws://{}/games/{game_id}/ws", self.addr);
+        let (stream, _) = tokio_tungstenite::connect_async(url)
+            .await
+            .expect("the socket opens");
+        let mut socket = GameSocket {
+            stream,
+            joined: Value::Null,
+        };
+        let first = token.map_or_else(
+            || json!({ "type": "fire", "entry": 7 }),
+            |token| json!({ "type": "auth", "token": token }),
+        );
+        socket.send(first).await;
+        socket
+    }
+
+    /// One message on a fresh socket, answered as an HTTP endpoint would have.
+    pub async fn play(&self, game_id: Uuid, token: Option<&str>, message: Value) -> Response {
+        match self.join(game_id, token).await {
+            Ok(mut socket) => socket.request(message).await,
+            Err(refused) => refused,
         }
     }
 
@@ -140,9 +200,9 @@ impl TestApp {
     }
 
     pub async fn propose(&self, game_id: Uuid, token: Option<&str>, layout: &Layout) -> Response {
-        let body = serde_json::to_value(layout).expect("the layout encodes");
-        self.post(&format!("/games/{game_id}/propositions"), token, body)
-            .await
+        let mut message = serde_json::to_value(layout).expect("the layout encodes");
+        message["type"] = json!("propose");
+        self.play(game_id, token, message).await
     }
 
     /// Solve a game the way a player does: propose its hidden layout.
@@ -161,9 +221,82 @@ impl TestApp {
     }
 }
 
+#[derive(Debug)]
 pub struct Response {
     pub status: StatusCode,
     pub body: Value,
+}
+
+pub struct GameSocket {
+    stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
+    /// The game the server answered on joining.
+    pub joined: Value,
+}
+
+impl GameSocket {
+    pub async fn send(&mut self, message: Value) {
+        self.stream
+            .send(Message::text(message.to_string()))
+            .await
+            .expect("the message is sent");
+    }
+
+    /// The next server message, or `None` once the server closed; the close code comes along.
+    pub async fn next(&mut self) -> Result<Value, Option<u16>> {
+        loop {
+            let frame = tokio::time::timeout(Duration::from_secs(5), self.stream.next())
+                .await
+                .expect("the server answers within 5 s");
+            match frame {
+                Some(Ok(Message::Text(text))) => {
+                    return Ok(serde_json::from_str(&text).expect("the server sends JSON"));
+                }
+                Some(Ok(Message::Close(frame))) => return Err(frame.map(|f| u16::from(f.code))),
+                Some(Ok(_)) => {}
+                None | Some(Err(_)) => return Err(None),
+            }
+        }
+    }
+
+    /// Send and read the answer, mapped to the status and body the HTTP endpoint had.
+    pub async fn request(&mut self, message: Value) -> Response {
+        self.send(message).await;
+        let answer = self
+            .next()
+            .await
+            .expect("the server answers before closing");
+        answered(answer)
+    }
+
+    /// Nothing arrives for a moment: no push is on its way.
+    pub async fn assert_quiet(&mut self) {
+        let frame = tokio::time::timeout(Duration::from_millis(300), self.stream.next()).await;
+        assert!(frame.is_err(), "unexpected message: {frame:?}");
+    }
+}
+
+/// `game` is a 200, `shot` a 201 or a replayed 200, `verdict` a 201, `error` its own status.
+pub fn answered(mut message: Value) -> Response {
+    let kind = message["type"]
+        .as_str()
+        .expect("every message is typed")
+        .to_owned();
+    let (status, body) = match kind.as_str() {
+        "game" => (StatusCode::OK, message["game"].take()),
+        "shot" if message["replayed"] == true => (StatusCode::OK, message["shot"].take()),
+        "shot" => (StatusCode::CREATED, message["shot"].take()),
+        "verdict" => {
+            message.as_object_mut().expect("an object").remove("type");
+            (StatusCode::CREATED, message)
+        }
+        "error" => {
+            let status = message["status"].as_u64().expect("an error has a status");
+            let status = StatusCode::from_u16(u16::try_from(status).unwrap()).unwrap();
+            (status, message)
+        }
+        other => panic!("unknown message type {other}"),
+    };
+    Response { status, body }
 }
 
 impl Response {

@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 import { fill, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
-import { SHAPES } from '@/app/lib/pieces'
-import { submitProposition } from '@/app/services/games'
+import { SHAPES, type Piece } from '@/app/lib/pieces'
+import type { PropositionVerdict } from '@/app/services/games'
 import DraftToolbar from './draft-toolbar'
 import HotkeyLegend from './hotkey-legend'
 import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
@@ -16,6 +16,7 @@ interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'dis
   readonly keyboardLayout: KeyboardLayout
   /** Called once the game is solved, by this proposition or meanwhile elsewhere; the page clears the draft. */
   readonly onSolved: () => void
+  readonly onPropose: (pieces: readonly Piece[]) => Promise<PropositionVerdict>
 }
 
 /** A verdict holds for the draft it was given, and vanishes as soon as the draft changes. */
@@ -29,6 +30,7 @@ export default function DraftPanel({
   gameId,
   keyboardLayout,
   onSolved,
+  onPropose,
   ...board
 }: DraftPanelProps) {
   const { t } = useI18n()
@@ -44,7 +46,7 @@ export default function DraftPanel({
     setPending(true)
     setVerdict(null)
     try {
-      const { correct } = await submitProposition(gameId, draft.pieces)
+      const { correct } = await onPropose(draft.pieces)
       if (correct) return onSolved()
       setVerdict({ draft: current })
     } catch (caught) {

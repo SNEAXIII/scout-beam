@@ -14,7 +14,7 @@ import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useI18n()
-  const { game, error, surrendering, load, fire, surrender } = useGame(id)
+  const { game, error, connected, surrendering, load, fire, surrender, propose } = useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
 
@@ -23,7 +23,7 @@ export default function GamePage() {
   const board = {
     paths,
     highlighted,
-    onFire: (entry: number) => void fire(entry),
+    onFire: fire,
     onHighlight: setHighlighted,
   }
 
@@ -31,7 +31,7 @@ export default function GamePage() {
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <GameHeader
         status={game?.status ?? null}
-        onSurrender={() => void surrender()}
+        onSurrender={surrender}
         surrendering={surrendering}
         keyboardLayout={keyboardLayout}
         onToggleKeyboardLayout={toggle}
@@ -43,6 +43,15 @@ export default function GamePage() {
           data-cy='game-error'
         >
           {error}
+        </p>
+      )}
+      {game && !connected && (
+        <p
+          className='text-sm text-muted-foreground'
+          role='status'
+          data-cy='game-reconnecting'
+        >
+          {t.game.reconnecting}
         </p>
       )}
       {game === null && !error && (
@@ -73,6 +82,7 @@ export default function GamePage() {
               gameId={id}
               keyboardLayout={keyboardLayout}
               onSolved={() => void load()}
+              onPropose={propose}
             />
           )}
           {/* Takes the row's height without adding to it, so the shots scroll instead of growing the row. */}
