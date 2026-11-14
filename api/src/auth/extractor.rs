@@ -2,7 +2,9 @@
 //!
 //! Database-free on purpose: whether the account still exists is the user domain's business.
 
-use axum::extract::FromRequestParts;
+use std::convert::Infallible;
+
+use axum::extract::{FromRequestParts, OptionalFromRequestParts};
 use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
 use uuid::Uuid;
@@ -32,6 +34,23 @@ impl FromRequestParts<AppState> for Identity {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         identity(parts, &state.jwt).map_err(ApiError::from)
+    }
+}
+
+/// `Option<Identity>`: for routes open to anyone, where a missing, invalid or expired bearer
+/// counts as no caller at all rather than a 401.
+impl OptionalFromRequestParts<AppState> for Identity {
+    type Rejection = Infallible;
+
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "axum's trait is async; checking a JWT awaits nothing"
+    )]
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        Ok(identity(parts, &state.jwt).ok())
     }
 }
 

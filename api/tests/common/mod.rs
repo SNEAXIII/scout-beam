@@ -213,6 +213,22 @@ impl TestApp {
         assert_eq!(proposed.body["correct"], true, "{}", proposed.body);
     }
 
+    /// Sign in as a new guest through the API: its id and access token.
+    pub async fn guest(&self) -> (Uuid, String) {
+        let created = self.post("/auth/guest", None, json!({})).await;
+        created.assert_status(StatusCode::CREATED);
+        let token = created.body["access_token"]
+            .as_str()
+            .expect("a token is returned")
+            .to_owned();
+        let id = self
+            .jwt
+            .decode_access(&token)
+            .expect("the token decodes")
+            .sub;
+        (id, token)
+    }
+
     /// Seed an account and return it with a matching token.
     pub async fn seed_with_token(&self, login: &str, role: Role) -> (Uuid, String) {
         let id = self.seed(login, role).await;

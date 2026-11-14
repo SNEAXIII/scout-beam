@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, login, role as \"role: Role\", password_hash, last_login_date, created_at, updated_at\n           FROM \"user\"\n           WHERE id = $1",
+  "query": "INSERT INTO \"user\" (login, password_hash)\n           VALUES ($1, $2)\n           RETURNING id, login, role as \"role: Role\", password_hash, guest, last_login_date, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 4,
+        "name": "guest",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "guest"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "last_login_date",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -94,7 +105,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Varchar",
+        "Text"
       ]
     },
     "nullable": [
@@ -102,10 +114,11 @@
       false,
       false,
       true,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "c900070e2d0dc66009a247a9ba01f32410a71c7bdb3ceccb9606d3723fa81ec3"
+  "hash": "c56ef3549e533389bc7a90333073ed26e45ae25b6a80922b57fb4a396a152979"
 }

@@ -18,6 +18,8 @@ pub struct User {
     /// Never serialised: the hash is for the sign-in check only.
     #[serde(skip)]
     pub password_hash: Option<String>,
+    /// A player without credentials, until they sign up.
+    pub guest: bool,
     pub last_login_date: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -31,6 +33,7 @@ impl fmt::Debug for User {
             .field("login", &self.login)
             .field("role", &self.role)
             .field("has_password", &self.password_hash.is_some())
+            .field("guest", &self.guest)
             .field("last_login_date", &self.last_login_date)
             .field("created_at", &self.created_at)
             .field("updated_at", &self.updated_at)
@@ -49,6 +52,7 @@ mod tests {
             login: "Sneaxiii".to_owned(),
             role: Role::User,
             password_hash: Some("$argon2id$secret".to_owned()),
+            guest: false,
             last_login_date: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),

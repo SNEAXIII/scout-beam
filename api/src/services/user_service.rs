@@ -52,15 +52,39 @@ pub async fn login_or_create(
 }
 
 /// Create a password account and sign it in. The login rules are the DTO's; the password's live here.
+/// A `caller` that is a guest becomes that account, keeping its id and games; any other caller is ignored.
 pub async fn register_with_password(
     pool: &PgPool,
     login: &str,
     password: &str,
+    caller: Option<Uuid>,
 ) -> Result<User, UserError> {
     validate_password(password)?;
     let password_hash = password::hash(password.to_owned()).await?;
 
-    let user = user_repository::insert_with_password(pool, login, &password_hash)
+    let converted = match caller {
+        Some(user_id) => {
+            user_repository::convert_guest_with_password(pool, user_id, login, &password_hash)
+                .await
+                .map_err(UserError::from_write)?
+        }
+        None => None,
+    };
+    let user = match converted {
+        Some(user) => user,
+        None => user_repository::insert_with_password(pool, login, &password_hash)
+            .await
+            .map_err(UserError::from_write)?,
+    };
+
+    user_repository::touch_last_login(pool, user.id).await?;
+    Ok(user)
+}
+
+/// A guest account under a generated login, signed in at once.
+pub async fn create_guest(pool: &PgPool) -> Result<User, UserError> {
+    let login = login_generator::unique_login(pool, &login_generator::random_base()).await?;
+    let user = user_repository::insert_guest(pool, &login)
         .await
         .map_err(UserError::from_write)?;
 

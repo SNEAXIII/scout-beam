@@ -11,7 +11,7 @@ use crate::shared::role::Role;
 pub async fn find_by_id(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Option<User>> {
     sqlx::query_as!(
         User,
-        r#"SELECT id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at
+        r#"SELECT id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at
            FROM "user"
            WHERE id = $1"#,
         user_id
@@ -23,7 +23,7 @@ pub async fn find_by_id(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Option<Use
 pub async fn find_by_login(pool: &PgPool, login: &str) -> sqlx::Result<Option<User>> {
     sqlx::query_as!(
         User,
-        r#"SELECT id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at
+        r#"SELECT id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at
            FROM "user"
            WHERE login = $1"#,
         login
@@ -37,7 +37,7 @@ pub async fn insert(pool: &PgPool, login: &str, role: Role) -> sqlx::Result<User
         User,
         r#"INSERT INTO "user" (login, role)
            VALUES ($1, $2)
-           RETURNING id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at"#,
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
         login,
         role as _
     )
@@ -55,7 +55,7 @@ pub async fn insert_with_password(
         User,
         r#"INSERT INTO "user" (login, password_hash)
            VALUES ($1, $2)
-           RETURNING id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at"#,
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
         login,
         password_hash
     )
@@ -75,9 +75,42 @@ pub async fn insert_if_absent(
         r#"INSERT INTO "user" (login, role)
            VALUES ($1, $2)
            ON CONFLICT (login) DO NOTHING
-           RETURNING id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at"#,
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
         login,
         role as _
+    )
+    .fetch_optional(pool)
+    .await
+}
+
+pub async fn insert_guest(pool: &PgPool, login: &str) -> sqlx::Result<User> {
+    sqlx::query_as!(
+        User,
+        r#"INSERT INTO "user" (login, guest)
+           VALUES ($1, true)
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
+        login
+    )
+    .fetch_one(pool)
+    .await
+}
+
+/// Turn a guest into a password account, in place. `None` when the row is not (or no longer) a guest.
+pub async fn convert_guest_with_password(
+    pool: &PgPool,
+    user_id: Uuid,
+    login: &str,
+    password_hash: &str,
+) -> sqlx::Result<Option<User>> {
+    sqlx::query_as!(
+        User,
+        r#"UPDATE "user"
+           SET login = $2, password_hash = $3, guest = false
+           WHERE id = $1 AND guest
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
+        user_id,
+        login,
+        password_hash
     )
     .fetch_optional(pool)
     .await
@@ -99,7 +132,7 @@ pub async fn set_role(pool: &PgPool, user_id: Uuid, role: Role) -> sqlx::Result<
         r#"UPDATE "user"
            SET role = $2
            WHERE id = $1
-           RETURNING id, login, role as "role: Role", password_hash, last_login_date, created_at, updated_at"#,
+           RETURNING id, login, role as "role: Role", password_hash, guest, last_login_date, created_at, updated_at"#,
         user_id,
         role as _
     )

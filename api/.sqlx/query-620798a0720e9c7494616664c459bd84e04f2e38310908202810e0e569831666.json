@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, login, role as \"role: Role\", password_hash, last_login_date, created_at, updated_at\n           FROM \"user\"\n           WHERE login = $1",
+  "query": "SELECT id, login, role as \"role: Role\", password_hash, guest, last_login_date, created_at, updated_at\n           FROM \"user\"\n           WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 4,
+        "name": "guest",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "guest"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "last_login_date",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -94,7 +105,7 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -102,10 +113,11 @@
       false,
       false,
       true,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "b23790e602a07f736b56d03b0a85e1eea2c7f7a100988f406ad46e96f3ba12c1"
+  "hash": "620798a0720e9c7494616664c459bd84e04f2e38310908202810e0e569831666"
 }

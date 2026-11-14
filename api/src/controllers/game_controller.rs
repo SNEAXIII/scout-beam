@@ -8,6 +8,7 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::dto::game_dto::{GameSummaryResponse, GameView};
+use crate::errors::game_error::GameError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::game_service;
 use crate::shared::error::ApiResult;
@@ -30,12 +31,16 @@ pub fn router() -> OpenApiRouter<AppState> {
     responses(
         (status = 201, description = "Game started, layout hidden", body = GameView),
         (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 403, description = "A guest may only play the daily", body = ErrorResponse),
     ),
 )]
 async fn post_game(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> ApiResult<(StatusCode, Json<GameView>)> {
+    if user.guest {
+        return Err(GameError::AccountRequired.into());
+    }
     let game = game_service::create(&state.pool, user.id).await?;
     Ok((StatusCode::CREATED, Json(GameView::new(&game, Vec::new()))))
 }

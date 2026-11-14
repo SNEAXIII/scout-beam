@@ -16,6 +16,7 @@ use tower_governor::key_extractor::SmartIpKeyExtractor;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::auth::Identity;
 use crate::auth::dto::{LoginResponse, RefreshTokenRequest};
 use crate::dto::user_dto::{DevLoginRequest, LoginRequest, RegisterRequest, UserProfile};
 use crate::extractors::current_user_extractor::CurrentUser;
@@ -25,7 +26,7 @@ use crate::shared::openapi::ErrorResponse;
 use crate::shared::validation::ValidatedJson;
 use crate::state::AppState;
 
-/// Five sign-in attempts a minute per address, shared by every route that checks a password.
+/// Five sign-in attempts a minute per address, shared by every route that signs in or creates an account.
 #[allow(clippy::expect_used)] // A fixed quota: `finish` cannot return `None`.
 fn sign_in_router() -> OpenApiRouter<AppState> {
     let config = GovernorConfigBuilder::default()
@@ -56,6 +57,7 @@ fn sign_in_router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(post_register))
         .routes(routes!(post_login))
+        .routes(routes!(post_guest))
         .layer(limit)
 }
 
@@ -135,11 +137,12 @@ async fn post_dev_login(
     )))
 }
 
-/// `POST /auth/register` — a new password account, signed in at once.
+/// `POST /auth/register` — a new password account, signed in at once; a guest's bearer converts that guest.
 #[utoipa::path(
     post,
     path = "/auth/register",
     tag = "Auth",
+    security((), ("bearer" = [])),
     request_body = RegisterRequest,
     responses(
         (status = 201, description = "Account created, token pair", body = LoginResponse),
@@ -151,10 +154,13 @@ async fn post_dev_login(
 )]
 async fn post_register(
     State(state): State<AppState>,
+    caller: Option<Identity>,
     ValidatedJson(body): ValidatedJson<RegisterRequest>,
 ) -> ApiResult<(StatusCode, Json<LoginResponse>)> {
+    let caller = caller.map(|identity| identity.user_id);
     let user =
-        user_service::register_with_password(&state.pool, &body.login, &body.password).await?;
+        user_service::register_with_password(&state.pool, &body.login, &body.password, caller)
+            .await?;
 
     Ok((
         StatusCode::CREATED,
@@ -187,4 +193,26 @@ async fn post_login(
         state.jwt.access_token(user.id, user.role)?,
         state.jwt.refresh_token(user.id)?,
     )))
+}
+
+/// `POST /auth/guest` — a guest account under a generated login, signed in at once.
+#[utoipa::path(
+    post,
+    path = "/auth/guest",
+    tag = "Auth",
+    responses(
+        (status = 201, description = "Guest created, token pair", body = LoginResponse),
+        (status = 429, description = "Too many sign-in attempts from this address", body = ErrorResponse),
+    ),
+)]
+async fn post_guest(State(state): State<AppState>) -> ApiResult<(StatusCode, Json<LoginResponse>)> {
+    let user = user_service::create_guest(&state.pool).await?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(LoginResponse::bearer(
+            state.jwt.access_token(user.id, user.role)?,
+            state.jwt.refresh_token(user.id)?,
+        )),
+    ))
 }

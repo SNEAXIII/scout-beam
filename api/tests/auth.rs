@@ -424,3 +424,137 @@ async fn a_sixth_sign_in_attempt_within_a_minute_answers_429(pool: PgPool) {
     .await
     .assert_status(StatusCode::TOO_MANY_REQUESTS);
 }
+
+#[sqlx::test]
+async fn a_guest_gets_a_token_and_is_flagged_in_its_session(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.guest().await;
+
+    let session = app.get("/auth/session", Some(&token)).await;
+
+    session.assert_status(StatusCode::OK);
+    assert_eq!(session.body["guest"], true);
+    let login = session.body["login"].as_str().unwrap();
+    assert!(login.chars().all(|c| c.is_ascii_alphanumeric()), "{login}");
+}
+
+#[sqlx::test]
+async fn registering_with_a_guest_bearer_converts_that_guest_and_keeps_its_games(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (guest_id, guest_token) = app.guest().await;
+    let game_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO game (user_id, layout) VALUES ($1, '[]'::jsonb) RETURNING id",
+    )
+    .bind(guest_id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+
+    let registered = app
+        .post(
+            "/auth/register",
+            Some(&guest_token),
+            credentials("Sneaxiii", "correct horse"),
+        )
+        .await;
+    registered.assert_status(StatusCode::CREATED);
+
+    let (id, login, guest): (Uuid, String, bool) =
+        sqlx::query_as(r#"SELECT id, login, guest FROM "user""#)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!((id, login.as_str(), guest), (guest_id, "Sneaxiii", false));
+
+    let owner: Uuid = sqlx::query_scalar("SELECT user_id FROM game WHERE id = $1")
+        .bind(game_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(owner, guest_id);
+
+    let access = registered.body["access_token"].as_str().unwrap();
+    let session = app.get("/auth/session", Some(access)).await;
+    assert_eq!(session.body["guest"], false);
+    app.post(
+        "/auth/login",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::OK);
+}
+
+#[sqlx::test]
+async fn registering_with_a_non_guest_bearer_creates_a_separate_account(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (member_id, member_token) = app.seed_with_token("Member", Role::User).await;
+
+    app.post(
+        "/auth/register",
+        Some(&member_token),
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::CREATED);
+
+    let login: String = sqlx::query_scalar(r#"SELECT login FROM "user" WHERE id = $1"#)
+        .bind(member_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(login, "Member", "the bearer's account must stay as it is");
+}
+
+#[sqlx::test]
+async fn registering_with_an_invalid_bearer_ignores_it(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    app.post(
+        "/auth/register",
+        Some("not-a-jwt"),
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::CREATED);
+}
+
+#[sqlx::test]
+async fn a_guest_bearer_on_login_leaves_the_guest_untouched(pool: PgPool) {
+    let app = TestApp::new(pool);
+    app.post(
+        "/auth/register",
+        None,
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await;
+    let (guest_id, guest_token) = app.guest().await;
+
+    app.post(
+        "/auth/login",
+        Some(&guest_token),
+        credentials("Sneaxiii", "correct horse"),
+    )
+    .await
+    .assert_status(StatusCode::OK);
+
+    let still_guest: bool = sqlx::query_scalar(r#"SELECT guest FROM "user" WHERE id = $1"#)
+        .bind(guest_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert!(still_guest);
+}
+
+#[sqlx::test]
+async fn a_guest_cannot_hold_a_password(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (guest_id, _) = app.guest().await;
+
+    let refused = sqlx::query(r#"UPDATE "user" SET password_hash = 'x' WHERE id = $1"#)
+        .bind(guest_id)
+        .execute(&app.pool)
+        .await;
+
+    assert!(refused.is_err(), "the CHECK constraint must refuse it");
+}

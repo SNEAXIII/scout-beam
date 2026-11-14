@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO \"user\" (login, role)\n           VALUES ($1, $2)\n           ON CONFLICT (login) DO NOTHING\n           RETURNING id, login, role as \"role: Role\", password_hash, last_login_date, created_at, updated_at",
+  "query": "INSERT INTO \"user\" (login, role)\n           VALUES ($1, $2)\n           RETURNING id, login, role as \"role: Role\", password_hash, guest, last_login_date, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 4,
+        "name": "guest",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "guest"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "last_login_date",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -114,10 +125,11 @@
       false,
       false,
       true,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "1cb209a07e86700bb25d572b67ba9823e7c57e5f9b69d35d7c79bf11675a3e23"
+  "hash": "bce4d49f009515d9e5b82388005939917a457182157de867b3b06ebade6c942c"
 }

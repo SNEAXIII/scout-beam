@@ -12,6 +12,8 @@ use crate::shared::role::Role;
 pub struct UserProfile {
     pub login: String,
     pub role: Role,
+    /// A guest may only play the daily, until they sign up.
+    pub guest: bool,
     pub last_login_date: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
@@ -21,6 +23,7 @@ impl From<User> for UserProfile {
         Self {
             login: user.login,
             role: user.role,
+            guest: user.guest,
             last_login_date: user.last_login_date,
             created_at: user.created_at,
         }

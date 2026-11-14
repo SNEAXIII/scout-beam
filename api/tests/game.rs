@@ -410,3 +410,14 @@ async fn another_players_game_cannot_be_surrendered(pool: PgPool) {
         .await;
     assert_eq!(read.body["status"], "in_progress");
 }
+
+#[sqlx::test]
+async fn a_guest_cannot_start_a_game(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.guest().await;
+
+    let refused = app.post("/games", Some(&token), json!({})).await;
+
+    refused.assert_status(StatusCode::FORBIDDEN);
+    assert!(refused.detail().contains("compte"), "{}", refused.detail());
+}
