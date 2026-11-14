@@ -74,6 +74,29 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+/// The code a provider handed the front on its callback.
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct ProviderCodeRequest {
+    #[validate(length(min = 1, message = "Le code du fournisseur est requis"))]
+    pub code: String,
+}
+
+/// What the sign-in page may offer.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ProvidersResponse {
+    /// Whether `POST /auth/dev-login` is mounted.
+    pub dev_login: bool,
+    pub providers: Vec<ProviderLink>,
+}
+
+/// An enabled provider; the front appends its own `state` to `authorize_url`.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ProviderLink {
+    #[schema(example = "discord")]
+    pub name: &'static str,
+    pub authorize_url: String,
+}
+
 /// `^[a-zA-Z0-9]+$` without pulling in a regex engine for one rule.
 fn validate_alphanumeric(value: &str) -> Result<(), ValidationError> {
     if value

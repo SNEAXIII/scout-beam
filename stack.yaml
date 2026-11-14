@@ -10,6 +10,12 @@ secrets:
     external: true
   scout_beam_jwt_secret:
     external: true
+  scout_beam_discord_client_secret:
+    external: true
+  scout_beam_google_client_secret:
+    external: true
+  scout_beam_email_pepper:
+    external: true
 
 services:
   postgres:
@@ -49,15 +55,25 @@ services:
     environment:
       ENV: dev
       BIND_ADDR: 0.0.0.0:8002
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      EMAIL_PEPPER_VERSION: ${EMAIL_PEPPER_VERSION:-1}
     secrets:
       - scout_beam_db_password
       - scout_beam_jwt_secret
+      - scout_beam_discord_client_secret
+      - scout_beam_google_client_secret
+      - scout_beam_email_pepper
     # The binary reads plain env vars, so the secret files are exported here.
+    # A provider secret is exported only with its client id: an unused provider keeps a placeholder secret.
     entrypoint:
       - sh
       - -c
       - |
         export JWT_SECRET="$$(cat /run/secrets/scout_beam_jwt_secret)"
+        export EMAIL_PEPPER="$$(cat /run/secrets/scout_beam_email_pepper)"
+        [ -n "$$DISCORD_CLIENT_ID" ] && export DISCORD_CLIENT_SECRET="$$(cat /run/secrets/scout_beam_discord_client_secret)"
+        [ -n "$$GOOGLE_CLIENT_ID" ] && export GOOGLE_CLIENT_SECRET="$$(cat /run/secrets/scout_beam_google_client_secret)"
         export DATABASE_URL="postgres://scout_beam:$$(cat /run/secrets/scout_beam_db_password)@postgres:5432/scout_beam"
         exec scout-beam
     deploy:

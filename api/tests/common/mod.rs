@@ -40,7 +40,7 @@ impl TestApp {
     }
 
     pub fn with_config(pool: PgPool, config: Config) -> Self {
-        let state = AppState::new(pool.clone(), config);
+        let state = AppState::new(pool.clone(), config).expect("state builds");
         let jwt = state.jwt.clone();
         let router = build_app(state).expect("router builds");
 

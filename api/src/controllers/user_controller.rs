@@ -18,8 +18,12 @@ use utoipa_axum::routes;
 
 use crate::auth::Identity;
 use crate::auth::dto::{LoginResponse, RefreshTokenRequest};
-use crate::dto::user_dto::{DevLoginRequest, LoginRequest, RegisterRequest, UserProfile};
+use crate::dto::user_dto::{
+    DevLoginRequest, LoginRequest, ProviderCodeRequest, ProviderLink, ProvidersResponse,
+    RegisterRequest, UserProfile,
+};
 use crate::extractors::current_user_extractor::CurrentUser;
+use crate::services::oauth_service::{self, Provider};
 use crate::services::user_service;
 use crate::shared::error::ApiResult;
 use crate::shared::openapi::ErrorResponse;
@@ -58,6 +62,8 @@ fn sign_in_router() -> OpenApiRouter<AppState> {
         .routes(routes!(post_register))
         .routes(routes!(post_login))
         .routes(routes!(post_guest))
+        .routes(routes!(post_discord))
+        .routes(routes!(post_google))
         .layer(limit)
 }
 
@@ -65,6 +71,7 @@ pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
     let router = OpenApiRouter::new()
         .routes(routes!(get_session))
         .routes(routes!(post_refresh_token))
+        .routes(routes!(get_providers))
         .merge(sign_in_router());
 
     // Minting a token from nothing but a login must not exist in a production router.
@@ -215,4 +222,96 @@ async fn post_guest(State(state): State<AppState>) -> ApiResult<(StatusCode, Jso
             state.jwt.refresh_token(user.id)?,
         )),
     ))
+}
+
+/// `GET /auth/providers` — what the sign-in page may offer.
+#[utoipa::path(
+    get,
+    path = "/auth/providers",
+    tag = "Auth",
+    responses((status = 200, description = "Enabled sign-in providers", body = ProvidersResponse)),
+)]
+async fn get_providers(State(state): State<AppState>) -> ApiResult<Json<ProvidersResponse>> {
+    let providers = oauth_service::authorize_links(&state.config)?
+        .into_iter()
+        .map(|(name, authorize_url)| ProviderLink {
+            name,
+            authorize_url,
+        })
+        .collect();
+
+    Ok(Json(ProvidersResponse {
+        dev_login: state.config.environment.is_dev(),
+        providers,
+    }))
+}
+
+/// `POST /auth/discord` — sign in with the code Discord handed the front.
+#[utoipa::path(
+    post,
+    path = "/auth/discord",
+    tag = "Auth",
+    security((), ("bearer" = [])),
+    request_body = ProviderCodeRequest,
+    responses(
+        (status = 200, description = "Token pair for the account", body = LoginResponse),
+        (status = 401, description = "The provider refused the code or could not be reached", body = ErrorResponse),
+        (status = 404, description = "Discord sign-in is not configured", body = ErrorResponse),
+        (status = 409, description = "The account with this email holds another Discord id", body = ErrorResponse),
+        (status = 429, description = "Too many sign-in attempts from this address", body = ErrorResponse),
+    ),
+)]
+async fn post_discord(
+    State(state): State<AppState>,
+    caller: Option<Identity>,
+    ValidatedJson(body): ValidatedJson<ProviderCodeRequest>,
+) -> ApiResult<Json<LoginResponse>> {
+    provider_sign_in(&state, Provider::Discord, caller, &body.code).await
+}
+
+/// `POST /auth/google` — sign in with the code Google handed the front.
+#[utoipa::path(
+    post,
+    path = "/auth/google",
+    tag = "Auth",
+    security((), ("bearer" = [])),
+    request_body = ProviderCodeRequest,
+    responses(
+        (status = 200, description = "Token pair for the account", body = LoginResponse),
+        (status = 401, description = "The provider refused the code or could not be reached", body = ErrorResponse),
+        (status = 404, description = "Google sign-in is not configured", body = ErrorResponse),
+        (status = 409, description = "The account with this email holds another Google id", body = ErrorResponse),
+        (status = 429, description = "Too many sign-in attempts from this address", body = ErrorResponse),
+    ),
+)]
+async fn post_google(
+    State(state): State<AppState>,
+    caller: Option<Identity>,
+    ValidatedJson(body): ValidatedJson<ProviderCodeRequest>,
+) -> ApiResult<Json<LoginResponse>> {
+    provider_sign_in(&state, Provider::Google, caller, &body.code).await
+}
+
+/// A guest bearer is converted when no account matches; any other bearer is ignored.
+async fn provider_sign_in(
+    state: &AppState,
+    provider: Provider,
+    caller: Option<Identity>,
+    code: &str,
+) -> ApiResult<Json<LoginResponse>> {
+    let caller = caller.map(|identity| identity.user_id);
+    let user = oauth_service::sign_in(
+        &state.pool,
+        &state.http,
+        &state.config,
+        provider,
+        code,
+        caller,
+    )
+    .await?;
+
+    Ok(Json(LoginResponse::bearer(
+        state.jwt.access_token(user.id, user.role)?,
+        state.jwt.refresh_token(user.id)?,
+    )))
 }

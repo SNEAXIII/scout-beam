@@ -37,10 +37,22 @@ with `ENV=dev`; an omitted login is generated server-side.
 | POST | `/auth/login` | anyone with a password account; same rate limit as `/auth/register` |
 | POST | `/auth/guest` | anyone — creates a guest under a generated login and signs it in; same rate limit; a guest gets 403 on `POST /games` |
 | POST | `/auth/dev-login` | anyone (dev builds only) — creates the account on first sight |
+| GET | `/auth/providers` | anyone — whether dev-login is mounted, and the authorize URL of each enabled provider |
+| POST | `/auth/discord` | anyone with a Discord code — finds, links or creates the account; a guest's bearer converts that guest; same rate limit |
+| POST | `/auth/google` | same as `/auth/discord`, with a Google code |
 | GET | `/auth/session` | any signed-in user |
 | POST | `/auth/refresh` | holder of a refresh token |
 | GET | `/health` | anyone |
 | GET | `/docs` | anyone — Swagger UI |
+
+**Discord and Google apps.** Create a Discord application (Developers portal, OAuth2) and a Google
+OAuth client (Cloud console, "Web application"). Register as redirect URI the front origin followed
+by `/login/callback/discord` or `/login/callback/google`, e.g.
+`http://localhost:3001/login/callback/discord`. Put the id and secret in `DISCORD_CLIENT_*` /
+`GOOGLE_CLIENT_*`, plus an `EMAIL_PEPPER` (a long random string) and `EMAIL_PEPPER_VERSION=1`. A
+provider without both variables stays off. The email is never stored, only a peppered hash used to
+link Discord and Google to the same account. In Swarm, create the three secrets of `stack.yaml`; a
+provider you do not use still needs a placeholder secret.
 
 `make check` runs format, clippy, the `.sqlx` cache check and the tests. A changed query or
 migration needs `make prepare` in the same commit: the Docker image compiles against `.sqlx/`.

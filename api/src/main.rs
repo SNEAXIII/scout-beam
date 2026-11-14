@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
 
     let bind_addr = config.bind_addr;
     let is_dev = config.environment.is_dev();
-    let app = build_app(AppState::new(pool, config))?;
+    let app = build_app(AppState::new(pool, config)?)?;
 
     let listener = TcpListener::bind(bind_addr)
         .await
