@@ -12,6 +12,8 @@ export type ServerMessage =
   | ({ type: 'verdict' } & PropositionVerdict)
   /** A room only: the opponent's shot count, after each of their new shots. */
   | { type: 'opponent'; shots: number }
+  /** The room socket only: the room changed, to be read again. */
+  | { type: 'room' }
   | {
       type: 'error'
       action: SocketAction
@@ -28,7 +30,7 @@ export type ClientMessage =
 
 export interface GameSocketHandlers {
   onMessage: (message: ServerMessage) => void
-  /** True once the game's snapshot arrived, false as soon as the socket drops. */
+  /** True once the server's first message arrived, false as soon as the socket drops. */
   onConnected: (connected: boolean) => void
 }
 
@@ -41,8 +43,20 @@ export interface GameSocket {
 const SOCKET_URL = API_URL.replace(/^http/, 'ws')
 const RETRY_MS = [500, 1000, 2000, 5000]
 
-/** The game's socket, reopened when it drops; a 401 renews the session first, a 404 is final. */
-export function openGameSocket(id: string, handlers: GameSocketHandlers): GameSocket {
+export const openGameSocket = (id: string, handlers: GameSocketHandlers) =>
+  openSocket(`/games/${id}/ws`, handlers)
+
+/** `onChange` on connecting and each time the room changes: the room is to be read again. */
+export const openRoomSocket = (code: string, onChange: () => void) =>
+  openSocket(`/rooms/${code}/ws`, {
+    onMessage: (message) => {
+      if (message.type === 'room') onChange()
+    },
+    onConnected: () => {},
+  })
+
+/** A socket reopened when it drops; a 401 renews the session first, a 404 is final. */
+function openSocket(path: string, handlers: GameSocketHandlers): GameSocket {
   let socket: WebSocket | null = null
   let ready = false
   let closed = false
@@ -67,12 +81,12 @@ export function openGameSocket(id: string, handlers: GameSocketHandlers): GameSo
   function connect() {
     if (closed) return
     // The browser sends the session cookie with the upgrade: no token goes through a script.
-    const opened = new WebSocket(`${SOCKET_URL}/games/${id}/ws`)
+    const opened = new WebSocket(`${SOCKET_URL}${path}`)
     socket = opened
     opened.onmessage = (event: MessageEvent<string>) => {
       const message = JSON.parse(event.data) as ServerMessage
       if (message.type === 'error' && message.action === 'connect') refusal = message.status
-      if (message.type === 'game' && !ready) {
+      else if (!ready) {
         ready = true
         attempts = 0
         handlers.onConnected(true)

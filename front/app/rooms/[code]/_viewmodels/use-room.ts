@@ -1,9 +1,8 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/app/services/auth'
+import { openRoomSocket } from '@/app/services/game-socket'
 import { getRoom, joinRoom, type RoomView } from '@/app/services/rooms'
-
-const POLL_MS = 2000
 
 const toError = (caught: unknown) => (caught instanceof Error ? caught : new Error(String(caught)))
 
@@ -14,7 +13,7 @@ export function useRoom(code: string) {
   const [me, setMe] = useState<string | null>(null)
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  // Bumped by `join`: a poll sent before it would answer the room as it was.
+  // Bumped by `join`: a read sent before it would answer the room as it was.
   const generation = useRef(0)
 
   const load = useEffectEvent(() => {
@@ -41,27 +40,19 @@ export function useRoom(code: string) {
   }, [code])
 
   const status = room?.status
+  const lobby = status === 'waiting' || status === 'composing'
   useEffect(() => {
-    if (status !== 'waiting' && status !== 'composing') return
-    // ponytail: polling every 2 s, a room channel on a socket if it shows its limits
-    let live = true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const next = () => {
-      timer = setTimeout(() => void load().finally(() => live && next()), POLL_MS)
-    }
-    next()
-    return () => {
-      live = false
-      clearTimeout(timer)
-    }
-  }, [status])
+    if (!lobby) return
+    const socket = openRoomSocket(code, () => void load())
+    return socket.close
+  }, [lobby, code])
 
   const gameId = status === 'playing' || status === 'finished' ? room?.game_id : undefined
   useEffect(() => {
     if (gameId) router.replace(`/games/${gameId}`)
   }, [gameId, router])
 
-  /** The room an action answered; a poll sent before it would answer the room as it was. */
+  /** The room an action answered; a read sent before it would answer the room as it was. */
   const update = (seen: RoomView) => {
     generation.current += 1
     setRoom(seen)

@@ -15,7 +15,8 @@ use crate::dto::game_dto::WebSocketServerMessage;
 const CAPACITY: usize = 64;
 
 /// An event, with who already knows it: the socket it came from, or the player it is about.
-#[derive(Debug, Clone)]
+/// The default is a bare change: a room's lobby sockets read it again.
+#[derive(Debug, Clone, Default)]
 pub struct WebSocketPush {
     pub origin: Option<Uuid>,
     /// `None`: the game changed, each socket sends its own snapshot.

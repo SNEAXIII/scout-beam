@@ -12,6 +12,7 @@ use crate::engine::Layout;
 use crate::errors::room_error::RoomError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::user_model::User;
+use crate::services::game_websocket_hub::WebSocketPush;
 use crate::services::room_service;
 use crate::shared::error::ApiResult;
 use crate::shared::openapi::ErrorResponse;
@@ -113,6 +114,9 @@ async fn post_room_join(
     Path(code): Path<String>,
 ) -> ApiResult<Json<RoomView>> {
     let seen = room_service::join(&state.pool, &code, registered(&user)?).await?;
+    state
+        .websocket_hub
+        .publish(seen.room.id, WebSocketPush::default());
     Ok(Json(seen.into()))
 }
 
@@ -144,11 +148,14 @@ async fn post_room_layout(
         pieces: body.pieces,
     };
     let seen = room_service::hide(&state.pool, &code, registered(&user)?, layout).await?;
+    state
+        .websocket_hub
+        .publish(seen.room.id, WebSocketPush::default());
     Ok((StatusCode::CREATED, Json(seen.into())))
 }
 
 /// Every room route is for registered players only.
-const fn registered(user: &User) -> Result<Uuid, RoomError> {
+pub(crate) const fn registered(user: &User) -> Result<Uuid, RoomError> {
     if user.guest {
         Err(RoomError::AccountRequired)
     } else {

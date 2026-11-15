@@ -187,6 +187,8 @@ pub enum WebSocketServerMessage {
     Opponent {
         shots: i64,
     },
+    /// The room socket only: the room changed, to be read again.
+    Room,
     /// The status and detail an HTTP endpoint would have answered.
     Error {
         action: Action,
