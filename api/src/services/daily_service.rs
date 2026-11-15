@@ -10,6 +10,9 @@ use crate::models::daily_model::{DayRankingRow, GlobalRankingRow};
 use crate::models::game_model::{Game, SealedLayout};
 use crate::repositories::{daily_repository, game_repository};
 
+/// The launch day: no daily game before it, whatever the `daily` table holds.
+pub const FIRST_DAY: NaiveDate = NaiveDate::from_ymd_opt(2026, 11, 15).unwrap();
+
 pub async fn today(pool: &PgPool) -> Result<NaiveDate, GameError> {
     Ok(daily_repository::today(pool).await?)
 }
@@ -32,7 +35,7 @@ pub async fn start(
         return Ok((game, false));
     }
     let today = daily_repository::today(pool).await?;
-    if date > today {
+    if date > today || date < FIRST_DAY {
         return Err(GameError::DailyNotFound);
     }
     if date == today {

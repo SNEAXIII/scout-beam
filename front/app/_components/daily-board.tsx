@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/app/i18n'
+import { FIRST_DAY } from '@/app/services/daily'
 import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
 import { shotPaths } from '@/app/games/[id]/_components/shot-paths'
 import type { useDaily } from '../_viewmodels/use-daily'
@@ -33,6 +34,7 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
           type='date'
           aria-label={t.daily.pickDay}
           title={t.daily.pickDay}
+          min={FIRST_DAY}
           max={today ?? undefined}
           value={date}
           onChange={(event) => setDate(event.target.value)}

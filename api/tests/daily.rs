@@ -8,6 +8,7 @@ use chrono::NaiveDate;
 use common::{Response, TestApp};
 use http::StatusCode;
 use scout_beam::engine::Layout;
+use scout_beam::services::daily_service::FIRST_DAY;
 use scout_beam::shared::role::Role;
 use serde_json::{Value, json};
 use sqlx::PgPool;
@@ -71,6 +72,21 @@ impl TestApp {
             .execute(&self.pool)
             .await
             .unwrap();
+    }
+
+    /// A solved game of that day's daily, written straight to the table: past days before
+    /// `FIRST_DAY` cannot be started through the API.
+    async fn insert_daily_game(&self, user_id: Uuid, date: NaiveDate) -> Uuid {
+        sqlx::query_scalar(
+            "INSERT INTO game (user_id, layout, daily_date, status, created_at, solved_at)
+             SELECT $1, layout, date, 'solved', now(), now() FROM daily WHERE date = $2
+             RETURNING id",
+        )
+        .bind(user_id)
+        .bind(date)
+        .fetch_one(&self.pool)
+        .await
+        .unwrap()
     }
 
     async fn day_ranking(&self, date: NaiveDate, token: Option<&str>) -> Response {
@@ -196,9 +212,24 @@ async fn a_day_to_come_or_a_past_day_without_daily_is_not_found(pool: PgPool) {
 }
 
 #[sqlx::test]
+async fn no_daily_game_before_the_first_day(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let before = FIRST_DAY.pred_opt().unwrap();
+    app.insert_daily(before).await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+
+    app.post_daily(before, &token)
+        .await
+        .assert_status(StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test]
 async fn a_past_daily_can_still_be_played(pool: PgPool) {
     let app = TestApp::new(pool);
     let yesterday = app.today().await.pred_opt().unwrap();
+    if yesterday < FIRST_DAY {
+        return; // No past day is playable yet on the first day.
+    }
     let layout = layout_with_square("red");
     sqlx::query("INSERT INTO daily (date, layout) VALUES ($1, $2)")
         .bind(yesterday)
@@ -352,9 +383,8 @@ async fn a_daily_played_late_counts_in_points_only(pool: PgPool) {
     let app = TestApp::new(pool);
     let yesterday = app.today().await.pred_opt().unwrap();
     app.insert_daily(yesterday).await;
-    let (_, token) = app.seed_with_token("late", Role::User).await;
-    let game_id = app.start_daily(yesterday, &token).await;
-    app.solve(game_id, &token).await;
+    let (late, token) = app.seed_with_token("late", Role::User).await;
+    app.insert_daily_game(late, yesterday).await;
 
     let day = app.day_ranking(yesterday, Some(&token)).await;
     let global = app.ranking(Some(&token)).await;
@@ -371,7 +401,7 @@ async fn a_wrong_proposition_adds_a_minute_and_points_follow_the_score(pool: PgP
     let today = app.today().await;
     let yesterday = today.pred_opt().unwrap();
     app.insert_daily(yesterday).await;
-    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let (owner, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_daily(today, &token).await;
     app.hide_layout(game_id, &layout_with_square("red")).await;
     let wrong = app
@@ -380,8 +410,7 @@ async fn a_wrong_proposition_adds_a_minute_and_points_follow_the_score(pool: PgP
     assert_eq!(wrong.body["correct"], false, "{}", wrong.body);
     app.solve(game_id, &token).await;
     app.time_game(game_id, 0.0, 100.4).await;
-    let slow_id = app.start_daily(yesterday, &token).await;
-    app.solve(slow_id, &token).await;
+    let slow_id = app.insert_daily_game(owner, yesterday).await;
     app.time_game(slow_id, 0.0, 10_000.0).await;
 
     let day = app.day_ranking(today, Some(&token)).await;
