@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
-import { clearTokens } from '@/app/lib/session'
+import { logout } from '@/app/services/auth'
 import LanguageSwitcher from '@/components/language-switcher'
 import NewGameButton from './new-game-button'
 
@@ -12,9 +12,11 @@ export default function HomeHeader() {
   const { t } = useI18n()
   const router = useRouter()
 
+  // Off to /login even when the API is unreachable: its cookies then expire on their own.
   const signOut = () => {
-    clearTokens()
-    router.replace('/login')
+    void logout()
+      .catch(() => undefined)
+      .finally(() => router.replace('/login'))
   }
 
   return (

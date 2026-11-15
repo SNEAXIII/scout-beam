@@ -15,6 +15,28 @@ pub enum UserError {
     )]
     InvalidLogin,
 
+    #[error("Le mot de passe doit faire entre 8 et 128 caractères")]
+    InvalidPassword,
+
+    /// The same answer for an unknown login, an account without a password and a wrong password.
+    #[error("Identifiants incorrects")]
+    InvalidCredentials,
+
+    #[error("Ce fournisseur de connexion n'est pas activé")]
+    ProviderDisabled,
+
+    /// A refused code or an unreachable provider: what it answered goes to the logs only.
+    #[error("La connexion avec ce fournisseur a échoué")]
+    ProviderRefused,
+
+    /// The account with this email already holds another id at the same provider.
+    #[error("Ce compte est déjà lié à un autre compte chez ce fournisseur")]
+    AlreadyLinked,
+
+    /// A hashing failure: nothing the caller can act on.
+    #[error(transparent)]
+    Internal(#[from] anyhow::Error),
+
     /// Kept only so services can `?` on repository calls; handed straight back to `ApiError`.
     #[error(transparent)]
     Database(#[from] sqlx::Error),
@@ -27,7 +49,7 @@ impl UserError {
     /// Read the business meaning out of a failed write: the unique index is the real
     /// guarantee against a login taken between the pre-check and the insert.
     pub fn from_write(error: sqlx::Error) -> Self {
-        if is_login_conflict(&error) {
+        if is_unique_violation_on(&error, "login") {
             Self::LoginAlreadyTaken
         } else {
             Self::Database(error)
@@ -35,12 +57,17 @@ impl UserError {
     }
 }
 
-fn is_login_conflict(error: &sqlx::Error) -> bool {
+/// A write lost a race against another one on a unique column.
+pub fn is_unique_violation(error: &sqlx::Error) -> bool {
+    is_unique_violation_on(error, "")
+}
+
+fn is_unique_violation_on(error: &sqlx::Error, column: &str) -> bool {
     error.as_database_error().is_some_and(|database_error| {
         database_error.code().as_deref() == Some(UNIQUE_VIOLATION)
             && database_error
                 .constraint()
-                .is_some_and(|constraint| constraint.contains("login"))
+                .is_some_and(|constraint| constraint.contains(column))
     })
 }
 
@@ -51,9 +78,13 @@ impl From<UserError> for ApiError {
         match error {
             UserError::Database(cause) => Self::Database(cause),
             // The caller's own account cannot be used: an authentication answer.
-            UserError::DoesNotExist => Self::Unauthorized(message),
-            UserError::LoginAlreadyTaken => Self::Conflict(message),
-            UserError::InvalidLogin => Self::BadRequest(message),
+            UserError::DoesNotExist
+            | UserError::InvalidCredentials
+            | UserError::ProviderRefused => Self::Unauthorized(message),
+            UserError::LoginAlreadyTaken | UserError::AlreadyLinked => Self::Conflict(message),
+            UserError::InvalidLogin | UserError::InvalidPassword => Self::BadRequest(message),
+            UserError::ProviderDisabled => Self::NotFound(message),
+            UserError::Internal(cause) => Self::Internal(cause),
         }
     }
 }

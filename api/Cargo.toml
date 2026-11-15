@@ -44,6 +44,11 @@ chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 http = "1"
 utoipa-axum = "0.3.0"
+argon2 = "0.6.0"
+tower_governor = { version = "0.8", default-features = false, features = ["axum"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+pbkdf2 = "0.13"
+sha2 = "0.11"
 
 [dev-dependencies]
 http-body-util = "0.1"
@@ -80,3 +85,7 @@ doc_markdown = "allow"
 module_name_repetitions = "allow"
 # Comes entirely from transitive dependencies; nothing to act on here.
 multiple_crate_versions = "allow"
+
+# The email hash runs 200 000 SHA-256 rounds: unoptimised, a sign-in takes a second in tests.
+[profile.dev.package.sha2]
+opt-level = 3

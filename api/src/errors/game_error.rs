@@ -9,6 +9,10 @@ pub enum GameError {
     #[error("Cette partie n'existe pas")]
     NotFound,
 
+    /// Guests may only play the daily.
+    #[error("Il faut un compte pour lancer une partie : inscrivez-vous pour continuer")]
+    AccountRequired,
+
     #[error("Cette partie est déjà résolue")]
     AlreadySolved,
 
@@ -37,6 +41,7 @@ impl From<GameError> for ApiError {
         match error {
             GameError::Database(cause) => Self::Database(cause),
             GameError::NotFound => Self::NotFound(message),
+            GameError::AccountRequired => Self::Forbidden(message),
             GameError::AlreadySolved | GameError::Surrendered => Self::Conflict(message),
             GameError::InvalidEntry | GameError::InvalidLayout(_) => {
                 Self::UnprocessableBody(message)

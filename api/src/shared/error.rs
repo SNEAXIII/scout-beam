@@ -19,6 +19,10 @@ pub enum ApiError {
     #[error("{0}")]
     BadRequest(String),
 
+    /// Authenticated, but this account may not do that.
+    #[error("{0}")]
+    Forbidden(String),
+
     /// The addressed thing does not exist.
     #[error("{0}")]
     NotFound(String),
@@ -61,6 +65,7 @@ impl ApiError {
         match self {
             Self::Unauthorized(message) => (StatusCode::UNAUTHORIZED, json!(message)),
             Self::BadRequest(message) => (StatusCode::BAD_REQUEST, json!(message)),
+            Self::Forbidden(message) => (StatusCode::FORBIDDEN, json!(message)),
             Self::NotFound(message) => (StatusCode::NOT_FOUND, json!(message)),
             Self::Conflict(message) => (StatusCode::CONFLICT, json!(message)),
             Self::UnprocessableBody(message) => (StatusCode::UNPROCESSABLE_ENTITY, json!(message)),

@@ -5,6 +5,8 @@ use std::time::Duration;
 
 use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, State};
+use axum::http::HeaderMap;
+use axum::http::header::ORIGIN;
 use axum::response::Response;
 use chrono::Utc;
 use tokio::sync::broadcast::{self, error::RecvError};
@@ -13,7 +15,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::auth::AuthError;
+use crate::auth::{AuthError, Identity};
 use crate::dto::game_dto::{Action, GameView, WebSocketClientMessage, WebSocketServerMessage};
 use crate::engine::Layout;
 use crate::errors::game_error::GameError;
@@ -22,10 +24,8 @@ use crate::models::game_model::Game;
 use crate::services::game_service::{self, Firing, Verdict};
 use crate::services::game_websocket_hub::WebSocketPush;
 use crate::shared::error::ApiError;
+use crate::shared::openapi::ErrorResponse;
 use crate::state::AppState;
-
-/// How long a fresh socket has to send its token.
-const AUTH_DEADLINE: Duration = Duration::from_secs(10);
 
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new().routes(routes!(get_game_websocket))
@@ -37,26 +37,46 @@ pub fn router() -> OpenApiRouter<AppState> {
     path = "/games/{game_id}/ws",
     tag = "Games",
     params(("game_id" = Uuid, Path, description = "Game")),
-    description = "A browser cannot send a header on a WebSocket: the first message is \
-        `{\"type\":\"auth\",\"token\":\"<access token>\"}`, answered by `game`. Then `fire {entry}`, \
-        `propose {pieces}` and `surrender` are each answered, in order, by `shot`, `verdict`, `game` \
-        or `error` carrying the HTTP status. The player's other sockets on the game are pushed `shot` \
-        and `game`. A refused connection, or the token expiring, sends an `error` with action \
-        `connect` and closes with code 4000 + status.",
+    security((), ("bearer" = [])),
+    description = "Authenticated at the upgrade, by the access cookie or a bearer header; the \
+        server opens with `game`. Then `fire {entry}`, `propose {pieces}` and `surrender` are each \
+        answered, in order, by `shot`, `verdict`, `game` or `error` carrying the HTTP status. The \
+        player's other sockets on the game are pushed `shot` and `game`. A refused connection, or \
+        the token expiring, sends an `error` with action `connect` and closes with code 4000 + status.",
     responses(
         (status = 101, description = "Switched to the game's WebSocket"),
+        (status = 403, description = "Opened from another origin than the front's", body = ErrorResponse),
     ),
 )]
 async fn get_game_websocket(
     State(state): State<AppState>,
     Path(game_id): Path<Uuid>,
+    headers: HeaderMap,
+    caller: Result<Identity, ApiError>,
     upgrade: WebSocketUpgrade,
-) -> Response {
-    upgrade.on_upgrade(move |socket| run_websocket(socket, state, game_id))
+) -> Result<Response, ApiError> {
+    // A browser sends the cookies whichever page opens the socket: only the front may.
+    // No `Origin` at all is a tool or a test, which can send any cookie it likes anyway.
+    if let Some(origin) = headers.get(ORIGIN)
+        && origin.as_bytes() != state.config.cors_allowed_origin.as_bytes()
+    {
+        return Err(ApiError::Forbidden("Origine non autorisée".into()));
+    }
+    // An auth refusal still upgrades: a browser reads the 4401 close code, never a 401 status.
+    Ok(upgrade.on_upgrade(move |socket| run_websocket(socket, state, game_id, caller)))
 }
 
-async fn run_websocket(mut socket: WebSocket, state: AppState, game_id: Uuid) {
-    let (session, mut pushes, expires_at) = match join_game(&mut socket, state, game_id).await {
+async fn run_websocket(
+    mut socket: WebSocket,
+    state: AppState,
+    game_id: Uuid,
+    caller: Result<Identity, ApiError>,
+) {
+    let joined = match caller {
+        Ok(identity) => join_game(&mut socket, state, game_id, identity).await,
+        Err(refusal) => Err(refusal),
+    };
+    let (session, mut pushes, expires_at) = match joined {
         Ok(joined) => joined,
         Err(refusal) => return close_with_error(socket, refusal).await,
     };
@@ -68,11 +88,12 @@ async fn run_websocket(mut socket: WebSocket, state: AppState, game_id: Uuid) {
     }
 }
 
-/// Authenticate the first message, check the game is the caller's, then send its snapshot.
+/// Check the account still exists and the game is its own, then send the game's snapshot.
 async fn join_game(
     socket: &mut WebSocket,
     state: AppState,
     game_id: Uuid,
+    identity: Identity,
 ) -> Result<
     (
         WebSocketSession,
@@ -81,8 +102,7 @@ async fn join_game(
     ),
     ApiError,
 > {
-    let claims = state.jwt.decode_access(&read_auth_token(socket).await?)?;
-    let CurrentUser(user) = CurrentUser::of(&state, claims.sub).await?;
+    let CurrentUser(user) = CurrentUser::of(&state, identity.user_id).await?;
     game_service::get_owned(&state.pool, game_id, user.id).await?;
 
     // Subscribed before the snapshot is read, so no event falls between the two.
@@ -97,24 +117,13 @@ async fn join_game(
         Ok(game) => {
             // A client already gone is seen by `serve` on its first read.
             let _ = send_message(socket, &WebSocketServerMessage::Game { game }).await;
-            Ok((session, pushes, token_deadline(claims.exp)))
+            Ok((session, pushes, token_deadline(identity.expires_at)))
         }
         Err(error) => {
             drop(pushes);
             session.state.websocket_hub.release(game_id);
             Err(error.into())
         }
-    }
-}
-
-async fn read_auth_token(socket: &mut WebSocket) -> Result<String, AuthError> {
-    let first = tokio::time::timeout(AUTH_DEADLINE, next_text_frame(socket))
-        .await
-        .ok()
-        .flatten();
-    match first.and_then(|text| serde_json::from_str::<WebSocketClientMessage>(&text).ok()) {
-        Some(WebSocketClientMessage::Auth { token }) => Ok(token),
-        _ => Err(AuthError::MissingToken),
     }
 }
 
@@ -158,10 +167,6 @@ impl WebSocketSession {
             }
         };
         match message {
-            WebSocketClientMessage::Auth { .. } => error_message(
-                Action::Message,
-                ApiError::BadRequest("Cette connexion est déjà authentifiée".into()),
-            ),
             WebSocketClientMessage::Fire { entry } => self
                 .fire(entry)
                 .await

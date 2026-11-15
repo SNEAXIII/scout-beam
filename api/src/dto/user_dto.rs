@@ -12,6 +12,8 @@ use crate::shared::role::Role;
 pub struct UserProfile {
     pub login: String,
     pub role: Role,
+    /// A guest may only play the daily, until they sign up.
+    pub guest: bool,
     pub last_login_date: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
@@ -21,6 +23,7 @@ impl From<User> for UserProfile {
         Self {
             login: user.login,
             role: user.role,
+            guest: user.guest,
             last_login_date: user.last_login_date,
             created_at: user.created_at,
         }
@@ -45,6 +48,53 @@ pub struct DevLoginRequest {
     /// Lets a test bootstrap an admin without a second, privileged endpoint.
     #[serde(default)]
     pub role: Option<Role>,
+}
+
+/// Creates a password account. No `Debug`: the body carries a password.
+#[derive(Deserialize, Validate, utoipa::ToSchema)]
+pub struct RegisterRequest {
+    #[validate(
+        length(
+            min = 3,
+            max = 30,
+            message = "Le nom d'utilisateur doit faire entre 3 et 30 caractères"
+        ),
+        custom(function = "validate_alphanumeric")
+    )]
+    pub login: String,
+
+    /// Its length is checked by the service, so a short one answers 400 rather than 422.
+    pub password: String,
+}
+
+/// Signs in with a login and password. No `Debug`: the body carries a password.
+#[derive(Deserialize, Validate, utoipa::ToSchema)]
+pub struct LoginRequest {
+    pub login: String,
+    pub password: String,
+}
+
+/// The code a provider handed the front on its callback.
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct ProviderCodeRequest {
+    #[validate(length(min = 1, message = "Le code du fournisseur est requis"))]
+    pub code: String,
+}
+
+/// What the sign-in page may offer.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ProvidersResponse {
+    /// Whether `POST /auth/dev-login` is mounted.
+    pub dev_login: bool,
+    pub providers: Vec<ProviderLink>,
+}
+
+/// An enabled provider; the front appends its own `state` to `authorize_url`.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct ProviderLink {
+    #[schema(example = "discord")]
+    pub name: &'static str,
+    pub authorize_url: String,
 }
 
 /// `^[a-zA-Z0-9]+$` without pulling in a regex engine for one rule.

@@ -207,7 +207,7 @@ async fn an_invalid_layout_is_refused_with_the_rule_it_breaks_and_not_stored(poo
             proposed.detail()
         );
     }
-    assert!(app.propositions(game_id).await.is_empty());
+    assert_eq!(app.propositions(game_id).await.len(), 0);
     assert_eq!(
         app.game_state(game_id).await,
         ("in_progress".to_owned(), false)
@@ -230,7 +230,7 @@ async fn a_malformed_piece_is_refused_and_not_stored(pool: PgPool) {
             .await
             .assert_status(StatusCode::UNPROCESSABLE_ENTITY);
     }
-    assert!(app.propositions(game_id).await.is_empty());
+    assert_eq!(app.propositions(game_id).await.len(), 0);
 }
 
 #[sqlx::test]
@@ -283,7 +283,7 @@ async fn another_players_game_cannot_receive_a_proposition(pool: PgPool) {
 
     proposed.assert_status(StatusCode::NOT_FOUND);
     assert!(proposed.body.get("layout").is_none());
-    assert!(app.propositions(game_id).await.is_empty());
+    assert_eq!(app.propositions(game_id).await.len(), 0);
     assert_eq!(
         app.game_state(game_id).await,
         ("in_progress".to_owned(), false)
@@ -310,7 +310,7 @@ async fn an_anonymous_caller_cannot_propose(pool: PgPool) {
         .await
         .assert_status(StatusCode::UNAUTHORIZED);
 
-    assert!(app.propositions(game_id).await.is_empty());
+    assert_eq!(app.propositions(game_id).await.len(), 0);
     assert_eq!(
         app.game_state(game_id).await,
         ("in_progress".to_owned(), false)

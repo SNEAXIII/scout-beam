@@ -70,7 +70,7 @@ async fn a_promoted_account_signs_in_with_its_new_role(pool: PgPool) {
         .await;
 
     response.assert_status(http::StatusCode::OK);
-    let token = response.body["access_token"].as_str().unwrap();
+    let token = &response.access_token();
     let profile = app.get("/auth/session", Some(token)).await;
     assert_eq!(profile.body["role"], "admin");
 }
