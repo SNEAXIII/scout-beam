@@ -1,3 +1,4 @@
+pub mod daily_service;
 pub mod email_hash;
 pub mod game_service;
 pub mod game_websocket_hub;

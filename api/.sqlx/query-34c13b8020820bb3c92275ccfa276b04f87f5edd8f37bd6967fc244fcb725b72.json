@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at\n           FROM game\n           WHERE id = $1 AND user_id = $2",
+  "query": "INSERT INTO game (user_id, layout)\n           VALUES ($1, $2)\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, 0::int8 as \"wrong_propositions!\"",
   "describe": {
     "columns": [
       {
@@ -79,12 +79,29 @@
             "name": "solved_at"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "daily_date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "daily_date"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "wrong_propositions!",
+        "type_info": "Int8",
+        "origin": "Expression"
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Jsonb"
       ]
     },
     "nullable": [
@@ -93,8 +110,10 @@
       false,
       false,
       false,
-      true
+      true,
+      true,
+      null
     ]
   },
-  "hash": "5f39315361b6431e1f7cf97d1ce9c861fe287d3ab8486371fb80d3049baf124f"
+  "hash": "34c13b8020820bb3c92275ccfa276b04f87f5edd8f37bd6967fc244fcb725b72"
 }

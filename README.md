@@ -48,6 +48,8 @@ with `ENV=dev`; an omitted login is generated server-side.
 | GET | `/auth/session` | any signed-in user |
 | POST | `/auth/refresh` | holder of the refresh cookie — sets a fresh pair of cookies |
 | POST | `/auth/logout` | anyone — clears both session cookies |
+| GET | `/daily/today` | anyone — today's date in Paris, where the day changes at midnight |
+| POST | `/daily/{date}/game` | any signed-in user, guests included — the caller's game of that day: 201 on the first call, the same game with 200 afterwards; today's layout is drawn on first sight, a past day without a daily or a day to come is 404; a daily cannot be surrendered (409) |
 | GET | `/health` | anyone |
 | GET | `/docs` | anyone — Swagger UI |
 

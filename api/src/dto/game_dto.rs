@@ -1,6 +1,6 @@
 //! Wire shapes of the game domain.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -16,6 +16,11 @@ pub struct GameView {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    /// The day it is the daily of; null for a game against the bot.
+    #[schema(example = "2026-11-15")]
+    pub daily_date: Option<NaiveDate>,
+    /// Propositions refused as wrong; each one adds a minute to a daily's score.
+    pub wrong_propositions: i64,
     /// In firing order.
     pub shots: Vec<ShotResponse>,
     /// The hidden layout: absent from the payload until the game is solved or surrendered.
@@ -31,6 +36,8 @@ impl GameView {
             status: game.status,
             created_at: game.created_at,
             solved_at: game.solved_at,
+            daily_date: game.daily_date,
+            wrong_propositions: game.wrong_propositions,
             shots: shots.into_iter().map(Into::into).collect(),
             layout: game.revealed_layout().cloned(),
         }
