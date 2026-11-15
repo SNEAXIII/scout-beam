@@ -74,7 +74,7 @@ const fr: Translations = {
     tagline:
       'Un jeu de déduction : tirez des rayons dans la grille et retrouvez où sont cachées les pièces.',
     play: 'Jouer',
-    daily: 'Jouer la quotidienne du jour',
+    back: 'Retour à la quotidienne du jour',
     signIn: 'Se connecter',
     rulesTitle: 'Comment jouer',
     piecesLabel: 'Les cinq pièces',
@@ -101,7 +101,6 @@ const fr: Translations = {
   },
   daily: {
     title: 'Quotidienne',
-    back: 'Retour à l’accueil',
     pickDay: 'Jour — aujourd’hui, ou un jour passé',
     play: 'Jouer',
     noDaily: 'Pas de quotidienne ce jour-là',
@@ -115,7 +114,6 @@ const fr: Translations = {
   ranking: {
     title: 'Classement',
     back: 'Retour à l’accueil',
-    daily: 'Quotidienne',
     dayTitle: 'Classement du jour',
     global: 'Classement général',
     empty: 'Personne de classé pour l’instant.',

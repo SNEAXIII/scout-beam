@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarDays, Play } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 
@@ -22,19 +22,6 @@ export default function LandingHero() {
           >
             <Play />
             {t.landing.play}
-          </Link>
-        </Button>
-        <Button
-          asChild
-          variant='outline'
-          size='lg'
-        >
-          <Link
-            href='/daily'
-            data-cy='daily-cta'
-          >
-            <CalendarDays />
-            {t.landing.daily}
           </Link>
         </Button>
         <Button

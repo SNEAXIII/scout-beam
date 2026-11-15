@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CalendarDays } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
@@ -40,19 +40,7 @@ export default function RankingPage() {
           </Link>
         </Button>
         <h1 className='text-2xl font-semibold tracking-tight'>{t.ranking.title}</h1>
-        <div className='ml-auto flex items-center gap-2'>
-          <Button
-            asChild
-            variant='outline'
-          >
-            <Link
-              href='/daily'
-              data-cy='ranking-daily-link'
-            >
-              <CalendarDays />
-              {t.ranking.daily}
-            </Link>
-          </Button>
+        <div className='ml-auto'>
           <LanguageSwitcher />
         </div>
       </header>

@@ -69,7 +69,7 @@ const en = {
     title: 'Scout Beam',
     tagline: 'A deduction game: fire beams into the grid and work out where the pieces are hidden.',
     play: 'Play',
-    daily: 'Play today’s daily',
+    back: 'Back to today’s daily',
     signIn: 'Sign in',
     rulesTitle: 'How to play',
     piecesLabel: 'The five pieces',
@@ -96,7 +96,6 @@ const en = {
   },
   daily: {
     title: 'Daily',
-    back: 'Back to home',
     pickDay: 'Day — today’s, or an earlier one',
     play: 'Play',
     noDaily: 'There was no daily that day',
@@ -110,7 +109,6 @@ const en = {
   ranking: {
     title: 'Ranking',
     back: 'Back to home',
-    daily: 'Daily',
     dayTitle: 'Ranking of the day',
     global: 'Global ranking',
     empty: 'Nobody ranked yet.',

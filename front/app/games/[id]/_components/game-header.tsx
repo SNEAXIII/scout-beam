@@ -39,9 +39,9 @@ export default function GameHeader({
         size='icon'
       >
         <Link
-          href={daily ? '/daily' : '/play'}
-          aria-label={t.game.back}
-          title={t.game.back}
+          href={daily ? '/' : '/play'}
+          aria-label={daily ? t.landing.back : t.game.back}
+          title={daily ? t.landing.back : t.game.back}
           data-cy='back-to-games'
         >
           <ArrowLeft />

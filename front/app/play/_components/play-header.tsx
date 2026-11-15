@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, LogOut, Trophy } from 'lucide-react'
+import { CalendarDays, CircleHelp, LogOut, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import { logout } from '@/app/services/auth'
@@ -29,7 +29,7 @@ export default function PlayHeader() {
           variant='outline'
         >
           <Link
-            href='/daily'
+            href='/'
             data-cy='daily-link'
           >
             <CalendarDays />
@@ -49,6 +49,20 @@ export default function PlayHeader() {
             data-cy='ranking-link'
           >
             <Trophy />
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant='ghost'
+          size='icon'
+        >
+          <Link
+            href='/rules'
+            aria-label={t.landing.rulesTitle}
+            title={t.landing.rulesTitle}
+            data-cy='rules-link'
+          >
+            <CircleHelp />
           </Link>
         </Button>
         <Button
