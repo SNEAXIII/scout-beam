@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { createRoom, isRoomCode, ROOM_CODE_ALPHABET, type RoomMode } from '@/app/services/rooms'
 
 const MODES = [
@@ -30,7 +30,7 @@ export default function RoomActions() {
       const room = await createRoom(mode)
       router.push(`/rooms/${room.code}`)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t.rooms.createFailed)
+      setError(errorText(t, caught, t.rooms.createFailed))
       setPending(false)
     }
   }

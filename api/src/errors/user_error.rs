@@ -1,36 +1,34 @@
 //! User-domain failures, phrased in domain vocabulary — no HTTP here but the mapping at the bottom.
 
-use crate::shared::error::ApiError;
+use crate::shared::error::{ApiError, Reason};
 
 #[derive(Debug, thiserror::Error)]
 pub enum UserError {
-    #[error("Ce compte n'existe pas")]
+    #[error("This account does not exist")]
     DoesNotExist,
 
-    #[error("Ce pseudo est déjà pris")]
+    #[error("This login is already taken")]
     LoginAlreadyTaken,
 
-    #[error(
-        "Le nom d'utilisateur doit faire entre 3 et 30 caractères et ne contenir que des chiffres et des lettres"
-    )]
+    #[error("A login is 3 to 30 characters long, letters and digits only")]
     InvalidLogin,
 
-    #[error("Le mot de passe doit faire entre 8 et 128 caractères")]
+    #[error("A password is 8 to 128 characters long")]
     InvalidPassword,
 
     /// The same answer for an unknown login, an account without a password and a wrong password.
-    #[error("Identifiants incorrects")]
+    #[error("Wrong login or password")]
     InvalidCredentials,
 
-    #[error("Ce fournisseur de connexion n'est pas activé")]
+    #[error("This sign-in provider is not enabled")]
     ProviderDisabled,
 
     /// A refused code or an unreachable provider: what it answered goes to the logs only.
-    #[error("La connexion avec ce fournisseur a échoué")]
+    #[error("Signing in with this provider failed")]
     ProviderRefused,
 
     /// The account with this email already holds another id at the same provider.
-    #[error("Ce compte est déjà lié à un autre compte chez ce fournisseur")]
+    #[error("This account is already linked to another one at this provider")]
     AlreadyLinked,
 
     /// A hashing failure: nothing the caller can act on.
@@ -74,17 +72,34 @@ fn is_unique_violation_on(error: &sqlx::Error, column: &str) -> bool {
 impl From<UserError> for ApiError {
     fn from(error: UserError) -> Self {
         // Rendered before the match: the `Database` arm moves out of `error`.
-        let message = error.to_string();
+        let reason = Reason::new(error.code(), error.to_string());
         match error {
             UserError::Database(cause) => Self::Database(cause),
             // The caller's own account cannot be used: an authentication answer.
             UserError::DoesNotExist
             | UserError::InvalidCredentials
-            | UserError::ProviderRefused => Self::Unauthorized(message),
-            UserError::LoginAlreadyTaken | UserError::AlreadyLinked => Self::Conflict(message),
-            UserError::InvalidLogin | UserError::InvalidPassword => Self::BadRequest(message),
-            UserError::ProviderDisabled => Self::NotFound(message),
+            | UserError::ProviderRefused => Self::Unauthorized(reason),
+            UserError::LoginAlreadyTaken | UserError::AlreadyLinked => Self::Conflict(reason),
+            UserError::InvalidLogin | UserError::InvalidPassword => Self::BadRequest(reason),
+            UserError::ProviderDisabled => Self::NotFound(reason),
             UserError::Internal(cause) => Self::Internal(cause),
+        }
+    }
+}
+
+impl UserError {
+    /// The code the front translates.
+    const fn code(&self) -> &'static str {
+        match self {
+            Self::DoesNotExist => "account_not_found",
+            Self::LoginAlreadyTaken => "login_taken",
+            Self::InvalidLogin => "invalid_login",
+            Self::InvalidPassword => "invalid_password",
+            Self::InvalidCredentials => "invalid_credentials",
+            Self::ProviderDisabled => "provider_disabled",
+            Self::ProviderRefused => "provider_refused",
+            Self::AlreadyLinked => "already_linked",
+            Self::Internal(_) | Self::Database(_) => "internal",
         }
     }
 }

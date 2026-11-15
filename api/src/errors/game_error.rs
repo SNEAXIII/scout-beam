@@ -1,45 +1,46 @@
 //! Failures of the game domain — no HTTP here but the mapping at the bottom.
 
-use crate::engine::colour::Colour;
-use crate::engine::{DrawError, LayoutError, Shape, TraceError};
-use crate::shared::error::ApiError;
+use serde_json::{Value, json};
+
+use crate::engine::{DrawError, LayoutError, TraceError};
+use crate::shared::error::{ApiError, Reason};
 
 #[derive(Debug, thiserror::Error)]
 pub enum GameError {
     /// Also what another player's game answers: its existence is not the caller's business.
-    #[error("Cette partie n'existe pas")]
+    #[error("This game does not exist")]
     NotFound,
 
     /// Guests may only play the daily.
-    #[error("Il faut un compte pour lancer une partie : inscrivez-vous pour continuer")]
+    #[error("Starting a game takes an account: sign up to go on")]
     AccountRequired,
 
-    #[error("Il n'y a pas de quotidienne ce jour-là")]
+    #[error("There is no daily on that day")]
     DailyNotFound,
 
-    #[error("On n'abandonne pas une quotidienne")]
+    #[error("A daily cannot be surrendered")]
     DailySurrender,
 
-    #[error("Cette partie est déjà résolue")]
+    #[error("This game is already solved")]
     AlreadySolved,
 
-    #[error("Cette partie a été abandonnée")]
+    #[error("This game was surrendered")]
     Surrendered,
 
-    #[error("Cette partie est perdue : l'adversaire a gagné")]
+    #[error("This game is lost: the opponent won")]
     Lost,
 
     /// A room game's shot allowance is spent until the next earned shot.
-    #[error("Plus de tir disponible : le prochain dans {} s", .retry_after_ms.div_ceil(1000))]
+    #[error("No shot left: the next one in {} s", .retry_after_ms.div_ceil(1000))]
     NoShotLeft { retry_after_ms: u64 },
 
-    #[error("Prochaine proposition dans {} s", .retry_after_ms.div_ceil(1000))]
+    #[error("Next proposition in {} s", .retry_after_ms.div_ceil(1000))]
     PropositionCooldown { retry_after_ms: u64 },
 
-    #[error("Une entrée est numérotée de 1 à 36")]
+    #[error("An entry is numbered from 1 to 36")]
     InvalidEntry,
 
-    #[error("{}", broken_rule(.0))]
+    #[error("{0}")]
     InvalidLayout(#[from] LayoutError),
 
     #[error(transparent)]
@@ -52,24 +53,58 @@ pub enum GameError {
     Database(#[from] sqlx::Error),
 }
 
+impl GameError {
+    /// The code the front translates, and what fills its text.
+    fn code(&self) -> (&'static str, Value) {
+        let code = match self {
+            Self::NotFound => "game_not_found",
+            Self::AccountRequired => "game_account_required",
+            Self::DailyNotFound => "daily_not_found",
+            Self::DailySurrender => "daily_surrender",
+            Self::AlreadySolved => "already_solved",
+            Self::Surrendered => "surrendered",
+            Self::Lost => "lost",
+            Self::NoShotLeft { retry_after_ms } => {
+                return ("no_shot_left", seconds(*retry_after_ms));
+            }
+            Self::PropositionCooldown { retry_after_ms } => {
+                return ("proposition_cooldown", seconds(*retry_after_ms));
+            }
+            Self::InvalidEntry => "invalid_entry",
+            Self::InvalidLayout(error) => return broken_rule(error),
+            Self::Draw(_) | Self::Trace(_) | Self::Database(_) => "internal",
+        };
+        (code, Value::Null)
+    }
+}
+
+fn seconds(retry_after_ms: u64) -> Value {
+    json!({ "seconds": retry_after_ms.div_ceil(1000) })
+}
+
 impl From<GameError> for ApiError {
     fn from(error: GameError) -> Self {
-        let message = error.to_string();
+        let (code, params) = error.code();
+        let reason = Reason {
+            code,
+            params,
+            message: error.to_string(),
+        };
         match error {
             GameError::Database(cause) => Self::Database(cause),
-            GameError::NotFound | GameError::DailyNotFound => Self::NotFound(message),
-            GameError::AccountRequired => Self::Forbidden(message),
+            GameError::NotFound | GameError::DailyNotFound => Self::NotFound(reason),
+            GameError::AccountRequired => Self::Forbidden(reason),
             GameError::AlreadySolved
             | GameError::Surrendered
             | GameError::Lost
-            | GameError::DailySurrender => Self::Conflict(message),
+            | GameError::DailySurrender => Self::Conflict(reason),
             GameError::NoShotLeft { retry_after_ms }
             | GameError::PropositionCooldown { retry_after_ms } => Self::RetryLater {
-                message,
+                reason,
                 retry_after_ms,
             },
             GameError::InvalidEntry | GameError::InvalidLayout(_) => {
-                Self::UnprocessableBody(message)
+                Self::UnprocessableBody(reason)
             }
             // Engine failures are bugs, not something the player can act on.
             GameError::Draw(cause) => Self::Internal(cause.into()),
@@ -78,49 +113,19 @@ impl From<GameError> for ApiError {
     }
 }
 
-/// The engine's layout rule, told to the player.
-pub fn broken_rule(error: &LayoutError) -> String {
+/// The engine's layout rule, as a code and the shapes or colour it names.
+pub fn broken_rule(error: &LayoutError) -> (&'static str, Value) {
     match *error {
-        LayoutError::MissingShape(shape) => format!("Il manque la pièce « {} »", name(shape)),
-        LayoutError::DuplicateShape(shape) => {
-            format!("La pièce « {} » est placée plus d'une fois", name(shape))
+        LayoutError::MissingShape(shape) => ("missing_shape", json!({ "shape": shape })),
+        LayoutError::DuplicateShape(shape) => ("duplicate_shape", json!({ "shape": shape })),
+        LayoutError::OutsideGrid(shape) => ("shape_outside_grid", json!({ "shape": shape })),
+        LayoutError::Overlap(shape, other) => {
+            ("shapes_overlap", json!({ "shape": shape, "other": other }))
         }
-        LayoutError::OutsideGrid(shape) => {
-            format!("La pièce « {} » dépasse de la grille", name(shape))
-        }
-        LayoutError::Overlap(a, b) => {
-            format!(
-                "Les pièces « {} » et « {} » se chevauchent",
-                name(a),
-                name(b)
-            )
-        }
-        LayoutError::SharedSide(a, b) => format!(
-            "Les pièces « {} » et « {} » se touchent par un côté",
-            name(a),
-            name(b)
+        LayoutError::SharedSide(shape, other) => (
+            "shapes_share_side",
+            json!({ "shape": shape, "other": other }),
         ),
-        LayoutError::MissingColour(colour) => {
-            format!("Il faut au moins une pièce {}", colour_name(colour))
-        }
-    }
-}
-
-const fn colour_name(colour: Colour) -> &'static str {
-    match colour {
-        Colour::Red => "rouge",
-        Colour::Blue => "bleue",
-        Colour::Yellow => "jaune",
-        Colour::White => "blanche",
-    }
-}
-
-const fn name(shape: Shape) -> &'static str {
-    match shape {
-        Shape::Square => "carré",
-        Shape::Bar => "barre",
-        Shape::Spike => "pointe",
-        Shape::Corner => "coin",
-        Shape::Diamond => "losange",
+        LayoutError::MissingColour(colour) => ("missing_colour", json!({ "colour": colour })),
     }
 }

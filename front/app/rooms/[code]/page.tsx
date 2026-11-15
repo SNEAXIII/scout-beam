@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeft, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import RoomCode from './_components/room-code'
 import RoomCompose from './_components/room-compose'
@@ -48,7 +48,7 @@ export default function RoomPage() {
           role='alert'
           data-cy='room-error'
         >
-          {error.message}
+          {errorText(t, error)}
         </p>
       )}
       {guest && (

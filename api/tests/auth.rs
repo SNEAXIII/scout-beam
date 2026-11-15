@@ -145,7 +145,7 @@ async fn session_refuses_a_token_whose_account_does_not_exist(pool: PgPool) {
     let response = app.get("/auth/session", Some(&token)).await;
 
     response.assert_status(StatusCode::UNAUTHORIZED);
-    assert!(response.detail().contains("n'existe pas"));
+    assert_eq!(response.code(), "account_not_found", "{}", response.body);
 }
 
 #[sqlx::test]
@@ -221,7 +221,7 @@ async fn refresh_refuses_an_unknown_account(pool: PgPool) {
         .await;
 
     response.assert_status(StatusCode::UNAUTHORIZED);
-    assert!(response.detail().contains("n'existe pas"));
+    assert_eq!(response.code(), "account_not_found", "{}", response.body);
 }
 
 #[sqlx::test]

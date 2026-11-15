@@ -25,7 +25,7 @@ use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::game_model::Game;
 use crate::services::game_service::{self, Firing, Verdict};
 use crate::services::game_websocket_hub::WebSocketPush;
-use crate::shared::error::ApiError;
+use crate::shared::error::{ApiError, Reason};
 use crate::shared::openapi::ErrorResponse;
 use crate::state::AppState;
 
@@ -69,7 +69,10 @@ async fn get_game_websocket(
     if let Some(origin) = headers.get(ORIGIN)
         && origin.as_bytes() != state.config.cors_allowed_origin.as_bytes()
     {
-        return Err(ApiError::Forbidden("Origine non autorisée".into()));
+        return Err(ApiError::Forbidden(Reason::new(
+            "origin_forbidden",
+            "Origin not allowed",
+        )));
     }
     // An auth refusal still upgrades: a browser reads the 4401 close code, never a 401 status.
     Ok(upgrade.on_upgrade(move |socket| run_websocket(socket, state, game_id, caller)))
@@ -210,7 +213,7 @@ impl WebSocketSession {
             Err(cause) => {
                 return error_message(
                     Action::Message,
-                    ApiError::UnprocessableBody(cause.to_string()),
+                    ApiError::UnprocessableBody(Reason::new("invalid_body", cause.to_string())),
                 );
             }
         };
@@ -353,25 +356,22 @@ async fn send_message(
 }
 
 fn error_message(action: Action, refusal: ApiError) -> WebSocketServerMessage {
-    let retry_after_ms = refusal.retry_after_ms();
-    let (status, detail) = refusal.into_parts();
+    let (status, body) = refusal.into_parts();
     WebSocketServerMessage::Error {
         action,
         status: status.as_u16(),
-        detail,
-        retry_after_ms,
+        body,
     }
 }
 
 /// Say why, then close with 4000 + the status; the client may be gone already, hence no check.
 async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
-    let (status, detail) = refusal.into_parts();
+    let (status, body) = refusal.into_parts();
     let status = status.as_u16();
     let message = WebSocketServerMessage::Error {
         action: Action::Connect,
         status,
-        detail,
-        retry_after_ms: None,
+        body,
     };
     let _ = send_message(&mut socket, &message).await;
     let _ = socket

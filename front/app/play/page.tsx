@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { listGames, type GameSummary } from '@/app/services/games'
 import { listRooms, type RoomView } from '@/app/services/rooms'
 import GameList from './_components/game-list'
@@ -21,7 +21,7 @@ export default function PlayPage() {
       setGames(await listGames())
       setRooms(await listRooms())
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t.common.loadFailed)
+      setError(errorText(t, caught, t.common.loadFailed))
     }
   }, [t])
 

@@ -1,25 +1,31 @@
-//! Authentication failures, in authentication vocabulary, phrased in French for the front.
+//! Authentication failures, in authentication vocabulary.
 
-use crate::shared::error::ApiError;
+use crate::shared::error::{ApiError, Reason};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
-    #[error("Aucun token n'a été fourni")]
+    #[error("No token was sent")]
     MissingToken,
 
-    #[error("Le token fourni est invalide")]
+    #[error("The token sent is invalid")]
     InvalidToken,
 
-    #[error("Le token fourni a expiré")]
+    #[error("The token sent has expired")]
     ExpiredToken,
 
     /// A refresh token was presented where an access token is required, or the other way round.
-    #[error("Le type de token est invalide")]
+    #[error("The token type is invalid")]
     WrongTokenType,
 }
 
 impl From<AuthError> for ApiError {
     fn from(error: AuthError) -> Self {
-        Self::Unauthorized(error.to_string())
+        let code = match error {
+            AuthError::MissingToken => "missing_token",
+            AuthError::InvalidToken => "invalid_token",
+            AuthError::ExpiredToken => "expired_token",
+            AuthError::WrongTokenType => "wrong_token_type",
+        };
+        Self::Unauthorized(Reason::new(code, error.to_string()))
     }
 }

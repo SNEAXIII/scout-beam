@@ -7,8 +7,15 @@ use utoipa::{Modify, ToSchema};
 /// Every error response has this shape, whatever the status code.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorResponse {
-    /// Human-readable reason, already translated.
-    #[schema(example = "Ce pseudo est déjà pris")]
+    /// Stable reason the front translates; a failed validation names its first rule.
+    #[schema(example = "missing_colour")]
+    pub code: String,
+    /// What fills the code's text, such as the shapes or colour a layout rule names.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(example = json!({ "colour": "yellow" }))]
+    pub params: Option<serde_json::Value>,
+    /// Human-readable reason in English, or a `[{loc, msg, type}]` list for a failed validation.
+    #[schema(example = "the layout has no Yellow piece")]
     pub detail: String,
     /// Only on a refusal that lifts by itself: milliseconds before trying again.
     #[serde(skip_serializing_if = "Option::is_none")]

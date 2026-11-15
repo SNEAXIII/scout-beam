@@ -137,7 +137,8 @@ async fn a_layout_without_yellow_is_refused_with_the_rule_broken(pool: PgPool) {
 
     let refused = app.hide(&code, &alice, &without_yellow).await;
     refused.assert_status(StatusCode::UNPROCESSABLE_ENTITY);
-    assert!(refused.detail().contains("pièce jaune"), "{}", refused.body);
+    assert_eq!(refused.code(), "missing_colour", "{}", refused.body);
+    assert_eq!(refused.body["params"], json!({ "colour": "yellow" }));
     app.hide(&code, &alice, &without_diamond)
         .await
         .assert_status(StatusCode::UNPROCESSABLE_ENTITY);
