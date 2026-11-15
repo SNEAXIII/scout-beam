@@ -69,6 +69,31 @@ const fr: Translations = {
     daily: 'Quotidienne',
     ranking: 'Classement',
   },
+  rooms: {
+    title: 'Jouer contre quelqu’un',
+    description:
+      'Course : les deux cherchent la même disposition. Duel : chacun cache la sienne à l’autre.',
+    race: 'Course',
+    duel: 'Duel',
+    createFailed: 'Ouverture du salon impossible',
+    code: 'Code du salon',
+    codeInvalid: '6 lettres ou chiffres, sans 0, O, 1 ni I',
+    open: 'Ouvrir',
+    back: 'Retour aux parties',
+    copyLink: 'Copier le lien d’invitation',
+    copied: 'Lien copié',
+    copyFailed: 'Copie impossible : partagez l’adresse de cette page',
+    players: 'Joueurs',
+    host: 'hôte',
+    waiting: 'En attente d’un adversaire…',
+    join: 'Rejoindre',
+    joinFailed: 'Impossible de rejoindre le salon',
+    full: 'Ce salon a déjà ses deux joueurs.',
+    composing:
+      'Composez votre disposition : cachez cinq pièces que votre adversaire devra trouver.',
+    starting: 'La partie commence…',
+    register: 'Créer un compte pour jouer',
+  },
   landing: {
     title: 'Scout Beam',
     tagline:

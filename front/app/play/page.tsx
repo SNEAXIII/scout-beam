@@ -5,6 +5,7 @@ import { useI18n } from '@/app/i18n'
 import { listGames, type GameSummary } from '@/app/services/games'
 import GameList from './_components/game-list'
 import PlayHeader from './_components/play-header'
+import RoomActions from './_components/room-actions'
 
 export default function PlayPage() {
   const { t } = useI18n()
@@ -28,6 +29,7 @@ export default function PlayPage() {
   return (
     <main className='mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8'>
       <PlayHeader />
+      <RoomActions />
       {error && (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
