@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json;
 use uuid::Uuid;
@@ -51,6 +51,9 @@ pub struct Game {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    /// The day it was the daily of; `None` for a game against the bot.
+    pub daily_date: Option<NaiveDate>,
+    pub wrong_propositions: i64,
 }
 
 impl Game {
@@ -127,6 +130,8 @@ mod tests {
             status: GameStatus::InProgress,
             created_at: Utc::now(),
             solved_at: None,
+            daily_date: None,
+            wrong_propositions: 0,
         };
 
         let printed = format!("{game:?}");

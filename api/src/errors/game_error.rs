@@ -13,6 +13,12 @@ pub enum GameError {
     #[error("Il faut un compte pour lancer une partie : inscrivez-vous pour continuer")]
     AccountRequired,
 
+    #[error("Il n'y a pas de quotidienne ce jour-là")]
+    DailyNotFound,
+
+    #[error("On n'abandonne pas une quotidienne")]
+    DailySurrender,
+
     #[error("Cette partie est déjà résolue")]
     AlreadySolved,
 
@@ -40,9 +46,11 @@ impl From<GameError> for ApiError {
         let message = error.to_string();
         match error {
             GameError::Database(cause) => Self::Database(cause),
-            GameError::NotFound => Self::NotFound(message),
+            GameError::NotFound | GameError::DailyNotFound => Self::NotFound(message),
             GameError::AccountRequired => Self::Forbidden(message),
-            GameError::AlreadySolved | GameError::Surrendered => Self::Conflict(message),
+            GameError::AlreadySolved | GameError::Surrendered | GameError::DailySurrender => {
+                Self::Conflict(message)
+            }
             GameError::InvalidEntry | GameError::InvalidLayout(_) => {
                 Self::UnprocessableBody(message)
             }

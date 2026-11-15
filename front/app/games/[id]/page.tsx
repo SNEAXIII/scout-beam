@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
 import DraftPanel from './_components/draft-panel'
 import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
+import GuestSaveCard from './_components/guest-save-card'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
@@ -17,6 +18,15 @@ export default function GamePage() {
   const { game, error, connected, surrendering, load, fire, surrender, propose } = useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
+  const router = useRouter()
+  const firstShot = useSearchParams().get('fire')
+
+  // The daily's first shot, clicked on `/` before the game existed.
+  useEffect(() => {
+    if (!connected || firstShot === null) return
+    fire(Number(firstShot))
+    router.replace(`/games/${id}`)
+  }, [connected, firstShot, fire, router, id])
 
   const shots = useMemo(() => game?.shots ?? [], [game])
   const paths = useMemo(() => shotPaths(shots), [shots])
@@ -30,7 +40,7 @@ export default function GamePage() {
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <GameHeader
-        status={game?.status ?? null}
+        game={game}
         onSurrender={surrender}
         surrendering={surrendering}
         keyboardLayout={keyboardLayout}
@@ -75,6 +85,7 @@ export default function GamePage() {
               >
                 {t.game[game.status]}
               </p>
+              {game.daily_date && game.status === 'solved' && <GuestSaveCard />}
             </div>
           ) : (
             <DraftPanel

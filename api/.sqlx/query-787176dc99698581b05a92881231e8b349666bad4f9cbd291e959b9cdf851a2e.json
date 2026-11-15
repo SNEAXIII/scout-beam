@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH timed AS (\n               SELECT u.id AS user_id, u.login, g.solved_at,\n                      floor(EXTRACT(EPOCH FROM g.solved_at - g.created_at))::int8 AS seconds,\n                      (SELECT count(*) FROM proposition p\n                       WHERE p.game_id = g.id AND NOT p.correct) AS wrong\n               FROM game g\n               JOIN \"user\" u ON u.id = g.user_id\n               WHERE g.daily_date = $1 AND g.status = 'solved' AND NOT u.guest\n                 AND (g.created_at AT TIME ZONE 'Europe/Paris')::date = $1\n           ), ranked AS (\n               SELECT *, RANK() OVER (ORDER BY seconds + 60 * wrong) AS rank,\n                      ROW_NUMBER() OVER (ORDER BY seconds + 60 * wrong, solved_at, login) AS position\n               FROM timed\n           )\n           SELECT rank as \"rank!\", login as \"login!\", seconds + 60 * wrong as \"score!\",\n                  seconds as \"seconds!\", wrong as \"wrong_propositions!\",\n                  position <= 100 as \"in_top!\", user_id IS NOT DISTINCT FROM $2 as \"mine!\"\n           FROM ranked\n           WHERE position <= 100 OR user_id IS NOT DISTINCT FROM $2\n           ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rank!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "login!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "score!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "seconds!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "wrong_propositions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "in_top!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "mine!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "787176dc99698581b05a92881231e8b349666bad4f9cbd291e959b9cdf851a2e"
+}

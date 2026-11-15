@@ -1,5 +1,6 @@
 //! Every SQL statement of the game domain, and nothing else.
 
+use chrono::NaiveDate;
 use sqlx::types::Json;
 use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
@@ -12,7 +13,9 @@ pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Re
     sqlx::query_as!(
         Game,
         r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                  created_at, solved_at
+                  created_at, solved_at, daily_date,
+                  (SELECT count(*) FROM proposition
+                   WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
            FROM game
            WHERE id = $1 AND user_id = $2"#,
         game_id,
@@ -41,11 +44,52 @@ pub async fn insert(pool: &PgPool, user_id: Uuid, layout: &SealedLayout) -> sqlx
         r#"INSERT INTO game (user_id, layout)
            VALUES ($1, $2)
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at"#,
+                     created_at, solved_at, daily_date, 0::int8 as "wrong_propositions!""#,
         user_id,
         layout as _
     )
     .fetch_one(pool)
+    .await
+}
+
+/// The caller's game of that day, if they started it.
+pub async fn find_daily(
+    pool: &PgPool,
+    user_id: Uuid,
+    date: NaiveDate,
+) -> sqlx::Result<Option<Game>> {
+    sqlx::query_as!(
+        Game,
+        r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
+                  created_at, solved_at, daily_date,
+                  (SELECT count(*) FROM proposition
+                   WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
+           FROM game
+           WHERE user_id = $1 AND daily_date = $2"#,
+        user_id,
+        date
+    )
+    .fetch_optional(pool)
+    .await
+}
+
+/// A game on that day's layout; `None` when the day has no daily or the caller already has its game.
+pub async fn insert_daily(
+    pool: &PgPool,
+    user_id: Uuid,
+    date: NaiveDate,
+) -> sqlx::Result<Option<Game>> {
+    sqlx::query_as!(
+        Game,
+        r#"INSERT INTO game (user_id, layout, daily_date)
+           SELECT $1, layout, date FROM daily WHERE date = $2
+           ON CONFLICT (user_id, daily_date) DO NOTHING
+           RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
+                     created_at, solved_at, daily_date, 0::int8 as "wrong_propositions!""#,
+        user_id,
+        date
+    )
+    .fetch_optional(pool)
     .await
 }
 
@@ -138,7 +182,9 @@ where
         r#"UPDATE game SET status = 'surrendered'
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at"#,
+                     created_at, solved_at, daily_date,
+                     (SELECT count(*) FROM proposition
+                      WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,
         game_id
     )
     .fetch_one(executor)
@@ -154,7 +200,9 @@ where
         r#"UPDATE game SET status = 'solved', solved_at = now()
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at"#,
+                     created_at, solved_at, daily_date,
+                     (SELECT count(*) FROM proposition
+                      WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,
         game_id
     )
     .fetch_one(executor)

@@ -89,8 +89,11 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
     Ok(verdict)
 }
 
-/// Give up: the game ends unsolved and its layout is revealed.
+/// Give up: the game ends unsolved and its layout is revealed. A daily is never given up.
 pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
+    if game.daily_date.is_some() {
+        return Err(GameError::DailySurrender);
+    }
     playable(game.status)?;
 
     let mut tx = pool.begin().await?;

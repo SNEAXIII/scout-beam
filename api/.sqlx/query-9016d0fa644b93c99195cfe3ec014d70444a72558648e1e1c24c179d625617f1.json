@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO daily (date, layout) VALUES ($1, $2) ON CONFLICT (date) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9016d0fa644b93c99195cfe3ec014d70444a72558648e1e1c24c179d625617f1"
+}

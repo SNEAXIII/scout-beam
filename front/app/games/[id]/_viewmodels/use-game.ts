@@ -54,6 +54,12 @@ export function useGame(id: string) {
         )
         return
       case 'verdict':
+        // A wrong verdict comes with no snapshot: counted here, for a daily's penalty.
+        if (!received.correct)
+          setGame(
+            (current) =>
+              current && { ...current, wrong_propositions: current.wrong_propositions + 1 }
+          )
         verdict.current?.resolve(received)
         verdict.current = null
         return
