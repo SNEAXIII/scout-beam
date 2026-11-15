@@ -53,8 +53,9 @@ services:
       - backend
       - traefik-public
     environment:
-      ENV: dev
+      ENV: prod
       BIND_ADDR: 0.0.0.0:8002
+      CORS_ALLOWED_ORIGIN: https://${SCOUT_BEAM_HOST:?}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       EMAIL_PEPPER_VERSION: ${EMAIL_PEPPER_VERSION:-1}
