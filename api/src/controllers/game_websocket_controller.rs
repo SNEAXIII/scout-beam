@@ -274,11 +274,13 @@ async fn send_message(
 }
 
 fn error_message(action: Action, refusal: ApiError) -> WebSocketServerMessage {
+    let retry_after_ms = refusal.retry_after_ms();
     let (status, detail) = refusal.into_parts();
     WebSocketServerMessage::Error {
         action,
         status: status.as_u16(),
         detail,
+        retry_after_ms,
     }
 }
 
@@ -290,6 +292,7 @@ async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
         action: Action::Connect,
         status,
         detail,
+        retry_after_ms: None,
     };
     let _ = send_message(&mut socket, &message).await;
     let _ = socket

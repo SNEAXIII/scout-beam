@@ -44,9 +44,30 @@ impl Room {
     }
 }
 
-/// The room of a game, locked to end it, seen from that game's player.
+/// The room of a game, locked to play in it or end it, seen from that game's player.
 #[derive(Debug, Clone, Copy)]
 pub struct RoomLock {
     pub id: Uuid,
     pub opponent_id: Uuid,
+    pub mode: RoomMode,
+    /// How long ago that player acted, when they acted last; `None` otherwise.
+    pub since_own_action_ms: Option<i64>,
+    /// Entries that player has fired.
+    pub fired: i64,
+}
+
+/// Where a Duel's priority stands for one of its players.
+#[derive(Debug, Clone)]
+pub struct DuelTurn {
+    pub last_actor_login: Option<String>,
+    pub since_own_action_ms: Option<i64>,
+    pub fired: i64,
+}
+
+/// What is left of the opponent's priority after a player's own action:
+/// 10 s × the entries that player has fired / 36.
+pub fn priority_left_ms(fired: i64, since_own_action_ms: Option<i64>) -> u64 {
+    since_own_action_ms.map_or(0, |since| {
+        u64::try_from(10_000 * fired / 36 - since).unwrap_or(0)
+    })
 }

@@ -1,11 +1,12 @@
 //! Rules of a game: controllers never reach its repository but through here.
 
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
 use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
+use crate::models::room_model::{RoomLock, RoomMode, priority_left_ms};
 use crate::repositories::{game_repository, room_repository};
 
 /// Whether a shot was just fired or had been fired before.
@@ -57,9 +58,17 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
         colour: traced.beam_colour.into(),
     };
 
-    if let Some(stored) = game_repository::insert_shot_if_absent(pool, game.id, &shot).await? {
+    let mut tx = pool.begin().await?;
+    // Locked before the insert: `fired` counts the shots before this one.
+    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
+    if let Some(stored) = game_repository::insert_shot_if_absent(&mut *tx, game.id, &shot).await? {
+        if let Some(room) = &room {
+            take_turn(&mut tx, room, game.user_id).await?;
+        }
+        tx.commit().await?;
         return Ok((stored, Firing::New));
     }
+    tx.rollback().await?;
     game_repository::find_shot(pool, game.id, shot.entry)
         .await?
         .map(|stored| (stored, Firing::Replayed))
@@ -81,6 +90,9 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
+    }
+    if let Some(room) = &room {
+        take_turn(&mut tx, room, game.user_id).await?;
     }
     game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
     let verdict = if correct {
@@ -118,6 +130,19 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     }
     tx.commit().await?;
     Ok(surrendered)
+}
+
+/// A Duel action passes only once the opponent's priority is over, then hands it to them.
+/// The caller's transaction holds the room lock; a refusal drops it, rolling back.
+async fn take_turn(tx: &mut PgConnection, room: &RoomLock, user_id: Uuid) -> Result<(), GameError> {
+    if room.mode != RoomMode::Duel {
+        return Ok(());
+    }
+    let retry_after_ms = priority_left_ms(room.fired, room.since_own_action_ms);
+    if retry_after_ms > 0 {
+        return Err(GameError::OpponentPriority { retry_after_ms });
+    }
+    Ok(room_repository::record_action(tx, room.id, user_id).await?)
 }
 
 /// Only a game in progress takes a shot, a proposition or a surrender.

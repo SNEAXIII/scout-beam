@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE room\n           SET host_layout = CASE WHEN host_id = $2 THEN $3 ELSE host_layout END,\n               opponent_layout = CASE WHEN opponent_id = $2 THEN $3 ELSE opponent_layout END\n           WHERE id = $1 AND status = 'composing'\n             AND CASE WHEN host_id = $2 THEN host_layout ELSE opponent_layout END IS NULL\n           RETURNING host_layout as \"host_layout: SealedLayout\",\n                     opponent_layout as \"opponent_layout: SealedLayout\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "host_layout: SealedLayout",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "host_layout"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "opponent_layout: SealedLayout",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "opponent_layout"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "b86a56632404ee6300e290616161f86b349eb0989714e975e15a6cb45360e749"
+}

@@ -4,11 +4,11 @@ use rand::RngExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::engine;
+use crate::engine::{self, Layout};
 use crate::errors::room_error::RoomError;
 use crate::errors::user_error::is_unique_violation;
 use crate::models::game_model::SealedLayout;
-use crate::models::room_model::{Room, RoomMode, RoomStatus};
+use crate::models::room_model::{DuelTurn, Room, RoomMode, RoomStatus};
 use crate::repositories::{game_repository, room_repository};
 
 /// No `0 O 1 I`: a code is read aloud and typed by hand.
@@ -23,6 +23,8 @@ pub struct Seen {
     pub room: Room,
     pub member: bool,
     pub game_id: Option<Uuid>,
+    /// Only for a player of a playing Duel.
+    pub turn: Option<DuelTurn>,
 }
 
 /// A waiting room hosted by the caller, under a code no other room holds.
@@ -46,10 +48,17 @@ pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomEr
     } else {
         None
     };
+    let turn = match game_id {
+        Some(game_id) if room.mode == RoomMode::Duel && room.status == RoomStatus::Playing => {
+            Some(room_repository::turn_of(pool, game_id).await?)
+        }
+        _ => None,
+    };
     Ok(Seen {
         room,
         member,
         game_id,
+        turn,
     })
 }
 
@@ -77,6 +86,41 @@ pub async fn join(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomE
     if let Some(layout) = layout {
         game_repository::insert_in_room(&mut *tx, room.host_id, room_id, &layout).await?;
         game_repository::insert_in_room(&mut *tx, caller, room_id, &layout).await?;
+    }
+    tx.commit().await?;
+    see(pool, code, caller).await
+}
+
+/// Hide the caller's layout in a composing Duel; the second one starts both games, each player
+/// hunting the layout the other hid.
+pub async fn hide(
+    pool: &PgPool,
+    code: &str,
+    caller: Uuid,
+    layout: Layout,
+) -> Result<Seen, RoomError> {
+    let room = find(pool, code).await?;
+    if !room.has_player(caller) {
+        return Err(RoomError::NotAPlayer);
+    }
+    if room.status != RoomStatus::Composing {
+        return Err(RoomError::NotComposing);
+    }
+    layout.validate_hidden()?;
+
+    let mut tx = pool.begin().await?;
+    let hidden =
+        room_repository::hide_layout(&mut *tx, room.id, caller, &SealedLayout::new(layout)).await?;
+    match hidden {
+        None => return Err(RoomError::LayoutAlreadyHidden),
+        Some((Some(host_layout), Some(opponent_layout))) => {
+            let opponent_id = room.opponent_id.ok_or(RoomError::NotComposing)?;
+            room_repository::start(&mut *tx, room.id).await?;
+            game_repository::insert_in_room(&mut *tx, room.host_id, room.id, &opponent_layout)
+                .await?;
+            game_repository::insert_in_room(&mut *tx, opponent_id, room.id, &host_layout).await?;
+        }
+        Some(_) => {}
     }
     tx.commit().await?;
     see(pool, code, caller).await

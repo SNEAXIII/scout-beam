@@ -132,11 +132,14 @@ pub async fn shots_of(pool: &PgPool, game_id: Uuid) -> sqlx::Result<Vec<Shot>> {
 }
 
 /// Insert, unless that entry was already fired: `None` means the stored shot stands.
-pub async fn insert_shot_if_absent(
-    pool: &PgPool,
+pub async fn insert_shot_if_absent<'e, E>(
+    executor: E,
     game_id: Uuid,
     shot: &Shot,
-) -> sqlx::Result<Option<Shot>> {
+) -> sqlx::Result<Option<Shot>>
+where
+    E: PgExecutor<'e>,
+{
     sqlx::query_as!(
         Shot,
         r#"INSERT INTO shot (game_id, entry, exit_entry, colour)
@@ -148,7 +151,7 @@ pub async fn insert_shot_if_absent(
         shot.exit_entry,
         shot.colour as _
     )
-    .fetch_optional(pool)
+    .fetch_optional(executor)
     .await
 }
 

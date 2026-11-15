@@ -31,6 +31,13 @@ pub enum ApiError {
     #[error("{0}")]
     Conflict(String),
 
+    /// A conflict that lifts by itself: the body also says when to try again.
+    #[error("{message}")]
+    RetryLater {
+        message: String,
+        retry_after_ms: u64,
+    },
+
     /// The payload did not pass field validation.
     #[error("validation failed")]
     Validation(#[from] ValidationErrors),
@@ -46,20 +53,37 @@ pub enum ApiError {
     Internal(#[from] anyhow::Error),
 }
 
-/// Every error answers `{"detail": ...}`.
+/// Every error answers `{"detail": ...}`, plus `retry_after_ms` when it lifts by itself.
 #[derive(Debug, Serialize)]
 struct ErrorBody<T> {
     detail: T,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    retry_after_ms: Option<u64>,
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        let retry_after_ms = self.retry_after_ms();
         let (status, detail) = self.into_parts();
-        (status, Json(ErrorBody { detail })).into_response()
+        (
+            status,
+            Json(ErrorBody {
+                detail,
+                retry_after_ms,
+            }),
+        )
+            .into_response()
     }
 }
 
 impl ApiError {
+    pub const fn retry_after_ms(&self) -> Option<u64> {
+        match self {
+            Self::RetryLater { retry_after_ms, .. } => Some(*retry_after_ms),
+            _ => None,
+        }
+    }
+
     /// The status and `detail` an HTTP response carries; a WebSocket error carries them too.
     pub fn into_parts(self) -> (StatusCode, serde_json::Value) {
         match self {
@@ -67,7 +91,9 @@ impl ApiError {
             Self::BadRequest(message) => (StatusCode::BAD_REQUEST, json!(message)),
             Self::Forbidden(message) => (StatusCode::FORBIDDEN, json!(message)),
             Self::NotFound(message) => (StatusCode::NOT_FOUND, json!(message)),
-            Self::Conflict(message) => (StatusCode::CONFLICT, json!(message)),
+            Self::Conflict(message) | Self::RetryLater { message, .. } => {
+                (StatusCode::CONFLICT, json!(message))
+            }
             Self::UnprocessableBody(message) => (StatusCode::UNPROCESSABLE_ENTITY, json!(message)),
             Self::Validation(errors) => (
                 StatusCode::UNPROCESSABLE_ENTITY,

@@ -149,6 +149,8 @@ pub enum LayoutError {
     Overlap(Shape, Shape),
     #[error("the {0:?} and the {1:?} share a cell side")]
     SharedSide(Shape, Shape),
+    #[error("the layout has no {0:?} piece")]
+    MissingColour(Colour),
 }
 
 impl Layout {
@@ -191,6 +193,17 @@ impl Layout {
                     Some(1) => return Err(LayoutError::SharedSide(*shape, *other_shape)),
                     _ => {}
                 }
+            }
+        }
+        Ok(())
+    }
+
+    /// Valid to hide, as the bot does: valid, with red, blue and yellow at least once each.
+    pub fn validate_hidden(&self) -> Result<(), LayoutError> {
+        self.validate()?;
+        for primary in [Colour::Red, Colour::Blue, Colour::Yellow] {
+            if !self.pieces.iter().any(|piece| piece.colour == primary) {
+                return Err(LayoutError::MissingColour(primary));
             }
         }
         Ok(())

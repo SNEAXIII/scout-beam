@@ -3,7 +3,8 @@
 use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
-use crate::models::room_model::{Room, RoomLock, RoomMode, RoomStatus};
+use crate::models::game_model::SealedLayout;
+use crate::models::room_model::{DuelTurn, Room, RoomLock, RoomMode, RoomStatus};
 
 pub async fn find_by_code(pool: &PgPool, code: &str) -> sqlx::Result<Option<Room>> {
     sqlx::query_as!(
@@ -78,7 +79,12 @@ where
         RoomLock,
         r#"SELECT room.id,
                   CASE WHEN room.host_id = game.user_id THEN room.opponent_id
-                       ELSE room.host_id END as "opponent_id!"
+                       ELSE room.host_id END as "opponent_id!",
+                  room.mode as "mode: RoomMode",
+                  CASE WHEN room.last_actor_id = game.user_id
+                       THEN (extract(epoch from now() - room.last_action_at) * 1000)::int8
+                  END as since_own_action_ms,
+                  (SELECT count(*) FROM shot WHERE shot.game_id = game.id) as "fired!"
            FROM room
            JOIN game ON game.room_id = room.id
            WHERE game.id = $1
@@ -107,5 +113,77 @@ where
     )
     .execute(executor)
     .await?;
+    Ok(())
+}
+
+/// The Duel priority as the player of that game sees it.
+pub async fn turn_of(pool: &PgPool, game_id: Uuid) -> sqlx::Result<DuelTurn> {
+    sqlx::query_as!(
+        DuelTurn,
+        r#"SELECT last_actor.login as "last_actor_login?",
+                  CASE WHEN room.last_actor_id = game.user_id
+                       THEN (extract(epoch from now() - room.last_action_at) * 1000)::int8
+                  END as since_own_action_ms,
+                  (SELECT count(*) FROM shot WHERE shot.game_id = game.id) as "fired!"
+           FROM game
+           JOIN room ON room.id = game.room_id
+           LEFT JOIN "user" last_actor ON last_actor.id = room.last_actor_id
+           WHERE game.id = $1"#,
+        game_id
+    )
+    .fetch_one(pool)
+    .await
+}
+
+/// The player acted: the opponent has priority from now.
+pub async fn record_action<'e, E>(executor: E, room_id: Uuid, user_id: Uuid) -> sqlx::Result<()>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query!(
+        "UPDATE room SET last_actor_id = $2, last_action_at = now() WHERE id = $1",
+        room_id,
+        user_id
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
+}
+
+/// Store the player's layout in a composing room: both layouts once stored, `None` when theirs
+/// already was. The row lock makes exactly one of two racing calls see both.
+pub async fn hide_layout<'e, E>(
+    executor: E,
+    room_id: Uuid,
+    user_id: Uuid,
+    layout: &SealedLayout,
+) -> sqlx::Result<Option<(Option<SealedLayout>, Option<SealedLayout>)>>
+where
+    E: PgExecutor<'e>,
+{
+    let hidden = sqlx::query!(
+        r#"UPDATE room
+           SET host_layout = CASE WHEN host_id = $2 THEN $3 ELSE host_layout END,
+               opponent_layout = CASE WHEN opponent_id = $2 THEN $3 ELSE opponent_layout END
+           WHERE id = $1 AND status = 'composing'
+             AND CASE WHEN host_id = $2 THEN host_layout ELSE opponent_layout END IS NULL
+           RETURNING host_layout as "host_layout: SealedLayout",
+                     opponent_layout as "opponent_layout: SealedLayout""#,
+        room_id,
+        user_id,
+        layout as _
+    )
+    .fetch_optional(executor)
+    .await?;
+    Ok(hidden.map(|row| (row.host_layout, row.opponent_layout)))
+}
+
+pub async fn start<'e, E>(executor: E, room_id: Uuid) -> sqlx::Result<()>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query!("UPDATE room SET status = 'playing' WHERE id = $1", room_id)
+        .execute(executor)
+        .await?;
     Ok(())
 }

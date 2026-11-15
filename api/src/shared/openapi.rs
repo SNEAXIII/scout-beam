@@ -10,6 +10,10 @@ pub struct ErrorResponse {
     /// Human-readable reason, already translated.
     #[schema(example = "Ce pseudo est déjà pris")]
     pub detail: String,
+    /// Only on a refusal that lifts by itself: milliseconds before trying again.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(example = 5000)]
+    pub retry_after_ms: Option<u64>,
 }
 
 /// Declares the bearer scheme once, so each protected route only references it by name.

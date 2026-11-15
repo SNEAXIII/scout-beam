@@ -1,5 +1,6 @@
 //! Failures of the game domain — no HTTP here but the mapping at the bottom.
 
+use crate::engine::colour::Colour;
 use crate::engine::{DrawError, LayoutError, Shape, TraceError};
 use crate::shared::error::ApiError;
 
@@ -28,6 +29,10 @@ pub enum GameError {
     #[error("Cette partie est perdue : l'adversaire a gagné")]
     Lost,
 
+    /// A Duel player acted last: the opponent has priority for that long.
+    #[error("L'adversaire a la priorité : encore {} s", .retry_after_ms.div_ceil(1000))]
+    OpponentPriority { retry_after_ms: u64 },
+
     #[error("Une entrée est numérotée de 1 à 36")]
     InvalidEntry,
 
@@ -55,6 +60,10 @@ impl From<GameError> for ApiError {
             | GameError::Surrendered
             | GameError::Lost
             | GameError::DailySurrender => Self::Conflict(message),
+            GameError::OpponentPriority { retry_after_ms } => Self::RetryLater {
+                message,
+                retry_after_ms,
+            },
             GameError::InvalidEntry | GameError::InvalidLayout(_) => {
                 Self::UnprocessableBody(message)
             }
@@ -66,7 +75,7 @@ impl From<GameError> for ApiError {
 }
 
 /// The engine's layout rule, told to the player.
-fn broken_rule(error: &LayoutError) -> String {
+pub fn broken_rule(error: &LayoutError) -> String {
     match *error {
         LayoutError::MissingShape(shape) => format!("Il manque la pièce « {} »", name(shape)),
         LayoutError::DuplicateShape(shape) => {
@@ -87,6 +96,18 @@ fn broken_rule(error: &LayoutError) -> String {
             name(a),
             name(b)
         ),
+        LayoutError::MissingColour(colour) => {
+            format!("Il faut au moins une pièce {}", colour_name(colour))
+        }
+    }
+}
+
+const fn colour_name(colour: Colour) -> &'static str {
+    match colour {
+        Colour::Red => "rouge",
+        Colour::Blue => "bleue",
+        Colour::Yellow => "jaune",
+        Colour::White => "blanche",
     }
 }
 

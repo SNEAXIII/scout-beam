@@ -146,6 +146,9 @@ pub enum WebSocketServerMessage {
         action: Action,
         status: u16,
         detail: Value,
+        /// Only on a Duel action refused while the opponent has priority.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after_ms: Option<u64>,
     },
 }
 

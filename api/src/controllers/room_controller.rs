@@ -7,7 +7,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::dto::room_dto::{CreateRoomRequest, RoomView};
+use crate::dto::room_dto::{CreateRoomRequest, HideLayoutRequest, RoomView};
+use crate::engine::Layout;
 use crate::errors::room_error::RoomError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::user_model::User;
@@ -22,6 +23,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(post_room))
         .routes(routes!(get_room))
         .routes(routes!(post_room_join))
+        .routes(routes!(post_room_layout))
 }
 
 /// `POST /rooms` — a waiting room hosted by the caller.
@@ -92,6 +94,37 @@ async fn post_room_join(
 ) -> ApiResult<Json<RoomView>> {
     let seen = room_service::join(&state.pool, &code, registered(&user)?).await?;
     Ok(Json(seen.into()))
+}
+
+/// `POST /rooms/{code}/layout` — hide the caller's layout in a composing Duel; the second one
+/// starts both games.
+#[utoipa::path(
+    post,
+    path = "/rooms/{code}/layout",
+    tag = "Rooms",
+    params(("code" = String, Path, description = "Room code")),
+    request_body = HideLayoutRequest,
+    security(("bearer" = [])),
+    responses(
+        (status = 201, description = "Layout hidden: still composing, or playing once both are", body = RoomView),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 403, description = "A guest may only play the daily", body = ErrorResponse),
+        (status = 404, description = "No room under that code", body = ErrorResponse),
+        (status = 409, description = "Not a player of the room, the room is not a composing Duel, or the caller's layout is already hidden", body = ErrorResponse),
+        (status = 422, description = "The layout breaks a rule, named in `detail`: the five shapes apart inside the grid, red, blue and yellow at least once", body = ErrorResponse),
+    ),
+)]
+async fn post_room_layout(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(code): Path<String>,
+    ValidatedJson(body): ValidatedJson<HideLayoutRequest>,
+) -> ApiResult<(StatusCode, Json<RoomView>)> {
+    let layout = Layout {
+        pieces: body.pieces,
+    };
+    let seen = room_service::hide(&state.pool, &code, registered(&user)?, layout).await?;
+    Ok((StatusCode::CREATED, Json(seen.into())))
 }
 
 /// Every room route is for registered players only.
