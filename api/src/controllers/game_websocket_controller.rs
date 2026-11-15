@@ -16,12 +16,14 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::auth::{AuthError, Identity};
-use crate::dto::game_dto::{Action, GameView, WebSocketClientMessage, WebSocketServerMessage};
+use crate::dto::game_dto::{
+    Action, GameView, PropositionResponse, WebSocketClientMessage, WebSocketServerMessage,
+};
 use crate::engine::Layout;
 use crate::errors::game_error::GameError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::game_model::Game;
-use crate::services::game_service::{self, Firing, Turn, Verdict};
+use crate::services::game_service::{self, Firing, Verdict};
 use crate::services::game_websocket_hub::WebSocketPush;
 use crate::shared::error::ApiError;
 use crate::shared::openapi::ErrorResponse;
@@ -41,11 +43,14 @@ pub fn router() -> OpenApiRouter<AppState> {
     description = "Authenticated at the upgrade, by the access cookie or a bearer header; the \
         server opens with `game`. Then `fire {entry}`, `propose {pieces}` and `surrender` are each \
         answered, in order, by `shot`, `verdict`, `game` or `error` carrying the HTTP status. The \
-        player's other sockets on the game are pushed `shot` and `game`. In a room, both players' \
-        sockets are pushed `opponent {shots}`, the opponent's shot count, after each of their new \
-        shots; in a Duel `priority {actor, until}` after any shot or proposition, `actor` a login \
-        who may act again at the RFC 3339 `until`; and each its own `game` when the room ends. A \
-        refused connection, or the token expiring, sends an `error` with action `connect` and \
+        player's other sockets on the game are pushed `shot` and `game`. In a room, `game`, `shot` \
+        and `verdict` also carry `elapsed_ms`, since the game started, and `proposition_in_ms`, \
+        before the next proposition (0: now), both by the server's clock: 15 shots at the start, \
+        the k-th earned one at 5 s × k + 0.25 s × k × (k − 1), so the shots left are 15 + earned − \
+        shots fired. A new shot with none left, or a proposition within its cooldown, is an `error` \
+        409 with `retry_after_ms`. Both players' sockets are pushed `opponent {shots}`, the \
+        opponent's shot count, after each of their new shots, and each its own `game` when the \
+        room ends. A refused connection, or the token expiring, sends an `error` with action `connect` and \
         closes with code 4000 + status.",
     responses(
         (status = 101, description = "Switched to the game's WebSocket"),
@@ -113,7 +118,6 @@ async fn join_game(
         game_id,
         room_id: game.room_id,
         user_id: user.id,
-        login: user.login,
         id: Uuid::new_v4(),
     };
     match session.snapshot().await {
@@ -140,7 +144,6 @@ struct WebSocketSession {
     game_id: Uuid,
     room_id: Option<Uuid>,
     user_id: Uuid,
-    login: String,
     /// Tells this socket's own events apart from the other sockets'.
     id: Uuid,
 }
@@ -230,18 +233,18 @@ impl WebSocketSession {
     /// An entry already fired answers its stored shot, and tells no other socket.
     async fn fire(&self, entry: u8) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let (shot, firing) =
+        let (shot, firing, pace) =
             game_service::fire(&self.state.pool, &game, game_service::entry(entry)?).await?;
         let message = WebSocketServerMessage::Shot {
             shot: shot.into(),
             replayed: firing == Firing::Replayed,
+            pace: pace.map(Into::into),
         };
-        if let Firing::New(turn) = firing {
+        if firing == Firing::New {
             self.publish(message.clone());
-            if let Some(turn) = turn {
-                let opponent = WebSocketServerMessage::Opponent { shots: turn.fired };
+            if let Some(pace) = pace {
+                let opponent = WebSocketServerMessage::Opponent { shots: pace.fired };
                 self.publish_to_room(Some(self.user_id), Some(opponent));
-                self.publish_priority(turn);
             }
         }
         Ok(message)
@@ -249,14 +252,12 @@ impl WebSocketSession {
 
     async fn propose(&self, layout: &Layout) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let (verdict, turn) = game_service::propose(&self.state.pool, &game, layout).await?;
-        if let Some(turn) = turn {
-            self.publish_priority(turn);
-        }
+        let (verdict, pace) = game_service::propose(&self.state.pool, &game, layout).await?;
         if let Verdict::Correct(solved) = &verdict {
             self.publish_end(solved).await;
         }
-        Ok(WebSocketServerMessage::Verdict(verdict.into()))
+        let answer = PropositionResponse::new(&verdict, pace);
+        Ok(WebSocketServerMessage::Verdict(answer))
     }
 
     async fn surrender(&self) -> Result<WebSocketServerMessage, GameError> {
@@ -278,7 +279,8 @@ impl WebSocketSession {
     async fn snapshot(&self) -> Result<GameView, GameError> {
         let game = self.game().await?;
         let shots = game_service::shots_of(&self.state.pool, &game).await?;
-        Ok(GameView::new(&game, shots))
+        let pace = game_service::pace_of(&self.state.pool, &game).await?;
+        Ok(GameView::new(&game, shots).with_pace(pace))
     }
 
     /// The proposition is stored whatever happens here: a failure only leaves other tabs behind.
@@ -301,16 +303,6 @@ impl WebSocketSession {
             self.publish_to_room(Some(self.id), None);
         } else {
             self.publish(message);
-        }
-    }
-
-    fn publish_priority(&self, turn: Turn) {
-        if let Some(until) = turn.priority_until {
-            let actor = self.login.clone();
-            self.publish_to_room(
-                None,
-                Some(WebSocketServerMessage::Priority { actor, until }),
-            );
         }
     }
 

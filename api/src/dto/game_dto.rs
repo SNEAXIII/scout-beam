@@ -6,7 +6,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::engine::{Layout, Piece};
-use crate::models::game_model::{Game, GameStatus, GameSummary, Shot, ShotColour};
+use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, Shot, ShotColour};
 use crate::services::game_service::Verdict;
 
 /// A game as its player sees it.
@@ -30,6 +30,28 @@ pub struct GameView {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Object>)]
     pub layout: Option<Layout>,
+    /// A room game only: absent from the payload outside a room.
+    #[serde(flatten)]
+    pub pace: Option<PaceView>,
+}
+
+/// A room game's pace, relative to the server's clock: the shots left follow from `elapsed_ms`
+/// and the shot count.
+#[derive(Debug, Clone, Copy, Serialize, utoipa::ToSchema)]
+pub struct PaceView {
+    /// Since the game started.
+    pub elapsed_ms: u64,
+    /// Before the next proposition is taken; 0 when it is now.
+    pub proposition_in_ms: u64,
+}
+
+impl From<Pace> for PaceView {
+    fn from(pace: Pace) -> Self {
+        Self {
+            elapsed_ms: u64::try_from(pace.elapsed_ms).unwrap_or(0),
+            proposition_in_ms: pace.proposition_in_ms(),
+        }
+    }
 }
 
 impl GameView {
@@ -44,6 +66,15 @@ impl GameView {
             wrong_propositions: game.wrong_propositions,
             shots: shots.into_iter().map(Into::into).collect(),
             layout: game.revealed_layout().cloned(),
+            pace: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_pace(self, pace: Option<Pace>) -> Self {
+        Self {
+            pace: pace.map(Into::into),
+            ..self
         }
     }
 }
@@ -101,19 +132,21 @@ pub struct PropositionResponse {
     /// The hidden layout, only when the proposition was correct.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layout: Option<Layout>,
+    /// A room game only, this proposition counted.
+    #[serde(flatten)]
+    pub pace: Option<PaceView>,
 }
 
-impl From<Verdict> for PropositionResponse {
-    fn from(verdict: Verdict) -> Self {
-        match verdict {
-            Verdict::Wrong => Self {
-                correct: false,
-                layout: None,
-            },
-            Verdict::Correct(game) => Self {
-                correct: true,
-                layout: game.revealed_layout().cloned(),
-            },
+impl PropositionResponse {
+    pub fn new(verdict: &Verdict, pace: Option<Pace>) -> Self {
+        let layout = match verdict {
+            Verdict::Wrong => None,
+            Verdict::Correct(game) => game.revealed_layout().cloned(),
+        };
+        Self {
+            correct: matches!(verdict, Verdict::Correct(_)),
+            layout,
+            pace: pace.map(Into::into),
         }
     }
 }
@@ -142,27 +175,24 @@ pub enum WebSocketServerMessage {
     Game {
         game: GameView,
     },
-    /// `replayed` when the entry had been fired before: the stored shot.
+    /// `replayed` when the entry had been fired before: the stored shot. In a room, the pace.
     Shot {
         shot: ShotResponse,
         replayed: bool,
+        #[serde(flatten)]
+        pace: Option<PaceView>,
     },
     Verdict(PropositionResponse),
     /// A room only: the opponent's shot count, after each of their new shots.
     Opponent {
         shots: i64,
     },
-    /// A Duel only, after either player's shot or proposition: `actor` may act again at `until`.
-    Priority {
-        actor: String,
-        until: DateTime<Utc>,
-    },
     /// The status and detail an HTTP endpoint would have answered.
     Error {
         action: Action,
         status: u16,
         detail: Value,
-        /// Only on a Duel action refused while the opponent has priority.
+        /// Only on a room's shot or proposition refused for its pace: when to try again.
         #[serde(skip_serializing_if = "Option::is_none")]
         retry_after_ms: Option<u64>,
     },

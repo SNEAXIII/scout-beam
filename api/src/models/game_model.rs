@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::Json;
 use uuid::Uuid;
 
-use crate::engine::{BeamColour, Layout};
+use crate::engine::{BeamColour, Layout, pace};
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema,
@@ -65,6 +65,31 @@ impl Game {
     /// The hidden layout, once the game is over: solved, surrendered or lost.
     pub fn revealed_layout(&self) -> Option<&Layout> {
         (self.status != GameStatus::InProgress).then(|| self.layout.pieces())
+    }
+}
+
+/// Where a room game's shot allowance and proposition cooldown stand, at the database's `now()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pace {
+    pub elapsed_ms: i64,
+    /// New shots fired so far.
+    pub fired: i64,
+    pub wrong_propositions: i64,
+    /// Since the last proposition; `None` before the first.
+    pub since_proposition_ms: Option<i64>,
+}
+
+impl Pace {
+    pub const fn shots_left(&self) -> i64 {
+        pace::shots_left(self.elapsed_ms, self.fired)
+    }
+
+    pub fn next_shot_in_ms(&self) -> u64 {
+        pace::next_shot_in_ms(self.elapsed_ms)
+    }
+
+    pub fn proposition_in_ms(&self) -> u64 {
+        pace::proposition_in_ms(self.wrong_propositions, self.since_proposition_ms)
     }
 }
 

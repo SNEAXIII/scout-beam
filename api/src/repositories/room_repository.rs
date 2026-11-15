@@ -1,11 +1,10 @@
 //! Every SQL statement of the room domain, and nothing else.
 
-use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
 use crate::models::game_model::SealedLayout;
-use crate::models::room_model::{DuelTurn, Room, RoomLock, RoomMode, RoomStatus};
+use crate::models::room_model::{Room, RoomLock, RoomMode, RoomStatus};
 
 pub async fn find_by_code(pool: &PgPool, code: &str) -> sqlx::Result<Option<Room>> {
     sqlx::query_as!(
@@ -83,12 +82,7 @@ where
         RoomLock,
         r#"SELECT room.id,
                   CASE WHEN room.host_id = game.user_id THEN room.opponent_id
-                       ELSE room.host_id END as "opponent_id!",
-                  room.mode as "mode: RoomMode",
-                  CASE WHEN room.last_actor_id = game.user_id
-                       THEN (extract(epoch from now() - room.last_action_at) * 1000)::int8
-                  END as since_own_action_ms,
-                  (SELECT count(*) FROM shot WHERE shot.game_id = game.id) as "fired!"
+                       ELSE room.host_id END as "opponent_id!"
            FROM room
            JOIN game ON game.room_id = room.id
            WHERE game.id = $1
@@ -118,44 +112,6 @@ where
     .execute(executor)
     .await?;
     Ok(())
-}
-
-/// The Duel priority as the player of that game sees it.
-pub async fn turn_of(pool: &PgPool, game_id: Uuid) -> sqlx::Result<DuelTurn> {
-    sqlx::query_as!(
-        DuelTurn,
-        r#"SELECT last_actor.login as "last_actor_login?",
-                  CASE WHEN room.last_actor_id = game.user_id
-                       THEN (extract(epoch from now() - room.last_action_at) * 1000)::int8
-                  END as since_own_action_ms,
-                  (SELECT count(*) FROM shot WHERE shot.game_id = game.id) as "fired!"
-           FROM game
-           JOIN room ON room.id = game.room_id
-           LEFT JOIN "user" last_actor ON last_actor.id = room.last_actor_id
-           WHERE game.id = $1"#,
-        game_id
-    )
-    .fetch_one(pool)
-    .await
-}
-
-/// The player acted: the opponent has priority from now, the instant answered.
-pub async fn record_action<'e, E>(
-    executor: E,
-    room_id: Uuid,
-    user_id: Uuid,
-) -> sqlx::Result<DateTime<Utc>>
-where
-    E: PgExecutor<'e>,
-{
-    sqlx::query_scalar!(
-        r#"UPDATE room SET last_actor_id = $2, last_action_at = now() WHERE id = $1
-           RETURNING last_action_at as "last_action_at!""#,
-        room_id,
-        user_id
-    )
-    .fetch_one(executor)
-    .await
 }
 
 /// Store the player's layout in a composing room: both layouts once stored, `None` when theirs

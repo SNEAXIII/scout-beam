@@ -16,9 +16,6 @@ export interface RoomView {
   surrendered?: boolean
   /** The caller's game, once it exists. */
   game_id?: string
-  /** A playing Duel only. */
-  last_actor?: string
-  retry_after_ms?: number
 }
 
 /** No 0, O, 1 or I: nothing to misread when a code is dictated. */

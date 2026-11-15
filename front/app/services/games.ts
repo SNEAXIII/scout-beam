@@ -24,7 +24,15 @@ export interface Shot {
   colour: BeamColour
 }
 
-export interface GameView extends Omit<GameSummary, 'mode' | 'opponent'> {
+/** A room game only, by the server's clock: the shots left follow from these and the shot count. */
+export interface PaceView {
+  /** Since the game started. */
+  elapsed_ms?: number
+  /** Before the next proposition is taken; 0 when it is now. */
+  proposition_in_ms?: number
+}
+
+export interface GameView extends Omit<GameSummary, 'mode' | 'opponent'>, PaceView {
   /** The day it is the daily of, `YYYY-MM-DD`; null for a game against the bot. */
   daily_date: string | null
   /** The room it is played in; null outside a room. */
@@ -42,7 +50,7 @@ export const createGame = (): Promise<GameView> =>
 
 export const getGame = (id: string): Promise<GameView> => apiRequest<GameView>(`/games/${id}`)
 
-export interface PropositionVerdict {
+export interface PropositionVerdict extends PaceView {
   correct: boolean
   /** Only when correct. */
   layout?: Layout

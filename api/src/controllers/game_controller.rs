@@ -84,5 +84,6 @@ async fn get_game(
 ) -> ApiResult<Json<GameView>> {
     let game = game_service::get_owned(&state.pool, game_id, user.id).await?;
     let shots = game_service::shots_of(&state.pool, &game).await?;
-    Ok(Json(GameView::new(&game, shots)))
+    let pace = game_service::pace_of(&state.pool, &game).await?;
+    Ok(Json(GameView::new(&game, shots).with_pace(pace)))
 }

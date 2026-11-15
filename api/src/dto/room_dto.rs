@@ -5,7 +5,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::engine::Piece;
-use crate::models::room_model::{RoomMode, RoomStatus, priority_left_ms};
+use crate::models::room_model::{RoomMode, RoomStatus};
 use crate::services::room_service::Seen;
 
 /// Opens a waiting room hosted by the caller.
@@ -43,12 +43,6 @@ pub struct RoomView {
     /// The caller's game: absent until it exists, or for a non-member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_id: Option<Uuid>,
-    /// A playing Duel only: the login of whoever acted last, absent before any action.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_actor: Option<String>,
-    /// A playing Duel only: milliseconds before the caller may act again, 0 when they may now.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub retry_after_ms: Option<u64>,
 }
 
 impl From<Seen> for RoomView {
@@ -57,7 +51,6 @@ impl From<Seen> for RoomView {
             room,
             member,
             game_id,
-            turn,
         } = seen;
         Self {
             code: room.code,
@@ -69,10 +62,6 @@ impl From<Seen> for RoomView {
             surrendered: (member && room.status == RoomStatus::Finished)
                 .then_some(room.surrendered),
             game_id,
-            retry_after_ms: turn
-                .as_ref()
-                .map(|turn| priority_left_ms(turn.fired, turn.since_own_action_ms)),
-            last_actor: turn.and_then(|turn| turn.last_actor_login),
         }
     }
 }

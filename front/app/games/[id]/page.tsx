@@ -17,7 +17,8 @@ import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useI18n()
-  const { game, room, error, connected, surrendering, load, fire, surrender, propose } = useGame(id)
+  const { game, room, pace, error, connected, surrendering, load, fire, surrender, propose } =
+    useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
   const router = useRouter()
@@ -48,9 +49,7 @@ export default function GamePage() {
         keyboardLayout={keyboardLayout}
         onToggleKeyboardLayout={toggle}
       />
-      {game?.room_code && (
-        <RoomLine room={game.status === 'in_progress' ? room : { ...room, waitMs: 0 }} />
-      )}
+      {game?.room_code && <RoomLine room={room} />}
       {error && (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
@@ -104,7 +103,7 @@ export default function GamePage() {
               {...board}
               gameId={id}
               keyboardLayout={keyboardLayout}
-              locked={room.waitMs > 0}
+              pace={pace}
               onSolved={() => void load()}
               onPropose={propose}
             />

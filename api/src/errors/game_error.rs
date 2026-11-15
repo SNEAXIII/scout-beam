@@ -29,9 +29,12 @@ pub enum GameError {
     #[error("Cette partie est perdue : l'adversaire a gagné")]
     Lost,
 
-    /// A Duel player acted last: the opponent has priority for that long.
-    #[error("L'adversaire a la priorité : encore {} s", .retry_after_ms.div_ceil(1000))]
-    OpponentPriority { retry_after_ms: u64 },
+    /// A room game's shot allowance is spent until the next earned shot.
+    #[error("Plus de tir disponible : le prochain dans {} s", .retry_after_ms.div_ceil(1000))]
+    NoShotLeft { retry_after_ms: u64 },
+
+    #[error("Prochaine proposition dans {} s", .retry_after_ms.div_ceil(1000))]
+    PropositionCooldown { retry_after_ms: u64 },
 
     #[error("Une entrée est numérotée de 1 à 36")]
     InvalidEntry,
@@ -60,7 +63,8 @@ impl From<GameError> for ApiError {
             | GameError::Surrendered
             | GameError::Lost
             | GameError::DailySurrender => Self::Conflict(message),
-            GameError::OpponentPriority { retry_after_ms } => Self::RetryLater {
+            GameError::NoShotLeft { retry_after_ms }
+            | GameError::PropositionCooldown { retry_after_ms } => Self::RetryLater {
                 message,
                 retry_after_ms,
             },

@@ -1,24 +1,27 @@
 import { useState } from 'react'
-import { Send } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { fill, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
+import { ENTRIES } from '@/app/lib/entries'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
 import { SHAPES, type Piece } from '@/app/lib/pieces'
 import type { PropositionVerdict } from '@/app/services/games'
 import DraftToolbar from './draft-toolbar'
 import HotkeyLegend from './hotkey-legend'
 import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
+import ProposeButton from './propose-button'
+import ShotAllowance from './shot-allowance'
 import { useDraft } from '../_viewmodels/use-draft'
+import type { Pace } from '../_viewmodels/use-pace'
 
 interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'disabled'> {
   readonly gameId: string
   readonly keyboardLayout: KeyboardLayout
-  /** A Duel's opponent has priority: no shot, no proposition. */
-  readonly locked: boolean
+  /** A room game's shot allowance and proposition cooldown; null outside a room. */
+  readonly pace: Pace | null
   /** Called once the game is solved, by this proposition or meanwhile elsewhere; the page clears the draft. */
   readonly onSolved: () => void
-  readonly onPropose: (pieces: readonly Piece[]) => Promise<PropositionVerdict>
+  /** Null when refused as too early. */
+  readonly onPropose: (pieces: readonly Piece[]) => Promise<PropositionVerdict | null>
 }
 
 /** A verdict holds for the draft it was given, and vanishes as soon as the draft changes. */
@@ -31,7 +34,7 @@ interface Verdict {
 export default function DraftPanel({
   gameId,
   keyboardLayout,
-  locked,
+  pace,
   onSolved,
   onPropose,
   ...board
@@ -43,15 +46,17 @@ export default function DraftPanel({
   const current = JSON.stringify(draft.pieces)
   const shown = verdict?.draft === current ? verdict : null
   const complete = draft.pieces.length === SHAPES.length
+  // Entries no beam has touched yet: once the shots left cover them, no more are needed.
+  const unknown = ENTRIES.filter((entry) => !board.paths.atEntry(entry)).length
 
   // Stays pending once solved: the reload unmounts the panel.
   const propose = async () => {
     setPending(true)
     setVerdict(null)
     try {
-      const { correct } = await onPropose(draft.pieces)
-      if (correct) return onSolved()
-      setVerdict({ draft: current })
+      const answer = await onPropose(draft.pieces)
+      if (answer?.correct) return onSolved()
+      if (answer) setVerdict({ draft: current })
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 409) return onSolved()
       setVerdict({
@@ -75,18 +80,15 @@ export default function DraftPanel({
       <GameBoard
         {...board}
         draft={draft}
-        disabled={locked}
+        disabled={pace !== null && pace.shotsLeft <= 0}
       />
+      {pace && pace.shotsLeft < unknown && <ShotAllowance pace={pace} />}
       <div className='flex flex-wrap items-center gap-2'>
-        <Button
-          size='sm'
-          onClick={() => void propose()}
-          disabled={!complete || pending || locked}
-          data-cy='propose'
-        >
-          <Send />
-          {t.draft.propose}
-        </Button>
+        <ProposeButton
+          disabled={!complete || pending}
+          pace={pace}
+          onPropose={() => void propose()}
+        />
         <span
           className='text-sm text-muted-foreground'
           data-cy='draft-count'

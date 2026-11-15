@@ -261,6 +261,28 @@ async fn only_wrong_propositions_are_counted(pool: PgPool) {
 }
 
 #[sqlx::test]
+async fn a_daily_fires_every_entry_at_once_and_has_no_pace(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_daily(today, &token).await;
+
+    for entry in 1..=36 {
+        app.play(
+            game_id,
+            Some(&token),
+            json!({ "type": "fire", "entry": entry }),
+        )
+        .await
+        .assert_status(StatusCode::CREATED);
+    }
+
+    let game = app.game(game_id, &token).await;
+    assert!(game.body.get("elapsed_ms").is_none(), "{}", game.body);
+    assert!(game.body.get("proposition_in_ms").is_none());
+}
+
+#[sqlx::test]
 async fn a_game_against_the_bot_has_no_daily_date(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;

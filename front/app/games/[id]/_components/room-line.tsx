@@ -1,8 +1,8 @@
-import { Hourglass, Swords } from 'lucide-react'
+import { Swords } from 'lucide-react'
 import { fill, useI18n } from '@/app/i18n'
 import type { RoomGame } from '../_viewmodels/use-room-game'
 
-/** The opponent, their shot count once known, and while the opponent has priority the wait. */
+/** The opponent, and their shot count once known. */
 export default function RoomLine({ room }: Readonly<{ room: RoomGame }>) {
   const { t } = useI18n()
   return (
@@ -19,16 +19,6 @@ export default function RoomLine({ room }: Readonly<{ room: RoomGame }>) {
       {room.opponentShots !== null && (
         <span data-cy='opponent-shots'>
           {fill(t.rooms.opponentShots, { count: room.opponentShots })}
-        </span>
-      )}
-      {room.waitMs > 0 && (
-        <span
-          className='flex items-center gap-1.5 font-medium text-foreground tabular-nums'
-          role='status'
-          data-cy='priority-countdown'
-        >
-          <Hourglass className='size-4' />
-          {fill(t.rooms.priority, { seconds: Math.ceil(room.waitMs / 1000) })}
         </span>
       )}
     </div>

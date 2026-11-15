@@ -1,29 +1,18 @@
 //! Rules of a game: controllers never reach its repository but through here.
 
-use chrono::{DateTime, TimeDelta, Utc};
-use sqlx::{PgConnection, PgPool};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
-use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::models::room_model::{RoomLock, RoomMode, priority_left_ms, priority_ms};
+use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, SealedLayout, Shot};
 use crate::repositories::{game_repository, room_repository};
 
-/// Whether a shot was just fired, with its turn in a room, or had been fired before.
+/// Whether a shot was just fired, or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Firing {
-    New(Option<Turn>),
+    New,
     Replayed,
-}
-
-/// A player's action in a room, as both players are told it once committed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Turn {
-    /// Entries that player has fired, this action included.
-    pub fired: i64,
-    /// A Duel only: when that player may act again, the opponent having priority until then.
-    pub priority_until: Option<DateTime<Utc>>,
 }
 
 /// What a stored proposition earned: the game, now solved, when it was correct.
@@ -51,14 +40,28 @@ pub async fn get_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> Result<Ga
         .ok_or(GameError::NotFound)
 }
 
+/// A room game's pace; `None` outside a room.
+pub async fn pace_of(pool: &PgPool, game: &Game) -> Result<Option<Pace>, GameError> {
+    if game.room_id.is_none() {
+        return Ok(None);
+    }
+    Ok(game_repository::pace_of(pool, game.id).await?)
+}
+
 /// Shots in firing order.
 pub async fn shots_of(pool: &PgPool, game: &Game) -> Result<Vec<Shot>, GameError> {
     Ok(game_repository::shots_of(pool, game.id).await?)
 }
 
 /// Trace a beam from `entry` and store it, unless that entry was already fired.
+///
+/// In a room a new shot spends the allowance, and the pace comes along, this shot counted.
 /// A shot racing the end of the game is harmless: the layout is revealed then anyway.
-pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Firing), GameError> {
+pub async fn fire(
+    pool: &PgPool,
+    game: &Game,
+    entry: Entry,
+) -> Result<(Shot, Firing, Option<Pace>), GameError> {
     playable(game.status)?;
 
     let traced = engine::trace(game.layout.pieces(), entry)?;
@@ -69,30 +72,38 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
     };
 
     let mut tx = pool.begin().await?;
-    // Locked before the insert: `fired` counts the shots before this one.
-    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
+    // Locked on its own first: the pace read next then sees a racing tab's committed shot.
+    if game.room_id.is_some() {
+        game_repository::lock_status(&mut *tx, game.id).await?;
+    }
+    let before = game_repository::pace_of(&mut *tx, game.id).await?;
     if let Some(stored) = game_repository::insert_shot_if_absent(&mut *tx, game.id, &shot).await? {
-        let turn = match &room {
-            Some(room) => Some(take_turn(&mut tx, room, game.user_id, room.fired + 1).await?),
-            None => None,
-        };
+        if let Some(pace) = before
+            && pace.shots_left() <= 0
+        {
+            tx.rollback().await?;
+            return Err(GameError::NoShotLeft {
+                retry_after_ms: pace.next_shot_in_ms(),
+            });
+        }
+        let pace = game_repository::pace_of(&mut *tx, game.id).await?;
         tx.commit().await?;
-        return Ok((stored, Firing::New(turn)));
+        return Ok((stored, Firing::New, pace));
     }
     tx.rollback().await?;
     game_repository::find_shot(pool, game.id, shot.entry)
         .await?
-        .map(|stored| (stored, Firing::Replayed))
+        .map(|stored| (stored, Firing::Replayed, before))
         .ok_or(GameError::NotFound)
 }
 
-/// Store a valid proposition; a correct one solves the game in the same transaction, and wins
-/// its room. The turn comes along in a room.
+/// Store a valid proposition, once a room's cooldown is over; a correct one solves the game in the
+/// same transaction, and wins its room. The pace comes along in a room, this proposition counted.
 pub async fn propose(
     pool: &PgPool,
     game: &Game,
     layout: &Layout,
-) -> Result<(Verdict, Option<Turn>), GameError> {
+) -> Result<(Verdict, Option<Pace>), GameError> {
     playable(game.status)?;
     layout.validate()?;
     let correct = engine::same_shots(game.layout.pieces(), layout)?;
@@ -106,11 +117,16 @@ pub async fn propose(
         tx.rollback().await?;
         return Err(refusal);
     }
-    let turn = match &room {
-        Some(room) => Some(take_turn(&mut tx, room, game.user_id, room.fired).await?),
-        None => None,
-    };
+    if let Some(pace) = game_repository::pace_of(&mut *tx, game.id).await?
+        && pace.proposition_in_ms() > 0
+    {
+        tx.rollback().await?;
+        return Err(GameError::PropositionCooldown {
+            retry_after_ms: pace.proposition_in_ms(),
+        });
+    }
     game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
+    let pace = game_repository::pace_of(&mut *tx, game.id).await?;
     let verdict = if correct {
         let solved = game_repository::mark_solved(&mut *tx, game.id).await?;
         if let Some(room) = room {
@@ -121,7 +137,7 @@ pub async fn propose(
         Verdict::Wrong
     };
     tx.commit().await?;
-    Ok((verdict, turn))
+    Ok((verdict, pace))
 }
 
 /// Give up: the game ends unsolved and its layout is revealed; in a room, the opponent wins.
@@ -146,31 +162,6 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     }
     tx.commit().await?;
     Ok(surrendered)
-}
-
-/// A Duel action passes only once the opponent's priority is over, then hands it to them.
-/// The caller's transaction holds the room lock; a refusal drops it, rolling back.
-async fn take_turn(
-    tx: &mut PgConnection,
-    room: &RoomLock,
-    user_id: Uuid,
-    fired: i64,
-) -> Result<Turn, GameError> {
-    if room.mode != RoomMode::Duel {
-        return Ok(Turn {
-            fired,
-            priority_until: None,
-        });
-    }
-    let retry_after_ms = priority_left_ms(room.fired, room.since_own_action_ms);
-    if retry_after_ms > 0 {
-        return Err(GameError::OpponentPriority { retry_after_ms });
-    }
-    let acted_at = room_repository::record_action(tx, room.id, user_id).await?;
-    Ok(Turn {
-        fired,
-        priority_until: Some(acted_at + TimeDelta::milliseconds(priority_ms(fired))),
-    })
 }
 
 /// Only a game in progress takes a shot, a proposition or a surrender.

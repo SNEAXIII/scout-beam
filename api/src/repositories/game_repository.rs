@@ -6,7 +6,9 @@ use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
 use crate::engine::Layout;
-use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot, ShotColour};
+use crate::models::game_model::{
+    Game, GameStatus, GameSummary, Pace, SealedLayout, Shot, ShotColour,
+};
 
 /// The caller's game, or nothing — another player's game is indistinguishable from a missing one.
 pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Result<Option<Game>> {
@@ -174,6 +176,28 @@ pub async fn find_shot(pool: &PgPool, game_id: Uuid, entry: i16) -> sqlx::Result
         entry
     )
     .fetch_optional(pool)
+    .await
+}
+
+/// A room game's pace, its row locked until the caller's transaction ends; `None` outside a room.
+pub async fn pace_of<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Option<Pace>>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query_as!(
+        Pace,
+        r#"SELECT (extract(epoch from now() - created_at) * 1000)::int8 as "elapsed_ms!",
+                  (SELECT count(*) FROM shot WHERE game_id = game.id) as "fired!",
+                  (SELECT count(*) FROM proposition
+                   WHERE game_id = game.id AND NOT correct) as "wrong_propositions!",
+                  (SELECT (extract(epoch from now() - max(created_at)) * 1000)::int8
+                   FROM proposition WHERE game_id = game.id) as since_proposition_ms
+           FROM game
+           WHERE id = $1 AND room_id IS NOT NULL
+           FOR UPDATE"#,
+        game_id
+    )
+    .fetch_optional(executor)
     .await
 }
 

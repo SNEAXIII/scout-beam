@@ -5,13 +5,15 @@ import { clearDraft } from '@/app/lib/draft'
 import type { Piece } from '@/app/lib/pieces'
 import { openGameSocket, type GameSocket, type ServerMessage } from '@/app/services/game-socket'
 import { getGame, type GameView, type PropositionVerdict } from '@/app/services/games'
+import { usePace } from './use-pace'
 import { useRoomGame } from './use-room-game'
 
 const message = (caught: unknown, fallback: string) =>
   caught instanceof Error ? caught.message : fallback
 
 interface PendingVerdict {
-  resolve: (verdict: PropositionVerdict) => void
+  /** Null when refused as too early. */
+  resolve: (verdict: PropositionVerdict | null) => void
   reject: (error: ApiError) => void
 }
 
@@ -25,11 +27,11 @@ export function useGame(id: string) {
   const socket = useRef<GameSocket | null>(null)
   const inFlight = useRef(new Set<number>())
   const verdict = useRef<PendingVerdict | null>(null)
-  const {
-    room,
-    receive: receiveRoom,
-    hold,
-  } = useRoomGame(game?.room_code ?? null, game !== null && game.status !== 'in_progress')
+  const { room, receive: receiveRoom } = useRoomGame(
+    game?.room_code ?? null,
+    game !== null && game.status !== 'in_progress'
+  )
+  const { pace, receive: receivePace, refused } = usePace(game)
 
   const load = useCallback(async () => {
     try {
@@ -41,13 +43,14 @@ export function useGame(id: string) {
 
   const failed = (received: Extract<ServerMessage, { type: 'error' }>) => {
     const wait = received.retry_after_ms
-    if (wait !== undefined) hold(wait)
+    if (wait !== undefined) refused(received.action, wait)
     if (received.action === 'fire') inFlight.current.clear()
     if (received.action === 'surrender') setSurrendering(false)
     if (received.action === 'propose') {
       const text = detailMessage(received.detail) ?? t.draft.proposeFailed
-      // 429, not the 409 that tells the draft panel the game is over.
-      verdict.current?.reject(new ApiError(wait === undefined ? received.status : 429, text))
+      // Too early is no failure: the cooldown, resynced, shows on the button.
+      if (wait === undefined) verdict.current?.reject(new ApiError(received.status, text))
+      else verdict.current?.resolve(null)
       verdict.current = null
       return
     }
@@ -60,6 +63,7 @@ export function useGame(id: string) {
 
   const receive = useEffectEvent((received: ServerMessage) => {
     receiveRoom(received)
+    receivePace(received)
     switch (received.type) {
       case 'game':
         setGame(received.game)
@@ -123,10 +127,10 @@ export function useGame(id: string) {
     setSurrendering(true)
   }, [t])
 
-  /** Rejects with the API's status: 409 when the game ended meanwhile, 422 naming a broken rule. */
+  /** Null when too early; rejects with the API's status: 409 when over meanwhile, 422 naming a rule. */
   const propose = useCallback(
     (pieces: readonly Piece[]) =>
-      new Promise<PropositionVerdict>((resolve, reject) => {
+      new Promise<PropositionVerdict | null>((resolve, reject) => {
         if (!socket.current?.send({ type: 'propose', pieces })) {
           reject(new ApiError(0, t.game.offline))
           return
@@ -142,5 +146,5 @@ export function useGame(id: string) {
     if (over) clearDraft(id)
   }, [over, id])
 
-  return { game, room, error, connected, over, surrendering, load, fire, surrender, propose }
+  return { game, room, pace, error, connected, over, surrendering, load, fire, surrender, propose }
 }

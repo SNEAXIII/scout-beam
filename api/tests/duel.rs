@@ -1,5 +1,5 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! A Duel end to end: each player hides a layout for the other, then priority passes between them.
+//! A Duel end to end: each player hides a layout for the other, then each hunts at their own pace.
 
 mod common;
 
@@ -43,34 +43,47 @@ impl TestApp {
         .await
     }
 
-    /// A playing Duel where alice has already fired 17 entries, so her next action leaves bob
-    /// 10 s × 18 / 36 = 5 s of priority.
-    async fn playing_duel(&self) -> (String, Player, Player) {
+    /// A playing Duel hosted by alice, joined by bob.
+    async fn playing_duel(&self) -> (Player, Player) {
         let (code, alice, bob) = self.composing_duel().await;
         self.hide(&code, &alice, &hidden()).await;
         let started = self.hide(&code, &bob, &hidden()).await;
         started.assert_status(StatusCode::CREATED);
-        let alice_game = self.game_in(&code, &alice).await;
-        let bob_game = started.body["game_id"].as_str().unwrap().parse().unwrap();
-        sqlx::query(
-            "INSERT INTO shot (game_id, entry, exit_entry, colour)
-             SELECT $1, entry, entry, 'none' FROM generate_series(20, 36) entry",
+        (
+            Player {
+                game: self.game_in(&code, &alice).await,
+                token: alice,
+            },
+            Player {
+                game: self.game_in(&code, &bob).await,
+                token: bob,
+            },
         )
-        .bind(alice_game)
+    }
+
+    /// Moves the game's start, and so its earned shots, that many milliseconds back.
+    async fn start_earlier(&self, player: &Player, ms: i64) {
+        sqlx::query(
+            "UPDATE game SET created_at = created_at - $2 * interval '1 millisecond' WHERE id = $1",
+        )
+        .bind(player.game)
+        .bind(ms)
         .execute(&self.pool)
         .await
         .unwrap();
-        (
-            code,
-            Player {
-                token: alice,
-                game: alice_game,
-            },
-            Player {
-                token: bob,
-                game: bob_game,
-            },
+    }
+
+    /// Moves the player's propositions that many milliseconds back.
+    async fn propose_earlier(&self, player: &Player, ms: i64) {
+        sqlx::query(
+            "UPDATE proposition SET created_at = created_at - $2 * interval '1 millisecond'
+             WHERE game_id = $1",
         )
+        .bind(player.game)
+        .bind(ms)
+        .execute(&self.pool)
+        .await
+        .unwrap();
     }
 
     async fn game_in(&self, code: &str, token: &str) -> Uuid {
@@ -85,6 +98,17 @@ impl TestApp {
             json!({ "type": "fire", "entry": entry }),
         )
         .await
+    }
+
+    async fn propose_wrong(&self, player: &Player) -> Response {
+        self.propose(player.game, Some(&player.token), &hidden())
+            .await
+    }
+
+    async fn pace(&self, player: &Player) -> Value {
+        self.get(&format!("/games/{}", player.game), Some(&player.token))
+            .await
+            .body
     }
 }
 
@@ -179,67 +203,112 @@ async fn each_players_game_holds_the_others_layout(pool: PgPool) {
 }
 
 #[sqlx::test]
-async fn an_immediate_second_action_at_18_entries_is_refused_for_about_5_s(pool: PgPool) {
+async fn fifteen_shots_go_at_once_then_the_next_waits_for_the_first_earned_one(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (code, alice, bob) = app.playing_duel().await;
+    let (alice, bob) = app.playing_duel().await;
 
-    app.fire(&alice, 1).await.assert_status(StatusCode::CREATED);
+    for entry in 1..=15 {
+        app.fire(&alice, entry)
+            .await
+            .assert_status(StatusCode::CREATED);
+    }
+    let refused = app.fire(&alice, 16).await;
 
-    let refused = app.fire(&alice, 2).await;
     refused.assert_status(StatusCode::CONFLICT);
     let left = retry_after_ms(&refused.body);
-    assert!((4_000..=5_000).contains(&left), "{left}");
-    let proposed = app.propose(alice.game, Some(&alice.token), &hidden()).await;
-    proposed.assert_status(StatusCode::CONFLICT);
-    assert!(retry_after_ms(&proposed.body) > 0);
+    assert!((1..=5_000).contains(&left), "{left}");
+    // A replayed shot costs nothing, and the opponent's allowance is their own.
+    app.fire(&alice, 1).await.assert_status(StatusCode::OK);
+    app.fire(&bob, 1).await.assert_status(StatusCode::CREATED);
 
-    let seen = app.get(&format!("/rooms/{code}"), Some(&alice.token)).await;
-    assert_eq!(seen.body["last_actor"], "alice");
-    assert!((4_000..=5_000).contains(&retry_after_ms(&seen.body)));
-    let seen = app.get(&format!("/rooms/{code}"), Some(&bob.token)).await;
-    assert_eq!(seen.body["last_actor"], "alice");
-    assert_eq!(retry_after_ms(&seen.body), 0);
+    app.start_earlier(&alice, 5_000).await;
+    app.fire(&alice, 16)
+        .await
+        .assert_status(StatusCode::CREATED);
+    let refused = app.fire(&alice, 17).await;
+    refused.assert_status(StatusCode::CONFLICT);
+    let left = retry_after_ms(&refused.body);
+    assert!((1..=5_500).contains(&left), "{left}");
+}
 
-    // The refused shot was not stored, and the delay runs out by itself.
-    sqlx::query("UPDATE room SET last_action_at = now() - interval '5 s'")
+#[sqlx::test]
+async fn two_tabs_firing_at_once_cannot_both_spend_the_last_shot(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (alice, _) = app.playing_duel().await;
+    for entry in 1..=14 {
+        app.fire(&alice, entry)
+            .await
+            .assert_status(StatusCode::CREATED);
+    }
+    // A slow build could earn a shot while the 14 are fired: restart the clock.
+    sqlx::query("UPDATE game SET created_at = now() WHERE id = $1")
+        .bind(alice.game)
         .execute(&app.pool)
         .await
         .unwrap();
-    app.fire(&alice, 2).await.assert_status(StatusCode::CREATED);
+
+    let (first, second) = tokio::join!(app.fire(&alice, 15), app.fire(&alice, 16));
+
+    let mut statuses = [first.status, second.status];
+    statuses.sort();
+    assert_eq!(statuses, [StatusCode::CREATED, StatusCode::CONFLICT]);
 }
 
 #[sqlx::test]
-async fn the_same_action_passes_once_the_opponent_acted(pool: PgPool) {
+async fn earned_shots_accumulate_until_fired(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (_, alice, bob) = app.playing_duel().await;
+    let (alice, _) = app.playing_duel().await;
+    // Earned at 5 s, 10.5 s and 16.5 s.
+    app.start_earlier(&alice, 16_500).await;
 
-    app.fire(&alice, 1).await.assert_status(StatusCode::CREATED);
-    app.fire(&bob, 1).await.assert_status(StatusCode::CREATED);
-
-    app.fire(&alice, 2).await.assert_status(StatusCode::CREATED);
-    app.fire(&alice, 3)
+    for entry in 1..=18 {
+        app.fire(&alice, entry)
+            .await
+            .assert_status(StatusCode::CREATED);
+    }
+    app.fire(&alice, 19)
         .await
         .assert_status(StatusCode::CONFLICT);
+
+    let game = app.pace(&alice).await;
+    assert!(game["elapsed_ms"].as_u64().unwrap() >= 16_500, "{game}");
+    assert_eq!(game["proposition_in_ms"], 0);
 }
 
 #[sqlx::test]
-async fn a_replayed_shot_neither_counts_nor_is_refused(pool: PgPool) {
+async fn the_proposition_cooldown_grows_with_wrong_propositions_up_to_10_s(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (code, alice, bob) = app.playing_duel().await;
-    app.fire(&alice, 1).await.assert_status(StatusCode::CREATED);
+    let (alice, _) = app.playing_duel().await;
 
-    // Within bob's priority, an entry already fired still answers its stored shot.
-    app.fire(&alice, 1).await.assert_status(StatusCode::OK);
-    app.fire(&bob, 1).await.assert_status(StatusCode::CREATED);
-    app.fire(&alice, 20).await.assert_status(StatusCode::OK);
+    let first = app.propose_wrong(&alice).await;
+    first.assert_status(StatusCode::CREATED);
+    assert_eq!(first.body["correct"], false, "{}", first.body);
+    assert_eq!(first.body["proposition_in_ms"], 5_000);
+    let refused = app.propose_wrong(&alice).await;
+    refused.assert_status(StatusCode::CONFLICT);
+    let left = retry_after_ms(&refused.body);
+    assert!((4_000..=5_000).contains(&left), "{left}");
 
-    let seen = app.get(&format!("/rooms/{code}"), Some(&alice.token)).await;
-    assert_eq!(seen.body["last_actor"], "bob");
-    app.fire(&alice, 2).await.assert_status(StatusCode::CREATED);
+    app.propose_earlier(&alice, 5_000).await;
+    let second = app.propose_wrong(&alice).await;
+    second.assert_status(StatusCode::CREATED);
+    assert_eq!(second.body["proposition_in_ms"], 6_000);
+
+    // 5 s + 5 × 1 s reaches the cap at the 6th; the 7th stays there.
+    for _ in 0..5 {
+        app.propose_earlier(&alice, 10_000).await;
+        app.propose_wrong(&alice)
+            .await
+            .assert_status(StatusCode::CREATED);
+    }
+    let capped = app.pace(&alice).await;
+    assert_eq!(capped["wrong_propositions"], 7);
+    let left = capped["proposition_in_ms"].as_u64().unwrap();
+    assert!((9_000..=10_000).contains(&left), "{left}");
 }
 
 #[sqlx::test]
-async fn a_race_has_no_priority(pool: PgPool) {
+async fn a_race_has_the_same_pace(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, alice) = app.seed_with_token("alice", Role::User).await;
     let (_, bob) = app.seed_with_token("bob", Role::User).await;
@@ -254,11 +323,18 @@ async fn a_race_has_no_priority(pool: PgPool) {
         token: alice,
     };
 
-    for entry in 1..=3 {
+    for entry in 1..=15 {
         app.fire(&alice, entry)
             .await
             .assert_status(StatusCode::CREATED);
     }
-    let seen = app.get(&format!("/rooms/{code}"), Some(&alice.token)).await;
-    assert!(seen.body.get("retry_after_ms").is_none(), "{}", seen.body);
+    app.fire(&alice, 16)
+        .await
+        .assert_status(StatusCode::CONFLICT);
+    app.propose_wrong(&alice)
+        .await
+        .assert_status(StatusCode::CREATED);
+    app.propose_wrong(&alice)
+        .await
+        .assert_status(StatusCode::CONFLICT);
 }

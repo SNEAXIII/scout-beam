@@ -8,7 +8,7 @@ use crate::engine::{self, Layout};
 use crate::errors::room_error::RoomError;
 use crate::errors::user_error::is_unique_violation;
 use crate::models::game_model::SealedLayout;
-use crate::models::room_model::{DuelTurn, Room, RoomMode, RoomStatus};
+use crate::models::room_model::{Room, RoomMode, RoomStatus};
 use crate::repositories::{game_repository, room_repository};
 
 /// No `0 O 1 I`: a code is read aloud and typed by hand.
@@ -23,8 +23,6 @@ pub struct Seen {
     pub room: Room,
     pub member: bool,
     pub game_id: Option<Uuid>,
-    /// Only for a player of a playing Duel.
-    pub turn: Option<DuelTurn>,
 }
 
 /// A waiting room hosted by the caller, under a code no other room holds.
@@ -48,17 +46,10 @@ pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomEr
     } else {
         None
     };
-    let turn = match game_id {
-        Some(game_id) if room.mode == RoomMode::Duel && room.status == RoomStatus::Playing => {
-            Some(room_repository::turn_of(pool, game_id).await?)
-        }
-        _ => None,
-    };
     Ok(Seen {
         room,
         member,
         game_id,
-        turn,
     })
 }
 

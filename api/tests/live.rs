@@ -5,14 +5,13 @@ mod common;
 
 use std::time::Duration;
 
-use chrono::{DateTime, TimeDelta, Utc};
 use common::{GameSocket, TestApp, answered};
 use http::StatusCode;
 use http::header::{COOKIE, ORIGIN};
 use scout_beam::Config;
 use scout_beam::engine::{Layout, draw_layout};
 use scout_beam::shared::role::Role;
-use serde_json::{Value, json};
+use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -47,17 +46,6 @@ impl TestApp {
             self.player(&code, alice).await,
             self.player(&code, bob).await,
         )
-    }
-
-    async fn last_action_at(&self, game_id: Uuid) -> DateTime<Utc> {
-        sqlx::query_scalar(
-            "SELECT room.last_action_at FROM room JOIN game ON game.room_id = room.id
-             WHERE game.id = $1",
-        )
-        .bind(game_id)
-        .fetch_one(&self.pool)
-        .await
-        .unwrap()
     }
 
     async fn player(&self, code: &str, token: String) -> Player {
@@ -322,40 +310,36 @@ async fn a_surrender_pushes_the_opponent_their_win(pool: PgPool) {
 }
 
 #[sqlx::test]
-async fn every_duel_action_pushes_its_priority_to_both_players(pool: PgPool) {
+async fn a_room_games_messages_carry_its_pace_by_the_servers_clock(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (mut alice, mut bob) = app.playing_room("duel").await;
+    let (mut alice, _) = app.playing_room("duel").await;
+    let mut alice_tab = app.join(alice.game, Some(&alice.token)).await.unwrap();
+    assert!(alice.socket.joined["elapsed_ms"].is_u64());
+    assert_eq!(alice.socket.joined["proposition_in_ms"], 0);
 
     alice
         .socket
-        .request(json!({ "type": "fire", "entry": 7 }))
-        .await
-        .assert_status(StatusCode::CREATED);
-
-    let priority = alice.socket.next().await.unwrap();
-    assert_eq!(priority["type"], "priority");
-    assert_eq!(priority["actor"], "alice");
-    // One entry fired: 10 s / 36 after the action.
-    let acted_at = app.last_action_at(alice.game).await;
-    assert_eq!(until(&priority), acted_at + TimeDelta::milliseconds(277));
-    assert_eq!(bob.socket.next().await.unwrap()["type"], "opponent");
-    assert_eq!(bob.socket.next().await.unwrap(), priority);
+        .send(json!({ "type": "fire", "entry": 7 }))
+        .await;
+    let shot = alice.socket.next().await.unwrap();
+    assert_eq!(shot["type"], "shot");
+    assert!(shot["elapsed_ms"].is_u64(), "{shot}");
+    assert_eq!(alice_tab.next().await.unwrap(), shot);
 
     let mut proposition = serde_json::to_value(draw_layout(&mut rand::rng()).unwrap()).unwrap();
     proposition["type"] = json!("propose");
-    let proposed = bob.socket.request(proposition).await;
+    alice.socket.send(proposition.clone()).await;
+    let verdict = alice.socket.next().await.unwrap();
+    assert_eq!(verdict["correct"], false, "{verdict}");
+    assert_eq!(verdict["proposition_in_ms"], 5_000);
 
-    assert_eq!(proposed.body["correct"], false, "{}", proposed.body);
-    let acted_at = app.last_action_at(bob.game).await;
-    for socket in [&mut alice.socket, &mut bob.socket] {
-        let priority = socket.next().await.unwrap();
-        assert_eq!(priority["actor"], "bob");
-        assert_eq!(until(&priority), acted_at);
-    }
-}
+    let refused = alice.socket.request(proposition).await;
+    refused.assert_status(StatusCode::CONFLICT);
+    assert!(refused.body["retry_after_ms"].as_u64().unwrap() > 4_000);
 
-fn until(priority: &Value) -> DateTime<Utc> {
-    priority["until"].as_str().unwrap().parse().unwrap()
+    let (_, token) = app.seed_with_token("solo", Role::User).await;
+    let solo = app.join(app.start_game(&token).await, Some(&token)).await;
+    assert!(solo.unwrap().joined.get("elapsed_ms").is_none());
 }
 
 /// Recolouring the square changes the beams it sends back: a wrong proposition, for sure.
