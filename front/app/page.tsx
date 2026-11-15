@@ -15,21 +15,21 @@ export default function HomePage() {
   const daily = useDaily()
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8'>
-      <header className='flex flex-wrap items-center gap-2'>
+      <header className='flex flex-wrap items-center gap-2 md:grid md:grid-cols-[1fr_auto_1fr]'>
         <h1 className='text-2xl font-semibold tracking-tight'>{t.landing.title}</h1>
-        <span className='text-muted-foreground'>{t.daily.title}</span>
-        <Input
-          type='date'
-          aria-label={t.daily.pickDay}
-          title={t.daily.pickDay}
-          max={daily.today ?? undefined}
-          value={daily.date}
-          onChange={(event) => daily.setDate(event.target.value)}
-          disabled={daily.today === null}
-          className='w-fit'
-          data-cy='daily-day'
-        />
-        <div className='ml-auto flex items-center gap-2'>
+        <span className='text-lg font-medium text-muted-foreground'>{t.daily.title}</span>
+        <div className='ml-auto flex items-center gap-2 md:justify-self-end'>
+          <Input
+            type='date'
+            aria-label={t.daily.pickDay}
+            title={t.daily.pickDay}
+            max={daily.today ?? undefined}
+            value={daily.date}
+            onChange={(event) => daily.setDate(event.target.value)}
+            disabled={daily.today === null}
+            className='w-fit'
+            data-cy='daily-day'
+          />
           <Button
             asChild
             variant='outline'
