@@ -383,8 +383,7 @@ impl Response {
     pub fn detail(&self) -> String {
         self.body
             .get("detail")
-            .map(ToString::to_string)
-            .unwrap_or_default()
+            .map_or_else(String::new, ToString::to_string)
     }
 
     pub fn assert_status(&self, expected: StatusCode) -> &Self {
