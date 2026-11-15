@@ -18,6 +18,8 @@ export interface RoomView {
   hidden_layout?: Layout
   /** The caller's game, once it exists. */
   game_id?: string
+  /** The opponent's shot count, once the games exist. */
+  opponent_shots?: number
 }
 
 /** No 0, O, 1 or I: nothing to misread when a code is dictated. */

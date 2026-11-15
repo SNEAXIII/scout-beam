@@ -25,6 +25,8 @@ pub struct Seen {
     pub game_id: Option<Uuid>,
     /// A composing Duel: the layout the caller already hid, sent back to them alone.
     pub own_layout: Option<Layout>,
+    /// The opponent's shot count once the games exist: never anything else of their game.
+    pub opponent_shots: Option<i64>,
 }
 
 /// A waiting room hosted by the caller, under a code no other room holds.
@@ -43,10 +45,13 @@ pub async fn create(pool: &PgPool, host_id: Uuid, mode: RoomMode) -> Result<Seen
 pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomError> {
     let room = find(pool, code).await?;
     let member = room.has_player(caller);
-    let game_id = if member {
-        room_repository::game_of(pool, room.id, caller).await?
+    let (game_id, opponent_shots) = if member {
+        (
+            room_repository::game_of(pool, room.id, caller).await?,
+            room_repository::opponent_shots(pool, room.id, caller).await?,
+        )
     } else {
-        None
+        (None, None)
     };
     let own_layout = if member && room.status == RoomStatus::Composing {
         room_repository::hidden_by(pool, room.id, caller)
@@ -60,6 +65,7 @@ pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomEr
         member,
         game_id,
         own_layout,
+        opponent_shots,
     })
 }
 
@@ -73,6 +79,7 @@ pub async fn open_rooms(pool: &PgPool, caller: Uuid) -> Result<Vec<Seen>, RoomEr
             member: true,
             game_id: None,
             own_layout: None,
+            opponent_shots: None,
         })
         .collect())
 }
