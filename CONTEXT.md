@@ -75,8 +75,15 @@ Two players hunting the same layout drawn by the bot; the first correct proposit
 
 **Duel**:
 Two players each hiding a layout for the other to find; the first correct proposition wins.
-After a shot or a proposition, the opponent has priority for a delay that grows with the entries
-already fired, up to 10 seconds.
+
+**Shot allowance**:
+In a Race or a Duel, the shots a player may fire right now: 15 when the game starts, then one more
+earned after 5 s, the next 5.5 s later, each 0.5 s longer than the last, kept until fired.
+_Avoid_: ammo, charges, priority
+
+**Proposition cooldown**:
+In a Race or a Duel, the wait after a proposition before the next one: 5 s, one more second per
+wrong proposition, up to 10 s.
 
 **Room**:
 Where two players meet before a game against each other, identified by a 6-character code that is

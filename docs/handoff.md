@@ -21,7 +21,7 @@ correct proposition of the opponent makes a game `lost`. Every 401 now lands on
 
 Known gaps of the rooms, left for later: `RoomView` does not say whether the caller already hid
 their Duel layout (after a reload the board shows until a 409); the opponent's shot count is
-unknown until their next shot; `priority.until` is absolute, so clock skew shows in the countdown;
+unknown until their next shot;
 API error texts are French in the English interface.
 
 ## How the work runs
@@ -48,8 +48,8 @@ junction (`mklink /J`), removed with `rmdir` before the worktree. Agent worktree
   `max(100, 1000 - floor(score/6))`, global ranking = sum of points, late dailies included; the day
   ranking only counts games played on their day. No surrender. A past day can be replayed only if
   someone played it on its day (the daily is drawn lazily).
-- **Rooms**: everything is in their plan. Duel priority: after an action, the same player waits
-  until the opponent acts or `10 s × fired / 36`, capped at 10 s by construction.
+- **Rooms**: everything is in their plan. Task 6 replaced the Duel priority with a shot allowance
+  and a proposition cooldown per game (see `CONTEXT.md`); 5 s base and 0.5 s step may change.
 - **Auth, kept for later**: whether to store the email in clear is undecided (hash only for now);
   no account linking between password accounts and providers; logout does not revoke tokens
   server-side; v1 accounts made by dev-login are abandoned (no credentials, cannot sign in).
