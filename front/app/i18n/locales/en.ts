@@ -69,6 +69,22 @@ const en = {
     empty: 'No games yet. Start one!',
     daily: 'Daily',
     ranking: 'Ranking',
+    profile: 'Profile',
+  },
+  profile: {
+    title: 'Profile',
+    back: 'Back to my games',
+    memberSince: 'Member since {{date}}',
+    guest: 'Guest',
+    guestHint: 'Sign up to keep your games and enter the ranking.',
+    guestCta: 'Sign up',
+    renameTitle: 'Change my pseudo',
+    renameDescription:
+      '3 to 30 letters or digits. With a password account, it is also the login you sign in with.',
+    newLogin: 'New pseudo',
+    submit: 'Save',
+    saved: 'Pseudo changed',
+    failed: 'Could not change the pseudo',
   },
   rooms: {
     title: 'Play against someone',

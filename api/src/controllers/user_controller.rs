@@ -1,4 +1,4 @@
-//! `/auth/*` — turning an account into session cookies, and back.
+//! `/auth/*` — turning an account into session cookies, and back; `/users/me` — the caller's profile.
 //!
 //! Here rather than in `auth`: each route reads the `user` table, and `auth` stays a pure mechanism.
 
@@ -22,7 +22,7 @@ use crate::auth::cookie::{self, REFRESH_COOKIE};
 use crate::auth::{AuthError, Identity};
 use crate::dto::user_dto::{
     DevLoginRequest, LoginRequest, ProviderCodeRequest, ProviderLink, ProvidersResponse,
-    RegisterRequest, UserProfile,
+    RegisterRequest, RenameRequest, UserProfile,
 };
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::user_model::User;
@@ -76,6 +76,7 @@ pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
         .routes(routes!(post_refresh_token))
         .routes(routes!(post_logout))
         .routes(routes!(get_providers))
+        .routes(routes!(patch_me))
         .merge(sign_in_router());
 
     // Minting a token from nothing but a login must not exist in a production router.
@@ -112,6 +113,29 @@ fn session_response(state: &AppState, user: User, status: StatusCode) -> ApiResu
 )]
 async fn get_session(CurrentUser(user): CurrentUser) -> Json<UserProfile> {
     Json(user.into())
+}
+
+/// `PATCH /users/me` — a new pseudo; the tokens carry only the id, so the session stays as it is.
+#[utoipa::path(
+    patch,
+    path = "/users/me",
+    tag = "Users",
+    security(("bearer" = [])),
+    request_body = RenameRequest,
+    responses(
+        (status = 200, description = "Renamed: the updated profile", body = UserProfile),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 409, description = "Login already taken", body = ErrorResponse),
+        (status = 422, description = "Login does not pass validation", body = ErrorResponse),
+    ),
+)]
+async fn patch_me(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    ValidatedJson(body): ValidatedJson<RenameRequest>,
+) -> ApiResult<Json<UserProfile>> {
+    let user = user_service::rename(&state.pool, user.id, &body.login).await?;
+    Ok(Json(user.into()))
 }
 
 /// `POST /auth/refresh` — the refresh cookie traded for a fresh pair, once the account is re-checked.

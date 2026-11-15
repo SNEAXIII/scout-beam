@@ -261,3 +261,17 @@ pub async fn set_role(pool: &PgPool, user_id: Uuid, role: Role) -> sqlx::Result<
     .fetch_one(pool)
     .await
 }
+
+pub async fn set_login(pool: &PgPool, user_id: Uuid, login: &str) -> sqlx::Result<Option<User>> {
+    sqlx::query_as!(
+        User,
+        r#"UPDATE "user"
+           SET login = $2
+           WHERE id = $1
+           RETURNING id, login, role as "role: Role", password_hash, guest, discord_id, google_id, email_hash, email_hash_version, last_login_date, created_at, updated_at"#,
+        user_id,
+        login
+    )
+    .fetch_optional(pool)
+    .await
+}

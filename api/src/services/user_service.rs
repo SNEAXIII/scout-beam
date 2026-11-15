@@ -111,6 +111,14 @@ pub async fn login_with_password(
     Ok(user)
 }
 
+/// The pseudo the caller goes by from now on; its rules are the DTO's, the unique index settles a race.
+pub async fn rename(pool: &PgPool, user_id: Uuid, login: &str) -> Result<User, UserError> {
+    user_repository::set_login(pool, user_id, login)
+        .await
+        .map_err(UserError::from_write)?
+        .ok_or(UserError::DoesNotExist)
+}
+
 /// What `seed` actually did, so a caller can report it instead of guessing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeedOutcome {

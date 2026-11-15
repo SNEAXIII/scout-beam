@@ -73,6 +73,22 @@ const fr: Translations = {
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',
     ranking: 'Classement',
+    profile: 'Profil',
+  },
+  profile: {
+    title: 'Profil',
+    back: 'Retour à mes parties',
+    memberSince: 'Membre depuis le {{date}}',
+    guest: 'Invité',
+    guestHint: 'Inscrivez-vous pour garder vos parties et entrer au classement.',
+    guestCta: 'S’inscrire',
+    renameTitle: 'Changer de pseudo',
+    renameDescription:
+      'De 3 à 30 lettres ou chiffres. Avec un mot de passe, c’est aussi votre identifiant de connexion.',
+    newLogin: 'Nouveau pseudo',
+    submit: 'Enregistrer',
+    saved: 'Pseudo modifié',
+    failed: 'Impossible de changer de pseudo',
   },
   rooms: {
     title: 'Jouer contre quelqu’un',
