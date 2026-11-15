@@ -141,6 +141,29 @@ async fn a_second_post_answers_the_same_game(pool: PgPool) {
 }
 
 #[sqlx::test]
+async fn the_daily_game_is_read_without_being_started(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let uri = format!("/daily/{today}/game");
+    app.get(&uri, Some(&token))
+        .await
+        .assert_status(StatusCode::NOT_FOUND);
+    app.get(&uri, None)
+        .await
+        .assert_status(StatusCode::NOT_FOUND);
+
+    let game_id = app.start_daily(today, &token).await;
+    let read = app.get(&uri, Some(&token)).await;
+
+    read.assert_status(StatusCode::OK);
+    assert_eq!(read.body["id"], game_id.to_string());
+    app.get(&uri, None)
+        .await
+        .assert_status(StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test]
 async fn a_guest_can_start_the_daily_and_it_is_listed(pool: PgPool) {
     let app = TestApp::new(pool);
     let today = app.today().await;

@@ -14,6 +14,13 @@ pub async fn today(pool: &PgPool) -> Result<NaiveDate, GameError> {
     Ok(daily_repository::today(pool).await?)
 }
 
+/// The caller's game of that day, without starting it.
+pub async fn find(pool: &PgPool, user_id: Uuid, date: NaiveDate) -> Result<Game, GameError> {
+    game_repository::find_daily(pool, user_id, date)
+        .await?
+        .ok_or(GameError::NotFound)
+}
+
 /// The caller's game of that day, and whether this call created it. Today's layout is drawn on
 /// first sight; a past day without one, or a day to come, has no daily.
 pub async fn start(

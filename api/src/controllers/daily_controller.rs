@@ -10,6 +10,7 @@ use utoipa_axum::routes;
 use crate::auth::Identity;
 use crate::dto::daily_dto::{DailyTodayResponse, DayRankingResponse, GlobalRankingResponse};
 use crate::dto::game_dto::GameView;
+use crate::errors::game_error::GameError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::{daily_service, game_service};
 use crate::shared::error::ApiResult;
@@ -19,7 +20,7 @@ use crate::state::AppState;
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(get_daily_today))
-        .routes(routes!(post_daily_game))
+        .routes(routes!(get_daily_game, post_daily_game))
         .routes(routes!(get_daily_ranking))
         .routes(routes!(get_ranking))
 }
@@ -36,6 +37,29 @@ pub fn router() -> OpenApiRouter<AppState> {
 async fn get_daily_today(State(state): State<AppState>) -> ApiResult<Json<DailyTodayResponse>> {
     let date = daily_service::today(&state.pool).await?;
     Ok(Json(DailyTodayResponse { date }))
+}
+
+/// `GET /daily/{date}/game` — the caller's game of that day, if they started it.
+#[utoipa::path(
+    get,
+    path = "/daily/{date}/game",
+    tag = "Daily",
+    params(("date" = NaiveDate, Path, description = "Day of the daily, in Paris")),
+    security((), ("bearer" = [])),
+    responses(
+        (status = 200, description = "The caller's game of that day", body = GameView),
+        (status = 404, description = "Signed out, or not started that day", body = ErrorResponse),
+    ),
+)]
+async fn get_daily_game(
+    State(state): State<AppState>,
+    caller: Option<Identity>,
+    Path(date): Path<NaiveDate>,
+) -> ApiResult<Json<GameView>> {
+    let caller = caller.ok_or(GameError::NotFound)?;
+    let game = daily_service::find(&state.pool, caller.user_id, date).await?;
+    let shots = game_service::shots_of(&state.pool, &game).await?;
+    Ok(Json(GameView::new(&game, shots)))
 }
 
 /// `POST /daily/{date}/game` — the caller's game of that day, started on the first call.
