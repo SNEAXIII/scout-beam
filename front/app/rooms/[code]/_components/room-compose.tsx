@@ -21,7 +21,7 @@ interface RoomComposeProps {
 /** A Duel's composition, laid out like the game page it leads to. */
 export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
   const { t } = useI18n()
-  const compose = useCompose(room.code, onRoom)
+  const compose = useCompose(room, onRoom)
   const { keyboardLayout, toggle } = useKeyboardLayout()
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
@@ -53,7 +53,7 @@ export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
           {room.code}
         </span>
         <div className='ml-auto flex items-center gap-2'>
-          {!compose.hidden && (
+          {compose.hidden === null && (
             <KeyboardLayoutToggle
               keyboardLayout={keyboardLayout}
               onToggle={toggle}
@@ -64,7 +64,7 @@ export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
       </header>
       <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>
         {compose.hidden ? (
-          <HiddenBoard pieces={compose.layout} />
+          <HiddenBoard pieces={compose.hidden} />
         ) : (
           <ComposeBoard
             code={room.code}

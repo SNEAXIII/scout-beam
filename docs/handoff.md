@@ -19,10 +19,8 @@ On surrender, the winner's game is `solved` and the surrenderer's stays `surrend
 correct proposition of the opponent makes a game `lost`. Every 401 now lands on
 `/login?next=<page>`, for every page.
 
-Known gaps of the rooms, left for later: `RoomView` does not say whether the caller already hid
-their Duel layout (after a reload the board shows until a 409); the opponent's shot count is
-unknown until their next shot;
-API error texts are French in the English interface.
+Known gaps of the rooms, left for later: the opponent's shot count is unknown until their next
+shot; API error texts are French in the English interface.
 
 ## How the work runs
 

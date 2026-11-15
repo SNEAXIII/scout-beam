@@ -23,6 +23,8 @@ pub struct Seen {
     pub room: Room,
     pub member: bool,
     pub game_id: Option<Uuid>,
+    /// A composing Duel: the layout the caller already hid, sent back to them alone.
+    pub own_layout: Option<Layout>,
 }
 
 /// A waiting room hosted by the caller, under a code no other room holds.
@@ -46,10 +48,18 @@ pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomEr
     } else {
         None
     };
+    let own_layout = if member && room.status == RoomStatus::Composing {
+        room_repository::hidden_by(pool, room.id, caller)
+            .await?
+            .map(|hidden| hidden.pieces().clone())
+    } else {
+        None
+    };
     Ok(Seen {
         room,
         member,
         game_id,
+        own_layout,
     })
 }
 
@@ -62,6 +72,7 @@ pub async fn open_rooms(pool: &PgPool, caller: Uuid) -> Result<Vec<Seen>, RoomEr
             room,
             member: true,
             game_id: None,
+            own_layout: None,
         })
         .collect())
 }

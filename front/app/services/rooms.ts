@@ -1,5 +1,5 @@
 import { ApiError, apiRequest } from '@/app/lib/api'
-import type { Piece } from '@/app/lib/pieces'
+import type { Layout, Piece } from '@/app/lib/pieces'
 
 export type RoomMode = 'race' | 'duel'
 export type RoomStatus = 'waiting' | 'composing' | 'playing' | 'finished'
@@ -14,6 +14,8 @@ export interface RoomView {
   winner?: string
   /** A finished room, for its players: ended on a surrender rather than a find. */
   surrendered?: boolean
+  /** A composing Duel: the layout the caller already hid, never the opponent's. */
+  hidden_layout?: Layout
   /** The caller's game, once it exists. */
   game_id?: string
 }

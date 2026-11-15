@@ -151,7 +151,7 @@ async fn a_layout_without_yellow_is_refused_with_the_rule_broken(pool: PgPool) {
 #[sqlx::test]
 async fn a_layout_is_hidden_once_by_a_player_of_a_composing_duel(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (code, alice, _) = app.composing_duel().await;
+    let (code, alice, bob) = app.composing_duel().await;
     let (_, stranger) = app.seed_with_token("stranger", Role::User).await;
     let (_, guest) = app.guest().await;
     let race = app
@@ -159,9 +159,16 @@ async fn a_layout_is_hidden_once_by_a_player_of_a_composing_duel(pool: PgPool) {
         .await;
     let race = race.body["code"].as_str().unwrap();
 
-    let first = app.hide(&code, &alice, &hidden()).await;
+    let layout = hidden();
+    let first = app.hide(&code, &alice, &layout).await;
     first.assert_status(StatusCode::CREATED);
-    assert!(!first.body.to_string().contains("pieces"), "{}", first.body);
+    assert_eq!(first.body["hidden_layout"], json!(layout));
+    let theirs = app.get(&format!("/rooms/{code}"), Some(&bob)).await;
+    assert!(
+        !theirs.body.to_string().contains("pieces"),
+        "{}",
+        theirs.body
+    );
     app.hide(&code, &alice, &hidden())
         .await
         .assert_status(StatusCode::CONFLICT);

@@ -47,6 +47,23 @@ pub async fn list_open_for(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Vec<Roo
     .await
 }
 
+/// The layout this player hid in the room, if they did.
+pub async fn hidden_by(
+    pool: &PgPool,
+    room_id: Uuid,
+    user_id: Uuid,
+) -> sqlx::Result<Option<SealedLayout>> {
+    sqlx::query_scalar!(
+        r#"SELECT CASE WHEN host_id = $2 THEN host_layout ELSE opponent_layout END
+                    as "layout?: SealedLayout"
+           FROM room WHERE id = $1"#,
+        room_id,
+        user_id
+    )
+    .fetch_one(pool)
+    .await
+}
+
 /// A unique violation means the code is taken: draw another.
 pub async fn insert(pool: &PgPool, code: &str, mode: RoomMode, host_id: Uuid) -> sqlx::Result<()> {
     sqlx::query!(

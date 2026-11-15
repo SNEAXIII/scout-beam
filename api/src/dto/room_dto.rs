@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::engine::Piece;
+use crate::engine::{Layout, Piece};
 use crate::models::room_model::{RoomMode, RoomStatus};
 use crate::services::room_service::Seen;
 
@@ -40,6 +40,10 @@ pub struct RoomView {
     /// A finished room, for its players: whether it ended on a surrender rather than a find.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub surrendered: Option<bool>,
+    /// A composing Duel: the layout the caller already hid, never the opponent's.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<Object>)]
+    pub hidden_layout: Option<Layout>,
     /// The caller's game: absent until it exists, or for a non-member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_id: Option<Uuid>,
@@ -51,6 +55,7 @@ impl From<Seen> for RoomView {
             room,
             member,
             game_id,
+            own_layout,
         } = seen;
         Self {
             code: room.code,
@@ -62,6 +67,7 @@ impl From<Seen> for RoomView {
             surrendered: (member && room.status == RoomStatus::Finished)
                 .then_some(room.surrendered),
             game_id,
+            hidden_layout: own_layout,
         }
     }
 }

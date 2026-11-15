@@ -33,7 +33,7 @@ impl SealedLayout {
         Self(Json(layout))
     }
 
-    /// For the engine only: tracing a shot needs the pieces.
+    /// For the engine, which traces shots with it, and for the player who hid it in a Duel.
     pub fn pieces(&self) -> &Layout {
         &self.0
     }
