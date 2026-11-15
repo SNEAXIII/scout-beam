@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
-import { cn } from '@/app/lib/utils'
 import RoomCode from './_components/room-code'
 import RoomCompose from './_components/room-compose'
 import RoomPlayers from './_components/room-players'
@@ -20,14 +19,16 @@ export default function RoomPage() {
   const { room, member, joining, error, join, update } = useRoom(code)
   // A guest is refused every room route: signing up converts it and comes back here.
   const guest = error instanceof ApiError && error.status === 403
+  if (room && member && room.status === 'composing')
+    return (
+      <RoomCompose
+        room={room}
+        onRoom={update}
+      />
+    )
 
   return (
-    <main
-      className={cn(
-        'mx-auto flex w-full flex-col gap-6 p-4 md:p-8',
-        room?.status === 'composing' ? 'max-w-xl' : 'max-w-md'
-      )}
-    >
+    <main className='mx-auto flex w-full max-w-md flex-col gap-6 p-4 md:p-8'>
       <Button
         asChild
         variant='ghost'
@@ -73,19 +74,12 @@ export default function RoomPage() {
           <CardContent className='flex flex-col gap-6'>
             <RoomCode code={room.code} />
             <RoomPlayers room={room} />
-            {member && room.status === 'composing' ? (
-              <RoomCompose
-                code={room.code}
-                onRoom={update}
-              />
-            ) : (
-              <RoomState
-                room={room}
-                member={member}
-                joining={joining}
-                onJoin={() => void join()}
-              />
-            )}
+            <RoomState
+              room={room}
+              member={member}
+              joining={joining}
+              onJoin={() => void join()}
+            />
           </CardContent>
         </Card>
       )}
