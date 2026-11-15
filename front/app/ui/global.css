@@ -189,3 +189,9 @@
     transform: scale(1);
   }
 }
+@keyframes piece-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}

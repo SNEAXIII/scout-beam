@@ -75,6 +75,10 @@ const fr: Translations = {
     signIn: 'Se connecter',
     rulesTitle: 'Comment jouer',
     piecesLabel: 'Les cinq pièces',
+    beamDemo:
+      'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet.',
+    colourMix:
+      'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
     rules: {
       grid: 'Cinq pièces sont cachées sur une grille de 10 × 8. Tout autour, 36 entrées numérotées : c’est par là que les rayons entrent et sortent.',
       pieces:

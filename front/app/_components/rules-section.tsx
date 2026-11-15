@@ -4,6 +4,8 @@ import { useI18n } from '@/app/i18n'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
 import { SHAPES, type PieceColour, type Shape } from '@/app/lib/pieces'
 import ShapeIcon from '@/components/shape-icon'
+import BeamDemo from './beam-demo'
+import ColourMixDemo from './colour-mix-demo'
 
 const SHOWCASE: Record<Shape, PieceColour> = {
   square: 'red',
@@ -54,15 +56,18 @@ export default function RulesSection() {
             className='flex items-center gap-3'
             aria-label={t.landing.piecesLabel}
           >
-            {SHAPES.map((shape) => (
+            {SHAPES.map((shape, index) => (
               <li
                 key={shape}
                 title={t.shapes[shape]}
+                className='motion-safe:animate-[piece-appear_0.5s_ease-out_both]'
+                style={{ animationDelay: `${index * 150}ms` }}
               >
                 <ShapeIcon
                   shape={shape}
                   rotation={0}
                   fill={PIECE_SWATCHES[SHOWCASE[shape]].fill}
+                  className='size-10'
                 />
               </li>
             ))}
@@ -75,11 +80,15 @@ export default function RulesSection() {
         <Rule
           text={rules.sides}
           cy='sides'
-        />
+        >
+          <BeamDemo label={t.landing.beamDemo} />
+        </Rule>
         <Rule
           text={rules.colours}
           cy='colours'
-        />
+        >
+          <ColourMixDemo label={t.landing.colourMix} />
+        </Rule>
         <Rule
           text={rules.draft}
           cy='draft'

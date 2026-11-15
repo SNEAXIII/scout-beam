@@ -70,6 +70,10 @@ const en = {
     signIn: 'Sign in',
     rulesTitle: 'How to play',
     piecesLabel: 'The five pieces',
+    beamDemo:
+      'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet.',
+    colourMix:
+      'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
     rules: {
       grid: 'Five pieces are hidden on a 10 × 8 grid. Around it, 36 numbered entries are where beams go in and come out.',
       pieces:
