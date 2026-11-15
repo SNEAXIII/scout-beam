@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CircleHelp, Gamepad2 } from 'lucide-react'
+import { CircleHelp, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
@@ -15,15 +15,12 @@ export default function HomePage() {
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8'>
       <header className='flex items-center justify-end gap-2'>
-        <Button
-          asChild
-          variant='outline'
-        >
+        <Button asChild>
           <Link
             href='/play'
             data-cy='play-link'
           >
-            <Gamepad2 />
+            <Plus />
             {t.landing.play}
           </Link>
         </Button>
