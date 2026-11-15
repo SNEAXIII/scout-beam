@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO game (user_id, layout)\n           VALUES ($1, $2)\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, NULL::text as room_code,\n                     0::int8 as \"wrong_propositions!\"",
+  "query": "UPDATE game SET status = 'solved', solved_at = now()\n           WHERE id = $1\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, room_id,\n                     (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                     (SELECT count(*) FROM proposition\n                      WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"",
   "describe": {
     "columns": [
       {
@@ -94,12 +94,23 @@
       },
       {
         "ordinal": 7,
+        "name": "room_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "room_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "room_code",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -107,8 +118,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Jsonb"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -119,9 +129,10 @@
       false,
       true,
       true,
+      true,
       null,
       null
     ]
   },
-  "hash": "d6a661885f43e83e8e6e334446377d5bfd14aa657bed32e30a428f1bcdefdc11"
+  "hash": "8f1e1295bad8b9fbaf88d50e41b110c657ed62a26d785c00f5953480e4030b25"
 }

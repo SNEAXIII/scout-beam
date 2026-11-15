@@ -1,5 +1,6 @@
 //! Every SQL statement of the room domain, and nothing else.
 
+use chrono::{DateTime, Utc};
 use sqlx::{PgExecutor, PgPool};
 use uuid::Uuid;
 
@@ -135,19 +136,23 @@ pub async fn turn_of(pool: &PgPool, game_id: Uuid) -> sqlx::Result<DuelTurn> {
     .await
 }
 
-/// The player acted: the opponent has priority from now.
-pub async fn record_action<'e, E>(executor: E, room_id: Uuid, user_id: Uuid) -> sqlx::Result<()>
+/// The player acted: the opponent has priority from now, the instant answered.
+pub async fn record_action<'e, E>(
+    executor: E,
+    room_id: Uuid,
+    user_id: Uuid,
+) -> sqlx::Result<DateTime<Utc>>
 where
     E: PgExecutor<'e>,
 {
-    sqlx::query!(
-        "UPDATE room SET last_actor_id = $2, last_action_at = now() WHERE id = $1",
+    sqlx::query_scalar!(
+        r#"UPDATE room SET last_actor_id = $2, last_action_at = now() WHERE id = $1
+           RETURNING last_action_at as "last_action_at!""#,
         room_id,
         user_id
     )
-    .execute(executor)
-    .await?;
-    Ok(())
+    .fetch_one(executor)
+    .await
 }
 
 /// Store the player's layout in a composing room: both layouts once stored, `None` when theirs

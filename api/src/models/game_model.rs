@@ -55,6 +55,7 @@ pub struct Game {
     pub solved_at: Option<DateTime<Utc>>,
     /// The day it was the daily of; `None` for a game against the bot.
     pub daily_date: Option<NaiveDate>,
+    pub room_id: Option<Uuid>,
     /// The room it is played in; `None` outside a room.
     pub room_code: Option<String>,
     pub wrong_propositions: i64,
@@ -135,6 +136,7 @@ mod tests {
             created_at: Utc::now(),
             solved_at: None,
             daily_date: None,
+            room_id: None,
             room_code: None,
             wrong_propositions: 0,
         };

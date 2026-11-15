@@ -1,5 +1,5 @@
 //! `/games/{game_id}/ws` — playing a game over one socket: shots, propositions and surrender,
-//! with what the player's other sockets on it change pushed in.
+//! with what the player's other sockets on it, and in a room the opponent, change pushed in.
 
 use std::time::Duration;
 
@@ -21,7 +21,7 @@ use crate::engine::Layout;
 use crate::errors::game_error::GameError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::models::game_model::Game;
-use crate::services::game_service::{self, Firing, Verdict};
+use crate::services::game_service::{self, Firing, Turn, Verdict};
 use crate::services::game_websocket_hub::WebSocketPush;
 use crate::shared::error::ApiError;
 use crate::shared::openapi::ErrorResponse;
@@ -41,8 +41,12 @@ pub fn router() -> OpenApiRouter<AppState> {
     description = "Authenticated at the upgrade, by the access cookie or a bearer header; the \
         server opens with `game`. Then `fire {entry}`, `propose {pieces}` and `surrender` are each \
         answered, in order, by `shot`, `verdict`, `game` or `error` carrying the HTTP status. The \
-        player's other sockets on the game are pushed `shot` and `game`. A refused connection, or \
-        the token expiring, sends an `error` with action `connect` and closes with code 4000 + status.",
+        player's other sockets on the game are pushed `shot` and `game`. In a room, both players' \
+        sockets are pushed `opponent {shots}`, the opponent's shot count, after each of their new \
+        shots; in a Duel `priority {actor, until}` after any shot or proposition, `actor` a login \
+        who may act again at the RFC 3339 `until`; and each its own `game` when the room ends. A \
+        refused connection, or the token expiring, sends an `error` with action `connect` and \
+        closes with code 4000 + status.",
     responses(
         (status = 101, description = "Switched to the game's WebSocket"),
         (status = 403, description = "Opened from another origin than the front's", body = ErrorResponse),
@@ -81,8 +85,7 @@ async fn run_websocket(
         Err(refusal) => return close_with_error(socket, refusal).await,
     };
     let ended = session.serve(&mut socket, &mut pushes, expires_at).await;
-    drop(pushes);
-    session.state.websocket_hub.release(game_id);
+    session.release(pushes);
     if let Some(refusal) = ended {
         close_with_error(socket, refusal).await;
     }
@@ -94,23 +97,23 @@ async fn join_game(
     state: AppState,
     game_id: Uuid,
     identity: Identity,
-) -> Result<
-    (
-        WebSocketSession,
-        broadcast::Receiver<WebSocketPush>,
-        Instant,
-    ),
-    ApiError,
-> {
+) -> Result<(WebSocketSession, Pushes, Instant), ApiError> {
     let CurrentUser(user) = CurrentUser::of(&state, identity.user_id).await?;
-    game_service::get_owned(&state.pool, game_id, user.id).await?;
+    let game = game_service::get_owned(&state.pool, game_id, user.id).await?;
 
     // Subscribed before the snapshot is read, so no event falls between the two.
-    let pushes = state.websocket_hub.subscribe(game_id);
+    let pushes = Pushes {
+        game: state.websocket_hub.subscribe(game_id),
+        room: game
+            .room_id
+            .map(|room_id| state.websocket_hub.subscribe(room_id)),
+    };
     let session = WebSocketSession {
         state,
         game_id,
+        room_id: game.room_id,
         user_id: user.id,
+        login: user.login,
         id: Uuid::new_v4(),
     };
     match session.snapshot().await {
@@ -120,18 +123,24 @@ async fn join_game(
             Ok((session, pushes, token_deadline(identity.expires_at)))
         }
         Err(error) => {
-            drop(pushes);
-            session.state.websocket_hub.release(game_id);
+            session.release(pushes);
             Err(error.into())
         }
     }
+}
+
+struct Pushes {
+    game: broadcast::Receiver<WebSocketPush>,
+    room: Option<broadcast::Receiver<WebSocketPush>>,
 }
 
 /// One authenticated socket on one game.
 struct WebSocketSession {
     state: AppState,
     game_id: Uuid,
+    room_id: Option<Uuid>,
     user_id: Uuid,
+    login: String,
     /// Tells this socket's own events apart from the other sockets'.
     id: Uuid,
 }
@@ -141,18 +150,54 @@ impl WebSocketSession {
     async fn serve(
         &self,
         socket: &mut WebSocket,
-        pushes: &mut broadcast::Receiver<WebSocketPush>,
+        pushes: &mut Pushes,
         expires_at: Instant,
     ) -> Option<ApiError> {
         let expiry = sleep_until(expires_at);
         tokio::pin!(expiry);
         loop {
             let outgoing = tokio::select! {
-                text = next_text_frame(socket) => self.answer_client_message(&text?).await,
-                event = pushes.recv() => match event { Ok(push) if push.origin == self.id => continue, Ok(push) => push.message, Err(RecvError::Lagged(_)) => match self.snapshot().await { Ok(game) => WebSocketServerMessage::Game { game }, Err(error) => return Some(error.into()), }, Err(RecvError::Closed) => return None, },
-                () = &mut expiry => return Some(AuthError::ExpiredToken.into()),
+                text = next_text_frame(socket) => Ok(Some(self.answer_client_message(&text?).await)),
+                event = pushes.game.recv() => self.pushed(event).await,
+                event = next_room_push(&mut pushes.room) => self.pushed(event).await,
+                () = &mut expiry => Err(Some(AuthError::ExpiredToken.into())),
             };
-            send_message(socket, &outgoing).await.ok()?;
+            match outgoing {
+                Ok(Some(message)) => send_message(socket, &message).await.ok()?,
+                Ok(None) => {}
+                Err(ended) => return ended,
+            }
+        }
+    }
+
+    /// What a push sends this socket: `None` to skip it, `Err` to end the connection.
+    async fn pushed(
+        &self,
+        event: Result<WebSocketPush, RecvError>,
+    ) -> Result<Option<WebSocketServerMessage>, Option<ApiError>> {
+        match event {
+            Ok(push) if push.origin == Some(self.id) || push.origin == Some(self.user_id) => {
+                Ok(None)
+            }
+            Ok(WebSocketPush {
+                message: Some(message),
+                ..
+            }) => Ok(Some(message)),
+            Ok(_) | Err(RecvError::Lagged(_)) => match self.snapshot().await {
+                Ok(game) => Ok(Some(WebSocketServerMessage::Game { game })),
+                Err(error) => Err(Some(error.into())),
+            },
+            Err(RecvError::Closed) => Err(None),
+        }
+    }
+
+    /// Once the socket closes: the receivers go before their channels are released.
+    fn release(&self, pushes: Pushes) {
+        drop(pushes);
+        let hub = &self.state.websocket_hub;
+        hub.release(self.game_id);
+        if let Some(room_id) = self.room_id {
+            hub.release(room_id);
         }
     }
 
@@ -187,20 +232,27 @@ impl WebSocketSession {
         let game = self.game().await?;
         let (shot, firing) =
             game_service::fire(&self.state.pool, &game, game_service::entry(entry)?).await?;
-        let replayed = firing == Firing::Replayed;
         let message = WebSocketServerMessage::Shot {
             shot: shot.into(),
-            replayed,
+            replayed: firing == Firing::Replayed,
         };
-        if !replayed {
+        if let Firing::New(turn) = firing {
             self.publish(message.clone());
+            if let Some(turn) = turn {
+                let opponent = WebSocketServerMessage::Opponent { shots: turn.fired };
+                self.publish_to_room(Some(self.user_id), Some(opponent));
+                self.publish_priority(turn);
+            }
         }
         Ok(message)
     }
 
     async fn propose(&self, layout: &Layout) -> Result<WebSocketServerMessage, GameError> {
         let game = self.game().await?;
-        let verdict = game_service::propose(&self.state.pool, &game, layout).await?;
+        let (verdict, turn) = game_service::propose(&self.state.pool, &game, layout).await?;
+        if let Some(turn) = turn {
+            self.publish_priority(turn);
+        }
         if let Verdict::Correct(solved) = &verdict {
             self.publish_end(solved).await;
         }
@@ -214,7 +266,7 @@ impl WebSocketSession {
         let message = WebSocketServerMessage::Game {
             game: GameView::new(&surrendered, shots),
         };
-        self.publish(message.clone());
+        self.publish_end_game(message.clone());
         Ok(message)
     }
 
@@ -232,7 +284,7 @@ impl WebSocketSession {
     /// The proposition is stored whatever happens here: a failure only leaves other tabs behind.
     async fn publish_end(&self, solved: &Game) {
         match game_service::shots_of(&self.state.pool, solved).await {
-            Ok(shots) => self.publish(WebSocketServerMessage::Game {
+            Ok(shots) => self.publish_end_game(WebSocketServerMessage::Game {
                 game: GameView::new(solved, shots),
             }),
             Err(error) => {
@@ -243,14 +295,49 @@ impl WebSocketSession {
         }
     }
 
+    /// In a room the end is the room's: every socket of both players sends its own game.
+    fn publish_end_game(&self, message: WebSocketServerMessage) {
+        if self.room_id.is_some() {
+            self.publish_to_room(Some(self.id), None);
+        } else {
+            self.publish(message);
+        }
+    }
+
+    fn publish_priority(&self, turn: Turn) {
+        if let Some(until) = turn.priority_until {
+            let actor = self.login.clone();
+            self.publish_to_room(
+                None,
+                Some(WebSocketServerMessage::Priority { actor, until }),
+            );
+        }
+    }
+
     fn publish(&self, message: WebSocketServerMessage) {
         self.state.websocket_hub.publish(
             self.game_id,
             WebSocketPush {
-                origin: self.id,
-                message,
+                origin: Some(self.id),
+                message: Some(message),
             },
         );
+    }
+
+    fn publish_to_room(&self, origin: Option<Uuid>, message: Option<WebSocketServerMessage>) {
+        if let Some(room_id) = self.room_id {
+            let push = WebSocketPush { origin, message };
+            self.state.websocket_hub.publish(room_id, push);
+        }
+    }
+}
+
+async fn next_room_push(
+    room: &mut Option<broadcast::Receiver<WebSocketPush>>,
+) -> Result<WebSocketPush, RecvError> {
+    match room {
+        Some(pushes) => pushes.recv().await,
+        None => std::future::pending().await,
     }
 }
 

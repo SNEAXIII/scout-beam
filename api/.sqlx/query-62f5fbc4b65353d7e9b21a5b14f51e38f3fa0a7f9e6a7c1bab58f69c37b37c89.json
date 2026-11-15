@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE room SET last_actor_id = $2, last_action_at = now() WHERE id = $1\n           RETURNING last_action_at as \"last_action_at!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "last_action_at!",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "last_action_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "62f5fbc4b65353d7e9b21a5b14f51e38f3fa0a7f9e6a7c1bab58f69c37b37c89"
+}

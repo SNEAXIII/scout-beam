@@ -64,10 +64,14 @@ pub struct DuelTurn {
     pub fired: i64,
 }
 
-/// What is left of the opponent's priority after a player's own action:
-/// 10 s × the entries that player has fired / 36.
+/// The opponent's priority after a player's action: 10 s × the entries that player has fired / 36.
+pub const fn priority_ms(fired: i64) -> i64 {
+    10_000 * fired / 36
+}
+
+/// What is left of the opponent's priority after a player's own action.
 pub fn priority_left_ms(fired: i64, since_own_action_ms: Option<i64>) -> u64 {
     since_own_action_ms.map_or(0, |since| {
-        u64::try_from(10_000 * fired / 36 - since).unwrap_or(0)
+        u64::try_from(priority_ms(fired) - since).unwrap_or(0)
     })
 }

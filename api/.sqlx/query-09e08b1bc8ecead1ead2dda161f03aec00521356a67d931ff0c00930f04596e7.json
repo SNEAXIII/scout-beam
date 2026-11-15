@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO game (user_id, layout, daily_date)\n           SELECT $1, layout, date FROM daily WHERE date = $2\n           ON CONFLICT (user_id, daily_date) DO NOTHING\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, NULL::text as room_code,\n                     0::int8 as \"wrong_propositions!\"",
+  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at, daily_date, room_id,\n                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"\n           FROM game\n           WHERE id = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
@@ -94,12 +94,23 @@
       },
       {
         "ordinal": 7,
+        "name": "room_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "room_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "room_code",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -108,7 +119,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Date"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -119,9 +130,10 @@
       false,
       true,
       true,
+      true,
       null,
       null
     ]
   },
-  "hash": "2dfee0a5bdfb13a83a7706663e81b215884d1e19fff36f2ee12530cb911add2f"
+  "hash": "09e08b1bc8ecead1ead2dda161f03aec00521356a67d931ff0c00930f04596e7"
 }

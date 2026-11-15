@@ -1,19 +1,29 @@
 //! Rules of a game: controllers never reach its repository but through here.
 
+use chrono::{DateTime, TimeDelta, Utc};
 use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
 use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::models::room_model::{RoomLock, RoomMode, priority_left_ms};
+use crate::models::room_model::{RoomLock, RoomMode, priority_left_ms, priority_ms};
 use crate::repositories::{game_repository, room_repository};
 
-/// Whether a shot was just fired or had been fired before.
+/// Whether a shot was just fired, with its turn in a room, or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Firing {
-    New,
+    New(Option<Turn>),
     Replayed,
+}
+
+/// A player's action in a room, as both players are told it once committed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Turn {
+    /// Entries that player has fired, this action included.
+    pub fired: i64,
+    /// A Duel only: when that player may act again, the opponent having priority until then.
+    pub priority_until: Option<DateTime<Utc>>,
 }
 
 /// What a stored proposition earned: the game, now solved, when it was correct.
@@ -62,11 +72,12 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
     // Locked before the insert: `fired` counts the shots before this one.
     let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
     if let Some(stored) = game_repository::insert_shot_if_absent(&mut *tx, game.id, &shot).await? {
-        if let Some(room) = &room {
-            take_turn(&mut tx, room, game.user_id).await?;
-        }
+        let turn = match &room {
+            Some(room) => Some(take_turn(&mut tx, room, game.user_id, room.fired + 1).await?),
+            None => None,
+        };
         tx.commit().await?;
-        return Ok((stored, Firing::New));
+        return Ok((stored, Firing::New(turn)));
     }
     tx.rollback().await?;
     game_repository::find_shot(pool, game.id, shot.entry)
@@ -76,8 +87,12 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
 }
 
 /// Store a valid proposition; a correct one solves the game in the same transaction, and wins
-/// its room.
-pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verdict, GameError> {
+/// its room. The turn comes along in a room.
+pub async fn propose(
+    pool: &PgPool,
+    game: &Game,
+    layout: &Layout,
+) -> Result<(Verdict, Option<Turn>), GameError> {
     playable(game.status)?;
     layout.validate()?;
     let correct = engine::same_shots(game.layout.pieces(), layout)?;
@@ -91,9 +106,10 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
         tx.rollback().await?;
         return Err(refusal);
     }
-    if let Some(room) = &room {
-        take_turn(&mut tx, room, game.user_id).await?;
-    }
+    let turn = match &room {
+        Some(room) => Some(take_turn(&mut tx, room, game.user_id, room.fired).await?),
+        None => None,
+    };
     game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
     let verdict = if correct {
         let solved = game_repository::mark_solved(&mut *tx, game.id).await?;
@@ -105,7 +121,7 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
         Verdict::Wrong
     };
     tx.commit().await?;
-    Ok(verdict)
+    Ok((verdict, turn))
 }
 
 /// Give up: the game ends unsolved and its layout is revealed; in a room, the opponent wins.
@@ -134,15 +150,27 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
 
 /// A Duel action passes only once the opponent's priority is over, then hands it to them.
 /// The caller's transaction holds the room lock; a refusal drops it, rolling back.
-async fn take_turn(tx: &mut PgConnection, room: &RoomLock, user_id: Uuid) -> Result<(), GameError> {
+async fn take_turn(
+    tx: &mut PgConnection,
+    room: &RoomLock,
+    user_id: Uuid,
+    fired: i64,
+) -> Result<Turn, GameError> {
     if room.mode != RoomMode::Duel {
-        return Ok(());
+        return Ok(Turn {
+            fired,
+            priority_until: None,
+        });
     }
     let retry_after_ms = priority_left_ms(room.fired, room.since_own_action_ms);
     if retry_after_ms > 0 {
         return Err(GameError::OpponentPriority { retry_after_ms });
     }
-    Ok(room_repository::record_action(tx, room.id, user_id).await?)
+    let acted_at = room_repository::record_action(tx, room.id, user_id).await?;
+    Ok(Turn {
+        fired,
+        priority_until: Some(acted_at + TimeDelta::milliseconds(priority_ms(fired))),
+    })
 }
 
 /// Only a game in progress takes a shot, a proposition or a surrender.

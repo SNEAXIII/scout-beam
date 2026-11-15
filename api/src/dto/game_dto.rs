@@ -127,7 +127,8 @@ pub enum WebSocketClientMessage {
     Surrender,
 }
 
-/// One answer per client message, in order, plus what another socket on the game changed.
+/// One answer per client message, in order, plus what another socket on the game or its room
+/// changed.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WebSocketServerMessage {
@@ -141,6 +142,15 @@ pub enum WebSocketServerMessage {
         replayed: bool,
     },
     Verdict(PropositionResponse),
+    /// A room only: the opponent's shot count, after each of their new shots.
+    Opponent {
+        shots: i64,
+    },
+    /// A Duel only, after either player's shot or proposition: `actor` may act again at `until`.
+    Priority {
+        actor: String,
+        until: DateTime<Utc>,
+    },
     /// The status and detail an HTTP endpoint would have answered.
     Error {
         action: Action,
