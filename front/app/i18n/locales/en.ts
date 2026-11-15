@@ -97,7 +97,7 @@ const en = {
   daily: {
     title: 'Daily',
     pickDay: 'Day — today’s, or an earlier one',
-    fireToStart: 'Fire a beam to start: the clock starts with it.',
+    fireToStart: 'Fire a shot by selecting a number',
     resume: 'Resume my game',
     seeGame: 'See my game',
     noDaily: 'There was no daily that day',

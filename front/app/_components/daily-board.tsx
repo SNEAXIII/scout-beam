@@ -25,22 +25,25 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
       className='mx-auto flex w-full flex-col gap-3'
       style={BOARD_COLUMN}
     >
-      <GameBoard
-        paths={paths}
-        layout={game?.layout}
-        disabled={game !== null || starting}
-        highlighted={highlighted}
-        onFire={(entry) => void start(entry)}
-        onHighlight={setHighlighted}
-      />
-      {game === null && (
-        <p
-          className='text-sm text-muted-foreground'
-          data-cy='daily-hint'
-        >
-          {t.daily.fireToStart}
-        </p>
-      )}
+      {/* The ring of entries is symmetric: the board's centre is the grid's. */}
+      <div className='relative'>
+        <GameBoard
+          paths={paths}
+          layout={game?.layout}
+          disabled={game !== null || starting}
+          highlighted={highlighted}
+          onFire={(entry) => void start(entry)}
+          onHighlight={setHighlighted}
+        />
+        {game === null && (
+          <p
+            className='pointer-events-none absolute inset-0 m-auto h-fit w-fit max-w-[60%] rounded-md bg-card/85 px-3 py-2 text-center text-sm font-medium'
+            data-cy='daily-hint'
+          >
+            {t.daily.fireToStart}
+          </p>
+        )}
+      </div>
       {game && (
         <Button
           asChild
