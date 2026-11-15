@@ -21,6 +21,7 @@ const en = {
     remove: 'remove',
     rightClick: 'Right-click',
     space: 'Space',
+    holdToRemove: 'Hold a piece to remove it',
   },
   login: {
     description: 'Sign in to find your games.',

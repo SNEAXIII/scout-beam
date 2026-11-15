@@ -23,6 +23,7 @@ const fr: Translations = {
     remove: 'retirer',
     rightClick: 'Clic droit',
     space: 'Espace',
+    holdToRemove: 'Maintenez une pièce pour la retirer',
   },
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
