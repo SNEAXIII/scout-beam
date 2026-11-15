@@ -64,15 +64,20 @@ async fn get_game_websocket(
     caller: Result<Identity, ApiError>,
     upgrade: WebSocketUpgrade,
 ) -> Result<Response, ApiError> {
-    // A browser sends the cookies whichever page opens the socket: only the front may.
-    // No `Origin` at all is a tool or a test, which can send any cookie it likes anyway.
-    if let Some(origin) = headers.get(ORIGIN)
-        && origin.as_bytes() != state.config.cors_allowed_origin.as_bytes()
-    {
-        return Err(ApiError::Forbidden("Origine non autorisée".into()));
-    }
+    check_origin(&state, &headers)?;
     // An auth refusal still upgrades: a browser reads the 4401 close code, never a 401 status.
     Ok(upgrade.on_upgrade(move |socket| run_websocket(socket, state, game_id, caller)))
+}
+
+/// A browser sends the cookies whichever page opens the socket: only the front may.
+/// No `Origin` at all is a tool or a test, which can send any cookie it likes anyway.
+pub(crate) fn check_origin(state: &AppState, headers: &HeaderMap) -> Result<(), ApiError> {
+    match headers.get(ORIGIN) {
+        Some(origin) if origin.as_bytes() != state.config.cors_allowed_origin.as_bytes() => {
+            Err(ApiError::Forbidden("Origine non autorisée".into()))
+        }
+        _ => Ok(()),
+    }
 }
 
 async fn run_websocket(
@@ -334,7 +339,7 @@ async fn next_room_push(
 }
 
 /// The next text frame; `None` once the client is gone. axum answers pings itself.
-async fn next_text_frame(socket: &mut WebSocket) -> Option<Utf8Bytes> {
+pub(crate) async fn next_text_frame(socket: &mut WebSocket) -> Option<Utf8Bytes> {
     loop {
         match socket.recv().await? {
             Ok(Message::Text(text)) => return Some(text),
@@ -344,7 +349,7 @@ async fn next_text_frame(socket: &mut WebSocket) -> Option<Utf8Bytes> {
     }
 }
 
-async fn send_message(
+pub(crate) async fn send_message(
     socket: &mut WebSocket,
     message: &WebSocketServerMessage,
 ) -> Result<(), axum::Error> {
@@ -364,7 +369,7 @@ fn error_message(action: Action, refusal: ApiError) -> WebSocketServerMessage {
 }
 
 /// Say why, then close with 4000 + the status; the client may be gone already, hence no check.
-async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
+pub(crate) async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
     let (status, detail) = refusal.into_parts();
     let status = status.as_u16();
     let message = WebSocketServerMessage::Error {
@@ -383,7 +388,7 @@ async fn close_with_error(mut socket: WebSocket, refusal: ApiError) {
 }
 
 /// The token's `exp` as a deadline for the socket, capped so the addition cannot overflow.
-fn token_deadline(exp: i64) -> Instant {
+pub(crate) fn token_deadline(exp: i64) -> Instant {
     const CAP: Duration = Duration::from_hours(24 * 365);
     let left = u64::try_from(exp.saturating_sub(Utc::now().timestamp())).unwrap_or(0);
     Instant::now() + Duration::from_secs(left).min(CAP)

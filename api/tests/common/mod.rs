@@ -93,7 +93,24 @@ impl TestApp {
         game_id: Uuid,
         headers: impl IntoIterator<Item = (http::HeaderName, String)>,
     ) -> Result<GameSocket, StatusCode> {
-        let mut request = format!("ws://{}/games/{game_id}/ws", self.addr)
+        self.open_socket(&format!("/games/{game_id}/ws"), headers)
+            .await
+    }
+
+    /// A room's lobby socket, its first message still unread.
+    pub async fn open_room_socket(&self, code: &str, token: &str) -> GameSocket {
+        let bearer = (http::header::AUTHORIZATION, format!("Bearer {token}"));
+        self.open_socket(&format!("/rooms/{code}/ws"), [bearer])
+            .await
+            .expect("the socket opens")
+    }
+
+    async fn open_socket(
+        &self,
+        path: &str,
+        headers: impl IntoIterator<Item = (http::HeaderName, String)>,
+    ) -> Result<GameSocket, StatusCode> {
+        let mut request = format!("ws://{}{path}", self.addr)
             .into_client_request()
             .expect("the URL is a request");
         for (name, value) in headers {

@@ -3,8 +3,9 @@
 
 mod common;
 
-use common::{Response, TestApp};
+use common::{Response, TestApp, answered};
 use http::StatusCode;
+use scout_beam::engine::draw_layout;
 use scout_beam::shared::role::Role;
 use serde_json::json;
 use sqlx::PgPool;
@@ -235,4 +236,32 @@ async fn a_non_member_sees_only_the_public_fields(pool: PgPool) {
     app.get("/rooms/ZZZZZZ", Some(&stranger))
         .await
         .assert_status(StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test]
+async fn the_lobby_socket_signals_each_change_of_the_room(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, host) = app.seed_with_token("host", Role::User).await;
+    let (_, opponent) = app.seed_with_token("opponent", Role::User).await;
+    let code = app.open_room(&host, "duel").await;
+    let mut lobby = app.open_room_socket(&code, &host).await;
+    assert_eq!(lobby.next().await.unwrap(), json!({ "type": "room" }));
+
+    app.join_room(&code, &opponent)
+        .await
+        .assert_status(StatusCode::OK);
+    assert_eq!(lobby.next().await.unwrap(), json!({ "type": "room" }));
+
+    let layout = serde_json::to_value(draw_layout(&mut rand::rng()).unwrap()).unwrap();
+    app.post(&format!("/rooms/{code}/layout"), Some(&opponent), layout)
+        .await
+        .assert_status(StatusCode::CREATED);
+    assert_eq!(lobby.next().await.unwrap(), json!({ "type": "room" }));
+    lobby.assert_quiet().await;
+
+    let (_, guest) = app.guest().await;
+    let mut refused = app.open_room_socket(&code, &guest).await;
+    let refusal = answered(refused.next().await.unwrap());
+    refusal.assert_status(StatusCode::FORBIDDEN);
+    assert_eq!(refused.next().await, Err(Some(4403)));
 }
