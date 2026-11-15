@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at, daily_date,\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"\n           FROM game\n           WHERE user_id = $1 AND daily_date = $2",
+  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at, daily_date,\n                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"\n           FROM game\n           WHERE id = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
@@ -46,7 +46,8 @@
               "Enum": [
                 "in_progress",
                 "solved",
-                "surrendered"
+                "surrendered",
+                "lost"
               ]
             }
           }
@@ -93,6 +94,12 @@
       },
       {
         "ordinal": 7,
+        "name": "room_code",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -101,7 +108,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Date"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -112,8 +119,9 @@
       false,
       true,
       true,
+      null,
       null
     ]
   },
-  "hash": "f2cd78c7347e1c452f2b6974e78f9db213a4a141af279817ed2a609f7f2eae9e"
+  "hash": "c0acc35c51d68e2fe310c86489b6cd7c87a986a2bb3e8e3e358f64a9b024a63d"
 }

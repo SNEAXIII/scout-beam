@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO room (code, mode, host_id) VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        {
+          "Custom": {
+            "name": "room_mode",
+            "kind": {
+              "Enum": [
+                "race",
+                "duel"
+              ]
+            }
+          }
+        },
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c42fd03fe89aa7cbaa717999480a3f3f6080cb11472e9c28e741a247121599f9"
+}

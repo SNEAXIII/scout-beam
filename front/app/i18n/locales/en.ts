@@ -123,6 +123,7 @@ const en = {
     in_progress: 'In progress',
     solved: 'Solved',
     surrendered: 'Surrendered',
+    lost: 'Lost',
   },
   game: {
     title: 'Game',
@@ -136,6 +137,7 @@ const en = {
     reconnecting: 'Connection lost, reconnecting…',
     solved: 'Game solved: here are the hidden pieces. Firing is disabled.',
     surrendered: 'Game surrendered: here are the hidden pieces. Firing is disabled.',
+    lost: 'Game lost: your opponent found first. Here are the hidden pieces.',
     grid: 'Grid',
     gridRevealed: 'Grid and hidden pieces',
     removePiece: 'Right-click or Space to remove the {{shape}} piece',

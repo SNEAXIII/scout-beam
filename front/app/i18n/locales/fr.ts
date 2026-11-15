@@ -128,6 +128,7 @@ const fr: Translations = {
     in_progress: 'En cours',
     solved: 'Résolue',
     surrendered: 'Abandonnée',
+    lost: 'Perdue',
   },
   game: {
     title: 'Partie',
@@ -141,6 +142,7 @@ const fr: Translations = {
     reconnecting: 'Connexion perdue, reconnexion…',
     solved: 'Partie résolue : voici les pièces cachées. Le tir est désactivé.',
     surrendered: 'Partie abandonnée : voici les pièces cachées. Le tir est désactivé.',
+    lost: 'Partie perdue : votre adversaire a trouvé avant vous. Voici les pièces cachées.',
     grid: 'Grille',
     gridRevealed: 'Grille et pièces cachées',
     removePiece: 'Clic droit ou Espace pour retirer la pièce « {{shape}} »',

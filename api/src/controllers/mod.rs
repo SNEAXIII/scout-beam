@@ -5,6 +5,7 @@
 pub mod daily_controller;
 pub mod game_controller;
 pub mod game_websocket_controller;
+pub mod room_controller;
 pub mod user_controller;
 
 use utoipa_axum::router::OpenApiRouter;
@@ -17,4 +18,5 @@ pub fn router(dev_login_enabled: bool) -> OpenApiRouter<AppState> {
         .merge(game_controller::router())
         .merge(game_websocket_controller::router())
         .merge(daily_controller::router())
+        .merge(room_controller::router())
 }

@@ -18,6 +18,8 @@ pub enum GameStatus {
     InProgress,
     Solved,
     Surrendered,
+    /// A room game whose opponent won.
+    Lost,
 }
 
 /// The hidden layout as stored. No `Serialize`, and a `Debug` that prints nothing: it cannot
@@ -53,11 +55,13 @@ pub struct Game {
     pub solved_at: Option<DateTime<Utc>>,
     /// The day it was the daily of; `None` for a game against the bot.
     pub daily_date: Option<NaiveDate>,
+    /// The room it is played in; `None` outside a room.
+    pub room_code: Option<String>,
     pub wrong_propositions: i64,
 }
 
 impl Game {
-    /// The hidden layout, once the game is over: solved or surrendered.
+    /// The hidden layout, once the game is over: solved, surrendered or lost.
     pub fn revealed_layout(&self) -> Option<&Layout> {
         (self.status != GameStatus::InProgress).then(|| self.layout.pieces())
     }
@@ -131,6 +135,7 @@ mod tests {
             created_at: Utc::now(),
             solved_at: None,
             daily_date: None,
+            room_code: None,
             wrong_propositions: 0,
         };
 

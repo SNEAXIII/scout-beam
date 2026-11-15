@@ -52,6 +52,9 @@ with `ENV=dev`; an omitted login is generated server-side.
 | POST | `/daily/{date}/game` | any signed-in user, guests included — the caller's game of that day: 201 on the first call, the same game with 200 afterwards; today's layout is drawn on first sight, a past day without a daily or a day to come is 404; a daily cannot be surrendered (409) |
 | GET | `/daily/{date}/ranking` | anyone — that day's top 100 by score (seconds to solve plus 60 per wrong proposition), games started that same day by registered players; with a session, `me` is the caller's line even outside the top |
 | GET | `/ranking` | anyone — top 100 by points summed over every solved daily, late ones included, registered players only; same `me` |
+| POST | `/rooms` | any registered user (guests get 403 on every room route) — opens a waiting room for a `race` or a `duel` under a 6-character code, also its invitation link `/rooms/<code>` |
+| GET | `/rooms/{code}` | any registered user — its two players see both logins, the winner and their own game id; anyone else only the mode, status and host |
+| POST | `/rooms/{code}/join` | any registered user but the host — takes the free seat (409 once full); a Race starts both games on one layout, the first correct proposition wins and the other game is `lost`, a surrender hands the win to the opponent |
 | GET | `/health` | anyone |
 | GET | `/docs` | anyone — Swagger UI |
 

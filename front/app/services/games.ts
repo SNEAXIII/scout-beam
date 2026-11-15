@@ -2,7 +2,7 @@ import { apiRequest } from '@/app/lib/api'
 import type { BeamColour } from '@/app/lib/colours'
 import type { Layout } from '@/app/lib/pieces'
 
-export type GameStatus = 'in_progress' | 'solved' | 'surrendered'
+export type GameStatus = 'in_progress' | 'solved' | 'surrendered' | 'lost'
 
 export interface GameSummary {
   id: string

@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
 use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::repositories::game_repository;
+use crate::repositories::{game_repository, room_repository};
 
 /// Whether a shot was just fired or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,13 +66,16 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
         .ok_or(GameError::NotFound)
 }
 
-/// Store a valid proposition; a correct one solves the game in the same transaction.
+/// Store a valid proposition; a correct one solves the game in the same transaction, and wins
+/// its room.
 pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verdict, GameError> {
     playable(game.status)?;
     layout.validate()?;
     let correct = engine::same_shots(game.layout.pieces(), layout)?;
 
     let mut tx = pool.begin().await?;
+    // Room before game, here and in `surrender`: both players' endings lock in the same order.
+    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
     // The lock holds a racing proposition or surrender until this one commits; it then reads the end.
     let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
@@ -81,7 +84,11 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
     }
     game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
     let verdict = if correct {
-        Verdict::Correct(game_repository::mark_solved(&mut *tx, game.id).await?)
+        let solved = game_repository::mark_solved(&mut *tx, game.id).await?;
+        if let Some(room) = room {
+            room_repository::finish(&mut *tx, room.id, game.user_id).await?;
+        }
+        Verdict::Correct(solved)
     } else {
         Verdict::Wrong
     };
@@ -89,7 +96,8 @@ pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verd
     Ok(verdict)
 }
 
-/// Give up: the game ends unsolved and its layout is revealed. A daily is never given up.
+/// Give up: the game ends unsolved and its layout is revealed; in a room, the opponent wins.
+/// A daily is never given up.
 pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     if game.daily_date.is_some() {
         return Err(GameError::DailySurrender);
@@ -97,13 +105,17 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     playable(game.status)?;
 
     let mut tx = pool.begin().await?;
-    // Same lock as `propose`: whichever of the two commits first ends the game.
+    // Same locks as `propose`: whichever of the two commits first ends the game.
+    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
     let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
     }
     let surrendered = game_repository::mark_surrendered(&mut *tx, game.id).await?;
+    if let Some(room) = room {
+        room_repository::finish(&mut *tx, room.id, room.opponent_id).await?;
+    }
     tx.commit().await?;
     Ok(surrendered)
 }
@@ -114,6 +126,7 @@ const fn playable(status: GameStatus) -> Result<(), GameError> {
         GameStatus::InProgress => Ok(()),
         GameStatus::Solved => Err(GameError::AlreadySolved),
         GameStatus::Surrendered => Err(GameError::Surrendered),
+        GameStatus::Lost => Err(GameError::Lost),
     }
 }
 

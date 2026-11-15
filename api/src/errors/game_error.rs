@@ -25,6 +25,9 @@ pub enum GameError {
     #[error("Cette partie a été abandonnée")]
     Surrendered,
 
+    #[error("Cette partie est perdue : l'adversaire a gagné")]
+    Lost,
+
     #[error("Une entrée est numérotée de 1 à 36")]
     InvalidEntry,
 
@@ -48,9 +51,10 @@ impl From<GameError> for ApiError {
             GameError::Database(cause) => Self::Database(cause),
             GameError::NotFound | GameError::DailyNotFound => Self::NotFound(message),
             GameError::AccountRequired => Self::Forbidden(message),
-            GameError::AlreadySolved | GameError::Surrendered | GameError::DailySurrender => {
-                Self::Conflict(message)
-            }
+            GameError::AlreadySolved
+            | GameError::Surrendered
+            | GameError::Lost
+            | GameError::DailySurrender => Self::Conflict(message),
             GameError::InvalidEntry | GameError::InvalidLayout(_) => {
                 Self::UnprocessableBody(message)
             }

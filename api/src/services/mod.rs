@@ -5,4 +5,5 @@ pub mod game_websocket_hub;
 pub mod login_generator;
 pub mod oauth_service;
 pub mod password;
+pub mod room_service;
 pub mod user_service;

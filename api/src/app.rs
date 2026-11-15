@@ -38,6 +38,7 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
         (name = "Auth", description = "Sessions and tokens"),
         (name = "Games", description = "Games against the bot, the shots fired at them and the propositions"),
         (name = "Daily", description = "The game of the day, the same layout for every player"),
+        (name = "Rooms", description = "Two players meeting through a code, for a Race or a Duel"),
     ),
     modifiers(&SecurityAddon),
 )]

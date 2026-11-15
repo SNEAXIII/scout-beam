@@ -14,6 +14,7 @@ pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Re
         Game,
         r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
                   created_at, solved_at, daily_date,
+                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                   (SELECT count(*) FROM proposition
                    WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
            FROM game
@@ -44,12 +45,34 @@ pub async fn insert(pool: &PgPool, user_id: Uuid, layout: &SealedLayout) -> sqlx
         r#"INSERT INTO game (user_id, layout)
            VALUES ($1, $2)
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, 0::int8 as "wrong_propositions!""#,
+                     created_at, solved_at, daily_date, NULL::text as room_code,
+                     0::int8 as "wrong_propositions!""#,
         user_id,
         layout as _
     )
     .fetch_one(pool)
     .await
+}
+
+/// A game on a room's layout; the room's own transaction runs it.
+pub async fn insert_in_room<'e, E>(
+    executor: E,
+    user_id: Uuid,
+    room_id: Uuid,
+    layout: &SealedLayout,
+) -> sqlx::Result<()>
+where
+    E: PgExecutor<'e>,
+{
+    sqlx::query!(
+        "INSERT INTO game (user_id, layout, room_id) VALUES ($1, $2, $3)",
+        user_id,
+        layout as _,
+        room_id
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
 }
 
 /// The caller's game of that day, if they started it.
@@ -62,6 +85,7 @@ pub async fn find_daily(
         Game,
         r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
                   created_at, solved_at, daily_date,
+                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                   (SELECT count(*) FROM proposition
                    WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
            FROM game
@@ -85,7 +109,8 @@ pub async fn insert_daily(
            SELECT $1, layout, date FROM daily WHERE date = $2
            ON CONFLICT (user_id, daily_date) DO NOTHING
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, 0::int8 as "wrong_propositions!""#,
+                     created_at, solved_at, daily_date, NULL::text as room_code,
+                     0::int8 as "wrong_propositions!""#,
         user_id,
         date
     )
@@ -183,6 +208,7 @@ where
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
                      created_at, solved_at, daily_date,
+                     (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                      (SELECT count(*) FROM proposition
                       WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,
         game_id
@@ -201,6 +227,7 @@ where
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
                      created_at, solved_at, daily_date,
+                     (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                      (SELECT count(*) FROM proposition
                       WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,
         game_id

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE game SET status = 'solved', solved_at = now()\n           WHERE id = $1\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date,\n                     (SELECT count(*) FROM proposition\n                      WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"",
+  "query": "INSERT INTO game (user_id, layout, daily_date)\n           SELECT $1, layout, date FROM daily WHERE date = $2\n           ON CONFLICT (user_id, daily_date) DO NOTHING\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, NULL::text as room_code,\n                     0::int8 as \"wrong_propositions!\"",
   "describe": {
     "columns": [
       {
@@ -46,7 +46,8 @@
               "Enum": [
                 "in_progress",
                 "solved",
-                "surrendered"
+                "surrendered",
+                "lost"
               ]
             }
           }
@@ -93,6 +94,12 @@
       },
       {
         "ordinal": 7,
+        "name": "room_code",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -100,7 +107,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Date"
       ]
     },
     "nullable": [
@@ -111,8 +119,9 @@
       false,
       true,
       true,
+      null,
       null
     ]
   },
-  "hash": "e81ac41f14ae9d7b16ad270904ad75100bc07f050a4d1962d863125eea6c6f91"
+  "hash": "2dfee0a5bdfb13a83a7706663e81b215884d1e19fff36f2ee12530cb911add2f"
 }
