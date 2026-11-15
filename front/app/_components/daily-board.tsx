@@ -37,7 +37,7 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
         />
         {game === null && (
           <p
-            className='pointer-events-none absolute inset-0 m-auto h-fit w-fit max-w-[60%] rounded-md bg-card/85 px-3 py-2 text-center text-sm font-medium'
+            className='pointer-events-none absolute inset-0 m-auto h-fit w-fit max-w-[70%] rounded-lg bg-card/85 px-5 py-3 text-center text-xl font-semibold md:text-2xl'
             data-cy='daily-hint'
           >
             {t.daily.fireToStart}
