@@ -3,20 +3,13 @@
 import { useEffect, useState } from 'react'
 import { Timer } from 'lucide-react'
 import { fill, useI18n } from '@/app/i18n'
+import { clock } from '@/app/lib/clock'
 
 interface DailyTimerProps {
   readonly createdAt: string
   /** Freezes the timer. */
   readonly solvedAt: string | null
   readonly wrongPropositions: number
-}
-
-const pad = (value: number) => String(value).padStart(2, '0')
-
-function clock(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
-  const rest = `${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`
-  return hours > 0 ? `${hours}:${rest}` : rest
 }
 
 /** Time since the daily started, and its penalty: a minute per wrong proposition. */

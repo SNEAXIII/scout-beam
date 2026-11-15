@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, LogOut } from 'lucide-react'
+import { CalendarDays, LogOut, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import { logout } from '@/app/services/auth'
@@ -37,6 +37,20 @@ export default function PlayHeader() {
           </Link>
         </Button>
         <NewGameButton />
+        <Button
+          asChild
+          variant='ghost'
+          size='icon'
+        >
+          <Link
+            href='/ranking'
+            aria-label={t.play.ranking}
+            title={t.play.ranking}
+            data-cy='ranking-link'
+          >
+            <Trophy />
+          </Link>
+        </Button>
         <Button
           variant='ghost'
           size='icon'

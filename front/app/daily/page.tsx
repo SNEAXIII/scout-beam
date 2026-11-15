@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
 import DailyPlayCard from './_components/daily-play-card'
+import DayRanking from './_components/day-ranking'
 import { useDaily } from './_viewmodels/use-daily'
 
 export default function DailyPage() {
@@ -34,6 +35,7 @@ export default function DailyPage() {
         </div>
       </header>
       <DailyPlayCard daily={daily} />
+      <DayRanking date={daily.date} />
     </main>
   )
 }

@@ -17,3 +17,34 @@ export async function playDaily(date: string): Promise<GameView> {
   if (!(await refreshSession())) await guestLogin()
   return start()
 }
+
+export interface RankingEntry {
+  /** Equal scores or points share a rank. */
+  rank: number
+  login: string
+}
+
+export interface DayRankingEntry extends RankingEntry {
+  /** Seconds plus 60 per wrong proposition; lower is better. */
+  score: number
+  seconds: number
+  wrong_propositions: number
+}
+
+export interface GlobalRankingEntry extends RankingEntry {
+  points: number
+  dailies_solved: number
+}
+
+export interface Ranking<T extends RankingEntry> {
+  top: T[]
+  /** The caller's line, inside the top or not; null when signed out or unranked. */
+  me: T | null
+}
+
+// Public routes: an expired access cookie only leaves `me` empty, so no refresh nor /login.
+export const getDayRanking = (date: string) =>
+  apiRequest<Ranking<DayRankingEntry>>(`/daily/${date}/ranking`, { noRedirect: true })
+
+export const getRanking = () =>
+  apiRequest<Ranking<GlobalRankingEntry>>('/ranking', { noRedirect: true })

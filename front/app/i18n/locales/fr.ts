@@ -67,6 +67,7 @@ const fr: Translations = {
     createFailed: 'Création impossible',
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',
+    ranking: 'Classement',
   },
   landing: {
     title: 'Scout Beam',
@@ -110,6 +111,19 @@ const fr: Translations = {
     saveTitle: 'Gardez cette partie',
     saveText: 'Inscrivez-vous pour garder votre partie et entrer au classement.',
     saveCta: 'S’inscrire',
+  },
+  ranking: {
+    title: 'Classement',
+    back: 'Retour à l’accueil',
+    daily: 'Quotidienne',
+    dayTitle: 'Classement du jour',
+    global: 'Classement général',
+    empty: 'Personne de classé pour l’instant.',
+    rank: '#',
+    login: 'Joueur',
+    time: 'Temps',
+    points: 'Points',
+    dailiesSolved: 'Quotidiennes résolues',
   },
   status: {
     in_progress: 'En cours',

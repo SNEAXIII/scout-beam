@@ -10,12 +10,11 @@ auth → home page → daily → rooms (Race and Duel). Vocabulary: `CONTEXT.md`
 | --- | --- | --- |
 | Auth | `docs/plans/2026-11-14-auth.md` | merged, PR #10 |
 | Home page | `docs/plans/2026-11-15-home-page.md` | merged, PR #11 |
-| Daily | `docs/plans/2026-11-15-daily.md` | **in progress** on `feat/daily` |
+| Daily | `docs/plans/2026-11-15-daily.md` | done on `feat/daily`, PR to open |
 | Rooms | `docs/plans/2026-11-15-duel-race.md` | planned, starts after the daily is merged |
 
-On `feat/daily`, Tasks 1 and 2 (API) are committed; **Task 3 (playing the daily, front)** was
-handed to an implementer subagent when this was last updated: its work may sit uncommitted in the
-tree. Check `git status` and finish or review it before starting Task 4.
+On `feat/daily`, the four tasks are committed and reviewed; nothing was checked in a browser yet.
+Next: a manual pass (`make dev` + `pnpm dev`), the PR, then the rooms plan from `main`.
 
 ## How the work runs
 

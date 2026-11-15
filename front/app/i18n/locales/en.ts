@@ -63,6 +63,7 @@ const en = {
     createFailed: 'Could not create the game',
     empty: 'No games yet. Start one!',
     daily: 'Daily',
+    ranking: 'Ranking',
   },
   landing: {
     title: 'Scout Beam',
@@ -105,6 +106,19 @@ const en = {
     saveTitle: 'Keep this game',
     saveText: 'Sign up to keep your game and enter the ranking.',
     saveCta: 'Sign up',
+  },
+  ranking: {
+    title: 'Ranking',
+    back: 'Back to home',
+    daily: 'Daily',
+    dayTitle: 'Ranking of the day',
+    global: 'Global ranking',
+    empty: 'Nobody ranked yet.',
+    rank: '#',
+    login: 'Player',
+    time: 'Time',
+    points: 'Points',
+    dailiesSolved: 'Dailies solved',
   },
   status: {
     in_progress: 'In progress',
