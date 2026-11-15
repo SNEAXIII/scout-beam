@@ -10,6 +10,7 @@ import KeyboardLayoutToggle from '@/app/games/[id]/_components/keyboard-layout-t
 import { useKeyboardLayout } from '@/app/games/[id]/_viewmodels/use-keyboard-layout'
 import { useCompose } from '../_viewmodels/use-compose'
 import ComposeBoard from './compose-board'
+import HiddenBoard from './hidden-board'
 import RoomPlayers from './room-players'
 
 interface RoomComposeProps {
@@ -63,12 +64,7 @@ export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
       </header>
       <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>
         {compose.hidden ? (
-          <p
-            className='text-sm text-muted-foreground'
-            data-cy='room-state-hidden'
-          >
-            {t.rooms.hidden}
-          </p>
+          <HiddenBoard pieces={compose.layout} />
         ) : (
           <ComposeBoard
             code={room.code}

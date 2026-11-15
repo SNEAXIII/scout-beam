@@ -13,6 +13,8 @@ export function useCompose(code: string, onRoom: (room: RoomView) => void) {
   const { t } = useI18n()
   // The room does not say whose layout is hidden: a 409 after a reload tells it instead.
   const [hidden, setHidden] = useState(false)
+  // Shown back while waiting; unknown when a reload learnt of it from a 409.
+  const [layout, setLayout] = useState<readonly Piece[]>([])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,6 +23,7 @@ export function useCompose(code: string, onRoom: (room: RoomView) => void) {
     setError(null)
     try {
       onRoom(await hideLayout(code, pieces))
+      setLayout(pieces)
     } catch (caught) {
       if (!(caught instanceof ApiError && caught.status === 409))
         return setError(caught instanceof Error ? caught.message : t.rooms.hideFailed)
@@ -31,5 +34,5 @@ export function useCompose(code: string, onRoom: (room: RoomView) => void) {
     clearDraft(composeKey(code))
   }
 
-  return { hidden, pending, error, hide }
+  return { hidden, layout, pending, error, hide }
 }
