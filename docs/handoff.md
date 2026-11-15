@@ -34,7 +34,8 @@ junction (`mklink /J`), removed with `rmdir` before the worktree. Agent worktree
 
 ## Decisions not written elsewhere
 
-- **Daily**: everything is in its plan. Score = time + 60 s per wrong proposition, displayed as raw
+- **Daily**: everything is in its plan. `/` is today's daily, like the .dle sites; the rules and
+  the Orapa Mine credit live on `/rules`, behind a `?` button. Score = time + 60 s per wrong proposition, displayed as raw
   time with the penalty beside it ("12:34 + 2 min"); shots counted but not shown yet. Points
   `max(100, 1000 - floor(score/6))`, global ranking = sum of points, late dailies included; the day
   ranking only counts games played on their day. No surrender. A past day can be replayed only if
