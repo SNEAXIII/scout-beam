@@ -5,6 +5,13 @@ import type { GameView } from './games'
 /** Today's date in Paris, as `YYYY-MM-DD`: the day changes on the API's clock, not the browser's. */
 export const getToday = () => apiRequest<{ date: string }>('/daily/today').then(({ date }) => date)
 
+/** The caller's game of that day if they started it; null otherwise or when signed out. */
+export const findDaily = (date: string) =>
+  apiRequest<GameView>(`/daily/${date}/game`, { noRedirect: true }).catch((caught: unknown) => {
+    if (caught instanceof ApiError && [401, 404].includes(caught.status)) return null
+    throw caught
+  })
+
 /** The caller's game of that day, signing in as a guest first when there is no session at all. */
 export async function playDaily(date: string): Promise<GameView> {
   const start = () =>

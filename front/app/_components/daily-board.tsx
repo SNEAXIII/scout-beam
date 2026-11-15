@@ -1,67 +1,69 @@
 'use client'
 
-import { Play } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useI18n } from '@/app/i18n'
+import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
+import { shotPaths } from '@/app/games/[id]/_components/shot-paths'
 import type { useDaily } from '../_viewmodels/use-daily'
 
-interface DailyPlayCardProps {
+interface DailyBoardProps {
   readonly daily: ReturnType<typeof useDaily>
 }
 
-/** `YYYY-MM-DD` read as a calendar day, whatever the browser's time zone. */
-const formatDay = (date: string, locale: string) =>
-  new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(date))
+/** The picked day's grid: empty and live until the first shot, else the caller's game on it. */
+export default function DailyBoard({ daily }: DailyBoardProps) {
+  const { t } = useI18n()
+  const { game, starting, error, start } = daily
+  const [highlighted, setHighlighted] = useState<string | null>(null)
+  const paths = useMemo(() => shotPaths(game?.shots ?? []), [game])
 
-export default function DailyPlayCard({ daily }: DailyPlayCardProps) {
-  const { t, locale } = useI18n()
-  const { today, date, setDate, starting, error, play } = daily
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle
-          className='first-letter:uppercase'
-          data-cy='daily-date'
+    <div
+      className='mx-auto flex w-full flex-col gap-3'
+      style={BOARD_COLUMN}
+    >
+      <GameBoard
+        paths={paths}
+        layout={game?.layout}
+        disabled={game !== null || starting}
+        highlighted={highlighted}
+        onFire={(entry) => void start(entry)}
+        onHighlight={setHighlighted}
+      />
+      {game === null && (
+        <p
+          className='text-sm text-muted-foreground'
+          data-cy='daily-hint'
         >
-          {date ? formatDay(date, locale) : t.common.loading}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className='flex flex-col gap-4'>
-        <div className='flex flex-col gap-2'>
-          <Label htmlFor='daily-day'>{t.daily.pickDay}</Label>
-          <Input
-            id='daily-day'
-            type='date'
-            max={today ?? undefined}
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            disabled={today === null}
-            className='w-fit'
-            data-cy='daily-day'
-          />
-        </div>
+          {t.daily.fireToStart}
+        </p>
+      )}
+      {game && (
         <Button
-          onClick={() => void play()}
-          disabled={!date || starting}
+          asChild
           className='w-fit'
-          data-cy='daily-play'
         >
-          <Play />
-          {t.daily.play}
-        </Button>
-        {error && (
-          <p
-            className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
-            role='alert'
-            data-cy='daily-error'
+          <Link
+            href={`/games/${game.id}`}
+            data-cy='daily-resume'
           >
-            {error}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+            {game.status === 'in_progress' ? t.daily.resume : t.daily.seeGame}
+            <ArrowRight />
+          </Link>
+        </Button>
+      )}
+      {error && (
+        <p
+          className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
+          role='alert'
+          data-cy='daily-error'
+        >
+          {error}
+        </p>
+      )}
+    </div>
   )
 }

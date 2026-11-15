@@ -102,7 +102,9 @@ const fr: Translations = {
   daily: {
     title: 'Quotidienne',
     pickDay: 'Jour — aujourd’hui, ou un jour passé',
-    play: 'Jouer',
+    fireToStart: 'Tirez un rayon pour commencer : le chrono part avec lui.',
+    resume: 'Reprendre ma partie',
+    seeGame: 'Voir ma partie',
     noDaily: 'Pas de quotidienne ce jour-là',
     startFailed: 'Impossible de lancer la quotidienne',
     timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',

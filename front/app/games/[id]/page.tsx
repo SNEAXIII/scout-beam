@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
 import DraftPanel from './_components/draft-panel'
 import GameBoard, { BOARD_COLUMN } from './_components/game-board'
@@ -18,6 +18,15 @@ export default function GamePage() {
   const { game, error, connected, surrendering, load, fire, surrender, propose } = useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
+  const router = useRouter()
+  const firstShot = useSearchParams().get('fire')
+
+  // The daily's first shot, clicked on `/` before the game existed.
+  useEffect(() => {
+    if (!connected || firstShot === null) return
+    fire(Number(firstShot))
+    router.replace(`/games/${id}`)
+  }, [connected, firstShot, fire, router, id])
 
   const shots = useMemo(() => game?.shots ?? [], [game])
   const paths = useMemo(() => shotPaths(shots), [shots])
