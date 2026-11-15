@@ -15,6 +15,8 @@ export interface GameBoardProps {
   readonly highlighted: string | null
   readonly onFire: (entry: number) => void
   readonly onHighlight: (key: string | null) => void
+  /** Leaves the ring empty, its room kept: a Duel's layout is composed without entries. */
+  readonly hideEntries?: boolean
 }
 
 const RING_COLUMNS = GRID_COLUMNS + 2
@@ -54,6 +56,7 @@ export default function GameBoard({
   highlighted,
   onFire,
   onHighlight,
+  hideEntries = false,
 }: GameBoardProps) {
   return (
     <div
@@ -76,20 +79,21 @@ export default function GameBoard({
           style={GRID_AREA}
         />
       )}
-      {ENTRIES.map((entry) => (
-        <EntryButton
-          key={entry}
-          entry={entry}
-          path={paths.atEntry(entry)}
-          fired={paths.fired.has(entry)}
-          highlighted={highlighted}
-          disabled={disabled}
-          onFire={onFire}
-          onHighlight={onHighlight}
-          inline={['top', 'bottom'].includes(entryPlace(entry).edge)}
-          style={ringCell(entry)}
-        />
-      ))}
+      {!hideEntries &&
+        ENTRIES.map((entry) => (
+          <EntryButton
+            key={entry}
+            entry={entry}
+            path={paths.atEntry(entry)}
+            fired={paths.fired.has(entry)}
+            highlighted={highlighted}
+            disabled={disabled}
+            onFire={onFire}
+            onHighlight={onHighlight}
+            inline={['top', 'bottom'].includes(entryPlace(entry).edge)}
+            style={ringCell(entry)}
+          />
+        ))}
     </div>
   )
 }

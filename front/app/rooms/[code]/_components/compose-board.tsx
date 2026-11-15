@@ -52,6 +52,7 @@ export default function ComposeBoard({
         highlighted={null}
         onFire={noop}
         onHighlight={noop}
+        hideEntries
       />
       <div className='flex flex-wrap items-center gap-2'>
         <Button
