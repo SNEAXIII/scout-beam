@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT room.id, room.code, room.mode as \"mode: RoomMode\",\n                  room.status as \"status: RoomStatus\", room.host_id, host.login as \"host_login!\",\n                  room.opponent_id, opponent.login as \"opponent_login?\",\n                  winner.login as \"winner_login?\"\n           FROM room\n           JOIN \"user\" host ON host.id = room.host_id\n           LEFT JOIN \"user\" opponent ON opponent.id = room.opponent_id\n           LEFT JOIN \"user\" winner ON winner.id = room.winner_id\n           WHERE room.code = $1",
+  "query": "SELECT room.id, room.code, room.mode as \"mode: RoomMode\",\n                  room.status as \"status: RoomStatus\", room.host_id, host.login as \"host_login!\",\n                  room.opponent_id, opponent.login as \"opponent_login?\",\n                  winner.login as \"winner_login?\",\n                  EXISTS (SELECT 1 FROM game\n                          WHERE game.room_id = room.id AND game.status = 'surrendered')\n                    as \"surrendered!\"\n           FROM room\n           JOIN \"user\" host ON host.id = room.host_id\n           LEFT JOIN \"user\" opponent ON opponent.id = room.opponent_id\n           LEFT JOIN \"user\" winner ON winner.id = room.winner_id\n           WHERE room.code = $1",
   "describe": {
     "columns": [
       {
@@ -123,6 +123,12 @@
             "name": "login"
           }
         }
+      },
+      {
+        "ordinal": 9,
+        "name": "surrendered!",
+        "type_info": "Bool",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -139,8 +145,9 @@
       false,
       true,
       true,
-      true
+      true,
+      null
     ]
   },
-  "hash": "a02f1055aabc9a75a29792d6639890c08d53d0e11cdd014142c21ea2456808e9"
+  "hash": "cc04cba553f79550a4b3d37494c64418d56f10d2e7d23d476fa60e1bd2b66e4c"
 }

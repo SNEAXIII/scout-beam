@@ -12,9 +12,11 @@ const BANNERS = {
 /** A room's end: whoever proposed right first won; a surrender hands the win to the opponent. */
 export default function RoomBanner({
   status,
-}: Readonly<{ status: Exclude<GameStatus, 'in_progress'> }>) {
+  surrendered,
+}: Readonly<{ status: Exclude<GameStatus, 'in_progress'>; surrendered: boolean }>) {
   const { t } = useI18n()
-  const { Icon, key, tone } = BANNERS[status]
+  const { Icon, tone } = BANNERS[status]
+  const key = status === 'solved' && surrendered ? 'wonBySurrender' : BANNERS[status].key
   return (
     <p
       className={cn('flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium', tone)}

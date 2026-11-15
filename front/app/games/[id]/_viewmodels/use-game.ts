@@ -25,7 +25,11 @@ export function useGame(id: string) {
   const socket = useRef<GameSocket | null>(null)
   const inFlight = useRef(new Set<number>())
   const verdict = useRef<PendingVerdict | null>(null)
-  const { room, receive: receiveRoom, hold } = useRoomGame(game?.room_code ?? null)
+  const {
+    room,
+    receive: receiveRoom,
+    hold,
+  } = useRoomGame(game?.room_code ?? null, game !== null && game.status !== 'in_progress')
 
   const load = useCallback(async () => {
     try {

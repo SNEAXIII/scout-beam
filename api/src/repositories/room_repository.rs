@@ -13,7 +13,10 @@ pub async fn find_by_code(pool: &PgPool, code: &str) -> sqlx::Result<Option<Room
         r#"SELECT room.id, room.code, room.mode as "mode: RoomMode",
                   room.status as "status: RoomStatus", room.host_id, host.login as "host_login!",
                   room.opponent_id, opponent.login as "opponent_login?",
-                  winner.login as "winner_login?"
+                  winner.login as "winner_login?",
+                  EXISTS (SELECT 1 FROM game
+                          WHERE game.room_id = room.id AND game.status = 'surrendered')
+                    as "surrendered!"
            FROM room
            JOIN "user" host ON host.id = room.host_id
            LEFT JOIN "user" opponent ON opponent.id = room.opponent_id

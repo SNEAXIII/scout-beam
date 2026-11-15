@@ -12,6 +12,8 @@ export interface RoomView {
   host: string
   opponent?: string
   winner?: string
+  /** A finished room, for its players: ended on a surrender rather than a find. */
+  surrendered?: boolean
   /** The caller's game, once it exists. */
   game_id?: string
   /** A playing Duel only. */

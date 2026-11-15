@@ -85,7 +85,10 @@ export default function GamePage() {
                 disabled
               />
               {game.room_code ? (
-                <RoomBanner status={game.status} />
+                <RoomBanner
+                  status={game.status}
+                  surrendered={room.surrendered}
+                />
               ) : (
                 <p
                   className='text-sm text-muted-foreground'

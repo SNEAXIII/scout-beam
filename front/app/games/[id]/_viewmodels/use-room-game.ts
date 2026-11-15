@@ -11,6 +11,7 @@ interface Priority {
 
 export interface RoomGame {
   readonly opponent: string | null
+  readonly surrendered: boolean
   /** Unknown until the opponent's first shot since the page opened. */
   readonly opponentShots: number | null
   /** Milliseconds before a Duel lets the caller fire or propose again; 0 when they may. */
@@ -18,9 +19,10 @@ export interface RoomGame {
 }
 
 /** A room game's opponent and, in a Duel, the caller's priority wait; idle outside a room. */
-export function useRoomGame(roomCode: string | null) {
+export function useRoomGame(roomCode: string | null, over: boolean) {
   const [me, setMe] = useState<string | null>(null)
   const [opponent, setOpponent] = useState<string | null>(null)
+  const [surrendered, setSurrendered] = useState(false)
   const [opponentShots, setOpponentShots] = useState<number | null>(null)
   const [priority, setPriority] = useState<Priority | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -31,7 +33,7 @@ export function useRoomGame(roomCode: string | null) {
     setPriority({ actor: null, until: at + ms })
   }, [])
 
-  // One after the other: two 401s at once would race for the refresh cookie.
+  // One after the other: two 401s at once would race for the refresh cookie. Read again once over.
   useEffect(() => {
     if (!roomCode) return
     let live = true
@@ -41,6 +43,7 @@ export function useRoomGame(roomCode: string | null) {
       if (!live) return
       setMe(login)
       setOpponent((login === room.host ? room.opponent : room.host) ?? null)
+      setSurrendered(room.surrendered ?? false)
       if (room.retry_after_ms) hold(room.retry_after_ms)
     })().catch(() => {
       // The game plays on without the opponent's login.
@@ -48,7 +51,7 @@ export function useRoomGame(roomCode: string | null) {
     return () => {
       live = false
     }
-  }, [roomCode, hold])
+  }, [roomCode, over, hold])
 
   const receive = (message: ServerMessage) => {
     if (message.type === 'opponent') setOpponentShots(message.shots)
@@ -72,6 +75,7 @@ export function useRoomGame(roomCode: string | null) {
 
   const room: RoomGame = {
     opponent,
+    surrendered,
     opponentShots,
     waitMs: readyAt === null ? 0 : Math.max(0, readyAt - now),
   }

@@ -36,6 +36,7 @@ pub struct Room {
     pub opponent_id: Option<Uuid>,
     pub opponent_login: Option<String>,
     pub winner_login: Option<String>,
+    pub surrendered: bool,
 }
 
 impl Room {

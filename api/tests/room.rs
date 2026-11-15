@@ -149,6 +149,7 @@ async fn the_first_correct_proposition_wins_the_room(pool: PgPool) {
     let room = app.room(&code, &bob).await;
     assert_eq!(room.body["status"], "finished");
     assert_eq!(room.body["winner"], "alice");
+    assert_eq!(room.body["surrendered"], false);
     assert_eq!(app.game(alice_game, &alice).await.body["status"], "solved");
     assert_eq!(app.game(bob_game, &bob).await.body["status"], "lost");
     app.play(bob_game, Some(&bob), json!({ "type": "fire", "entry": 7 }))
@@ -173,6 +174,7 @@ async fn a_surrender_makes_the_opponent_win(pool: PgPool) {
     let room = app.room(&code, &alice).await;
     assert_eq!(room.body["status"], "finished");
     assert_eq!(room.body["winner"], "alice");
+    assert_eq!(room.body["surrendered"], true);
     let alice_view = app.game(alice_game, &alice).await;
     assert_eq!(alice_view.body["status"], "solved");
     assert!(alice_view.body["layout"].is_object());
