@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
+import { sameLook, type Piece } from '@/app/lib/pieces'
 import DraftPanel from './_components/draft-panel'
 import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
@@ -23,6 +24,13 @@ export default function GamePage() {
   const { keyboardLayout, toggle } = useKeyboardLayout()
   const router = useRouter()
   const firstShot = useSearchParams().get('fire')
+  // The winning proposition, kept to tell the player when it differs from the hidden layout.
+  const [proposed, setProposed] = useState<readonly Piece[] | null>(null)
+  const proposeAndKeep = async (pieces: readonly Piece[]) => {
+    const verdict = await propose(pieces)
+    if (verdict?.correct) setProposed(pieces)
+    return verdict
+  }
 
   // The daily's first shot, clicked on `/` before the game existed.
   useEffect(() => {
@@ -96,6 +104,17 @@ export default function GamePage() {
                   {t.game[game.status]}
                 </p>
               )}
+              {game.status === 'solved' &&
+                proposed &&
+                game.layout &&
+                !sameLook(proposed, game.layout.pieces) && (
+                  <p
+                    className='text-sm text-muted-foreground'
+                    data-cy='game-equivalent'
+                  >
+                    {t.game.equivalent}
+                  </p>
+                )}
               {game.daily_date && game.status === 'solved' && <GuestSaveCard />}
             </div>
           ) : (
@@ -105,7 +124,7 @@ export default function GamePage() {
               keyboardLayout={keyboardLayout}
               pace={pace}
               onSolved={() => void load()}
-              onPropose={propose}
+              onPropose={proposeAndKeep}
             />
           )}
           {/* Takes the row's height without adding to it, so the shots scroll instead of growing the row. */}

@@ -129,7 +129,7 @@ const en = {
       colours:
         'The beam colour mixes the colours of the pieces it touched: red and blue give violet, red and yellow orange, blue and yellow green, all three black. Only white pieces give white, nothing at all gives no colour.',
       draft:
-        'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries.',
+        'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries. It need not match the hidden pieces: any layout giving the same results wins.',
       surrender: 'Stuck? Surrender reveals the hidden layout and ends the game.',
     },
     inspiredBy: 'Inspired by ',
@@ -180,6 +180,7 @@ const en = {
     solved: 'Game solved: here are the hidden pieces. Firing is disabled.',
     surrendered: 'Game surrendered: here are the hidden pieces. Firing is disabled.',
     lost: 'Game lost: your opponent found first. Here are the hidden pieces.',
+    equivalent: 'Different from the hidden layout, but it gives the same shots: accepted.',
     grid: 'Grid',
     gridRevealed: 'Grid and hidden pieces',
     removePiece: 'Right-click or Space to remove the {{shape}} piece',

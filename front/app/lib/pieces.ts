@@ -86,6 +86,18 @@ export function overlaps(piece: Piece, others: readonly Piece[]): boolean {
   return pieceCells(piece).some((cell) => taken.has(key(cell)))
 }
 
+/** Whether two layouts look alike: the same half cells in the same colours, whatever the rotations. */
+export function sameLook(a: readonly Piece[], b: readonly Piece[]): boolean {
+  const look = (pieces: readonly Piece[]) =>
+    pieces
+      .flatMap((piece) =>
+        pieceCells(piece).map(({ x, y, fill }) => `${x},${y},${fill},${piece.colour}`)
+      )
+      .sort()
+      .join(' ')
+  return look(a) === look(b)
+}
+
 /** SVG `points` of a cell drawn with unit-sized cells. */
 export function cellPoints({ x, y, fill }: PieceCell): string {
   const nw = [x, y]

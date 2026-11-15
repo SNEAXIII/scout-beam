@@ -137,7 +137,7 @@ const fr: Translations = {
       colours:
         'La couleur du rayon mélange celles des pièces touchées : rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir. Des pièces blanches seules donnent blanc, rien du tout ne donne aucune couleur.',
       draft:
-        'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées.',
+        'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées. Inutile de retrouver les pièces cachées : toute disposition qui donne les mêmes résultats gagne.',
       surrender: 'Bloqué ? Abandonner révèle la disposition cachée et termine la partie.',
     },
     inspiredBy: 'Inspiré d’',
@@ -188,6 +188,7 @@ const fr: Translations = {
     solved: 'Partie résolue : voici les pièces cachées. Le tir est désactivé.',
     surrendered: 'Partie abandonnée : voici les pièces cachées. Le tir est désactivé.',
     lost: 'Partie perdue : votre adversaire a trouvé avant vous. Voici les pièces cachées.',
+    equivalent: 'Différente de la disposition cachée, mais elle donne les mêmes tirs : acceptée.',
     grid: 'Grille',
     gridRevealed: 'Grille et pièces cachées',
     removePiece: 'Clic droit ou Espace pour retirer la pièce « {{shape}} »',
