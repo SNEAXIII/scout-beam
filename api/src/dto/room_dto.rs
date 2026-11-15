@@ -47,6 +47,9 @@ pub struct RoomView {
     /// The caller's game: absent until it exists, or for a non-member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_id: Option<Uuid>,
+    /// The opponent's shot count: absent until the games exist, or for a non-member.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opponent_shots: Option<i64>,
 }
 
 impl From<Seen> for RoomView {
@@ -56,6 +59,7 @@ impl From<Seen> for RoomView {
             member,
             game_id,
             own_layout,
+            opponent_shots,
         } = seen;
         Self {
             code: room.code,
@@ -68,6 +72,7 @@ impl From<Seen> for RoomView {
                 .then_some(room.surrendered),
             game_id,
             hidden_layout: own_layout,
+            opponent_shots,
         }
     }
 }

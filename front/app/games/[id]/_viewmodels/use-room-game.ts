@@ -6,7 +6,7 @@ import { getRoom } from '@/app/services/rooms'
 export interface RoomGame {
   readonly opponent: string | null
   readonly surrendered: boolean
-  /** Unknown until the opponent's first shot since the page opened. */
+  /** Unknown until the room is read; live `opponent` events keep it current. */
   readonly opponentShots: number | null
 }
 
@@ -26,6 +26,9 @@ export function useRoomGame(roomCode: string | null, over: boolean) {
       if (!live) return
       setOpponent((login === room.host ? room.opponent : room.host) ?? null)
       setSurrendered(room.surrendered ?? false)
+      const seeded = room.opponent_shots
+      // A count only grows: a live event may land before this read does.
+      if (seeded !== undefined) setOpponentShots((known) => Math.max(known ?? 0, seeded))
     })().catch(() => {
       // The game plays on without the opponent's login.
     })

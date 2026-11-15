@@ -220,6 +220,40 @@ async fn a_surrender_makes_the_opponent_win(pool: PgPool) {
 }
 
 #[sqlx::test]
+async fn a_player_sees_the_opponents_shot_count_and_nothing_else(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (code, (_, alice), (bob_game, bob)) = app.race().await;
+    assert_eq!(app.room(&code, &alice).await.body["opponent_shots"], 0);
+
+    for entry in [3, 9, 9] {
+        app.play(
+            bob_game,
+            Some(&bob),
+            json!({ "type": "fire", "entry": entry }),
+        )
+        .await;
+    }
+
+    let seen = app.room(&code, &alice).await;
+    assert_eq!(seen.body["opponent_shots"], 2);
+    let mut fields: Vec<_> = seen.body.as_object().unwrap().keys().cloned().collect();
+    fields.sort();
+    assert_eq!(
+        fields,
+        [
+            "code",
+            "game_id",
+            "host",
+            "mode",
+            "opponent",
+            "opponent_shots",
+            "status"
+        ]
+    );
+    assert_eq!(app.room(&code, &bob).await.body["opponent_shots"], 0);
+}
+
+#[sqlx::test]
 async fn a_non_member_sees_only_the_public_fields(pool: PgPool) {
     let app = TestApp::new(pool);
     let (code, (alice_game, alice), _) = app.race().await;

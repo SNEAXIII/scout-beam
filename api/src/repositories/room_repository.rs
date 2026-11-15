@@ -110,6 +110,22 @@ pub async fn game_of(pool: &PgPool, room_id: Uuid, user_id: Uuid) -> sqlx::Resul
     .await
 }
 
+/// The shots the other player of the room fired, once their game exists.
+pub async fn opponent_shots(
+    pool: &PgPool,
+    room_id: Uuid,
+    user_id: Uuid,
+) -> sqlx::Result<Option<i64>> {
+    sqlx::query_scalar!(
+        r#"SELECT (SELECT count(*) FROM shot WHERE shot.game_id = game.id) as "shots!"
+           FROM game WHERE room_id = $1 AND user_id <> $2"#,
+        room_id,
+        user_id
+    )
+    .fetch_optional(pool)
+    .await
+}
+
 /// The room of that game, locked until the caller's transaction ends; `None` outside a room.
 pub async fn lock_for_game<'e, E>(executor: E, game_id: Uuid) -> sqlx::Result<Option<RoomLock>>
 where
