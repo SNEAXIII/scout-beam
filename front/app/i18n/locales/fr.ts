@@ -60,7 +60,7 @@ const fr: Translations = {
     failed: 'Connexion impossible avec ce fournisseur',
     back: 'Retour à la connexion',
   },
-  home: {
+  play: {
     title: 'Mes parties',
     signOut: 'Se déconnecter',
     newGame: 'Nouvelle partie',

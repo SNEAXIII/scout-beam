@@ -56,7 +56,7 @@ const en = {
     failed: 'Could not sign in with this provider',
     back: 'Back to sign-in',
   },
-  home: {
+  play: {
     title: 'My games',
     signOut: 'Sign out',
     newGame: 'New game',

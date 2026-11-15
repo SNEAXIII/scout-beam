@@ -29,7 +29,7 @@ export default function OAuthCallbackPage() {
     }
 
     oauthLogin(provider, code).then(
-      () => router.replace('/'),
+      () => router.replace('/play'),
       (caught: unknown) => setError(caught instanceof Error ? caught.message : t.callback.failed)
     )
   }, [provider, router, t])
