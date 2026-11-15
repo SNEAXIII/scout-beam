@@ -13,7 +13,8 @@ auth → home page → daily → rooms (Race and Duel). Vocabulary: `CONTEXT.md`
 | Daily | `docs/plans/2026-11-15-daily.md` | done on `feat/daily`, PR to open |
 | Rooms | `docs/plans/2026-11-15-duel-race.md` | planned, starts after the daily is merged |
 
-On `feat/daily`, the four tasks are committed and reviewed; nothing was checked in a browser yet.
+On `feat/daily`, the six tasks are committed (task 6: the grid on `/` from the start, the first
+shot starts the daily, the day's ranking beside it); nothing was checked in a browser yet.
 Next: a manual pass (`make dev` + `pnpm dev`), the PR, then the rooms plan from `main`.
 
 ## How the work runs
@@ -60,7 +61,8 @@ junction (`mklink /J`), removed with `rmdir` before the worktree. Agent worktree
 
 - CI uses the **latest stable rustc**, the local one may be older: new clippy lints break CI only
   (e.g. 1.100's `map_unwrap_or`). Prefer `map_or_else`.
-- A running `make dev` locks `target\debug\scout-beam.exe`: `make check` then fails to relink.
+- A running `make dev` locks `target\debug\scout-beam.exe`: `make check` then fails to relink;
+  `CARGO_TARGET_DIR=target/check make check` works around it.
 - BoardGameGeek answers 403 to scripts (Cloudflare): a link there is checked in a browser.
 - `stack.yaml` uses `update_config.failure_action: continue` because the API exits while
   PostgreSQL is not ready; making the API wait for the database would allow the safer default.
