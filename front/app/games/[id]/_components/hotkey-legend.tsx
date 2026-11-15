@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { Hand } from 'lucide-react'
 import { useI18n } from '@/app/i18n'
 import { KEYMAPS, type KeyboardLayout } from '@/app/lib/keyboard'
 
@@ -25,9 +26,10 @@ export default function HotkeyLegend({ keyboardLayout }: HotkeyLegendProps) {
   return (
     <>
       <p
-        className='text-xs text-muted-foreground pointer-fine:hidden'
+        className='flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground pointer-fine:hidden'
         data-cy='touch-legend'
       >
+        <Hand className='size-4 shrink-0 text-primary' />
         {t.hotkeys.holdToRemove}
       </p>
       <ul
