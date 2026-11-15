@@ -26,7 +26,7 @@ export default function LoginForm({ providers }: Readonly<{ providers: ProviderL
     setError(null)
     try {
       await signIn(login.trim(), password)
-      router.push('/')
+      router.push('/play')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.login.failed)
       setPending(false)

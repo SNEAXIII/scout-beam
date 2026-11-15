@@ -1,0 +1,43 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { useI18n } from '@/app/i18n'
+import { listGames, type GameSummary } from '@/app/services/games'
+import GameList from './_components/game-list'
+import PlayHeader from './_components/play-header'
+
+export default function PlayPage() {
+  const { t } = useI18n()
+  const [games, setGames] = useState<GameSummary[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    try {
+      setError(null)
+      setGames(await listGames())
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t.common.loadFailed)
+    }
+  }, [t])
+
+  // Signed out, the list answers 401: `apiRequest` tries the refresh cookie, else goes to /login.
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  return (
+    <main className='mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8'>
+      <PlayHeader />
+      {error && (
+        <p
+          className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
+          role='alert'
+          data-cy='games-error'
+        >
+          {error}
+        </p>
+      )}
+      {!error && <GameList games={games} />}
+    </main>
+  )
+}

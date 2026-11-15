@@ -4,7 +4,7 @@ import { I18nProvider } from '@/app/i18n'
 
 export const metadata: Metadata = {
   title: 'Scout Beam',
-  description: 'Un jeu de déduction en solo : tirez des rayons, retrouvez les pièces cachées.',
+  description: 'Un jeu de déduction : tirez des rayons, retrouvez les pièces cachées.',
 }
 
 interface RootLayoutProps {
@@ -18,9 +18,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       className='dark'
     >
       <body className='flex min-h-dvh flex-col antialiased'>
-        <I18nProvider>
-          {children}
-        </I18nProvider>
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   )

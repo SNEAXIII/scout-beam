@@ -20,7 +20,7 @@ export default function NewGameButton() {
       const game = await createGame()
       router.push(`/games/${game.id}`)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t.home.createFailed)
+      setError(caught instanceof Error ? caught.message : t.play.createFailed)
       setPending(false)
     }
   }
@@ -33,7 +33,7 @@ export default function NewGameButton() {
         data-cy='new-game'
       >
         <Plus />
-        {t.home.newGame}
+        {t.play.newGame}
       </Button>
       {error && (
         <p

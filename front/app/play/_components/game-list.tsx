@@ -22,7 +22,7 @@ export default function GameList({ games }: GameListProps) {
         className='text-sm text-muted-foreground'
         data-cy='games-empty'
       >
-        {t.home.empty}
+        {t.play.empty}
       </p>
     )
   }

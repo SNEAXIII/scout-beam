@@ -4,7 +4,7 @@ import { ArrowLeft, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmationDialog } from '@/components/confirmation-dialog'
 import LanguageSwitcher from '@/components/language-switcher'
-import GameStatusBadge from '@/app/_components/game-status-badge'
+import GameStatusBadge from '@/app/play/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
 import type { GameStatus } from '@/app/services/games'
@@ -36,7 +36,7 @@ export default function GameHeader({
         size='icon'
       >
         <Link
-          href='/'
+          href='/play'
           aria-label={t.game.back}
           title={t.game.back}
           data-cy='back-to-games'

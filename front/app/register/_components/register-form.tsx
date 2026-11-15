@@ -57,7 +57,7 @@ export default function RegisterForm() {
     setError(null)
     try {
       await register(login.trim(), password)
-      router.push('/')
+      router.push('/play')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.register.failed)
       setPending(false)

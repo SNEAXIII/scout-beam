@@ -56,12 +56,40 @@ const en = {
     failed: 'Could not sign in with this provider',
     back: 'Back to sign-in',
   },
-  home: {
+  play: {
     title: 'My games',
     signOut: 'Sign out',
     newGame: 'New game',
     createFailed: 'Could not create the game',
     empty: 'No games yet. Start one!',
+  },
+  landing: {
+    title: 'Scout Beam',
+    tagline: 'A deduction game: fire beams into the grid and work out where the pieces are hidden.',
+    play: 'Play',
+    signIn: 'Sign in',
+    rulesTitle: 'How to play',
+    piecesLabel: 'The five pieces',
+    beamDemo:
+      'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet.',
+    colourMix:
+      'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
+    rules: {
+      grid: 'Five pieces are hidden on a 10 × 8 grid. Around it, 36 numbered entries are where beams go in and come out.',
+      pieces:
+        'The pieces are the Square, the Bar, the Spike, the Corner and the Diamond. Each has a colour: red, blue and yellow are always present.',
+      shot: 'A shot fires a beam from an entry. It is answered with the entry the beam leaves by and the colour it picked up on the way.',
+      sides:
+        'A straight side sends the beam back where it came from (180°); a slanted side turns it by 90°.',
+      colours:
+        'The beam colour mixes the colours of the pieces it touched: red and blue give violet, red and yellow orange, blue and yellow green, all three black. Only white pieces give white, nothing at all gives no colour.',
+      draft:
+        'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries.',
+      surrender: 'Stuck? Surrender reveals the hidden layout and ends the game.',
+    },
+    inspiredBy: 'Inspired by ',
+    game: 'Orapa Mine',
+    credit: ', by Junghee Choi and Wanjin Gill (Playte, 2024; published in France by Miraludo)',
   },
   status: {
     in_progress: 'In progress',

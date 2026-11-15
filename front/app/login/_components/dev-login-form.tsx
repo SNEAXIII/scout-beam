@@ -24,7 +24,7 @@ export default function DevLoginForm() {
     setError(null)
     try {
       await devLogin(login.trim())
-      router.push('/')
+      router.push('/play')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.login.failed)
       setPending(false)

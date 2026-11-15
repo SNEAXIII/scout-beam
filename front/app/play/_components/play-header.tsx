@@ -8,7 +8,7 @@ import { logout } from '@/app/services/auth'
 import LanguageSwitcher from '@/components/language-switcher'
 import NewGameButton from './new-game-button'
 
-export default function HomeHeader() {
+export default function PlayHeader() {
   const { t } = useI18n()
   const router = useRouter()
 
@@ -21,15 +21,15 @@ export default function HomeHeader() {
 
   return (
     <header className='flex flex-wrap items-center justify-between gap-3'>
-      <h1 className='text-2xl font-semibold tracking-tight'>{t.home.title}</h1>
+      <h1 className='text-2xl font-semibold tracking-tight'>{t.play.title}</h1>
       <div className='flex items-start gap-2'>
         <NewGameButton />
         <Button
           variant='ghost'
           size='icon'
           onClick={signOut}
-          aria-label={t.home.signOut}
-          title={t.home.signOut}
+          aria-label={t.play.signOut}
+          title={t.play.signOut}
           data-cy='sign-out'
         >
           <LogOut />

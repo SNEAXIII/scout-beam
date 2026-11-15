@@ -63,3 +63,135 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Home page demos: applied through motion-safe, so a reduced motion shows the final frame. */
+@keyframes beam-a {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  13%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes beam-b {
+  0%,
+  13% {
+    stroke-dashoffset: 1;
+  }
+  34%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes beam-c {
+  0%,
+  34% {
+    stroke-dashoffset: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes beam-exit {
+  0%,
+  70% {
+    opacity: 0;
+  }
+  74%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes beam-fade {
+  0%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mix-1 {
+  0% {
+    opacity: 0;
+  }
+  4%,
+  88% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mix-2 {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  24%,
+  88% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mix-3 {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  44%,
+  88% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mix-4 {
+  0%,
+  60% {
+    opacity: 0;
+  }
+  64%,
+  88% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Delayed by its slot's start, so it replays while that slot is hidden. */
+@keyframes mix-join {
+  0%,
+  4% {
+    transform: translateX(var(--spread));
+  }
+  12%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes mix-pop {
+  0%,
+  12% {
+    transform: scale(0);
+  }
+  18%,
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes piece-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}

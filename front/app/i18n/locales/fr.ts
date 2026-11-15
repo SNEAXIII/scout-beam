@@ -60,12 +60,41 @@ const fr: Translations = {
     failed: 'Connexion impossible avec ce fournisseur',
     back: 'Retour à la connexion',
   },
-  home: {
+  play: {
     title: 'Mes parties',
     signOut: 'Se déconnecter',
     newGame: 'Nouvelle partie',
     createFailed: 'Création impossible',
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
+  },
+  landing: {
+    title: 'Scout Beam',
+    tagline:
+      'Un jeu de déduction : tirez des rayons dans la grille et retrouvez où sont cachées les pièces.',
+    play: 'Jouer',
+    signIn: 'Se connecter',
+    rulesTitle: 'Comment jouer',
+    piecesLabel: 'Les cinq pièces',
+    beamDemo:
+      'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet.',
+    colourMix:
+      'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
+    rules: {
+      grid: 'Cinq pièces sont cachées sur une grille de 10 × 8. Tout autour, 36 entrées numérotées : c’est par là que les rayons entrent et sortent.',
+      pieces:
+        'Les pièces sont le carré, la barre, la pointe, le coin et le losange. Chacune a une couleur : le rouge, le bleu et le jaune sont toujours présents.',
+      shot: 'Un tir envoie un rayon depuis une entrée. Il a pour réponse l’entrée par laquelle le rayon ressort et la couleur prise en chemin.',
+      sides:
+        'Un côté droit renvoie le rayon d’où il vient (180°) ; un côté oblique le fait tourner de 90°.',
+      colours:
+        'La couleur du rayon mélange celles des pièces touchées : rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir. Des pièces blanches seules donnent blanc, rien du tout ne donne aucune couleur.',
+      draft:
+        'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées.',
+      surrender: 'Bloqué ? Abandonner révèle la disposition cachée et termine la partie.',
+    },
+    inspiredBy: 'Inspiré d’',
+    game: 'Orapa Mine',
+    credit: ', de Junghee Choi et Wanjin Gill (Playte, 2024 ; édité en France par Miraludo)',
   },
   status: {
     in_progress: 'En cours',
