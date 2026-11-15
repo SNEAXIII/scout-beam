@@ -47,8 +47,7 @@ pub async fn login_or_create(
     };
 
     // Not atomic with the creation: a failure in between leaves a null `last_login_date`, which no rule reads.
-    user_repository::touch_last_login(pool, user.id).await?;
-    Ok(user)
+    Ok(user_repository::touch_last_login(pool, user.id).await?)
 }
 
 /// Create a password account and sign it in. The login rules are the DTO's; the password's live here.
@@ -77,8 +76,7 @@ pub async fn register_with_password(
             .map_err(UserError::from_write)?,
     };
 
-    user_repository::touch_last_login(pool, user.id).await?;
-    Ok(user)
+    Ok(user_repository::touch_last_login(pool, user.id).await?)
 }
 
 /// A guest account under a generated login, signed in at once.
@@ -88,8 +86,7 @@ pub async fn create_guest(pool: &PgPool) -> Result<User, UserError> {
         .await
         .map_err(UserError::from_write)?;
 
-    user_repository::touch_last_login(pool, user.id).await?;
-    Ok(user)
+    Ok(user_repository::touch_last_login(pool, user.id).await?)
 }
 
 /// Every failure answers the same `InvalidCredentials`: an unknown login is not for the caller to learn.
@@ -107,8 +104,7 @@ pub async fn login_with_password(
         _ => return Err(UserError::InvalidCredentials),
     };
 
-    user_repository::touch_last_login(pool, user.id).await?;
-    Ok(user)
+    Ok(user_repository::touch_last_login(pool, user.id).await?)
 }
 
 /// The pseudo the caller goes by from now on; its rules are the DTO's, the unique index settles a race.

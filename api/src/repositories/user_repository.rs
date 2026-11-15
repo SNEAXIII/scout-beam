@@ -238,14 +238,17 @@ pub async fn insert_with_provider(
     .await
 }
 
-pub async fn touch_last_login(pool: &PgPool, user_id: Uuid) -> sqlx::Result<()> {
-    sqlx::query!(
-        r#"UPDATE "user" SET last_login_date = now() WHERE id = $1"#,
+pub async fn touch_last_login(pool: &PgPool, user_id: Uuid) -> sqlx::Result<User> {
+    sqlx::query_as!(
+        User,
+        r#"UPDATE "user"
+           SET last_login_date = now()
+           WHERE id = $1
+           RETURNING id, login, role as "role: Role", password_hash, guest, discord_id, google_id, email_hash, email_hash_version, last_login_date, created_at, updated_at"#,
         user_id
     )
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .map(|_| ())
 }
 
 pub async fn set_role(pool: &PgPool, user_id: Uuid, role: Role) -> sqlx::Result<User> {
