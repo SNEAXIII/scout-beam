@@ -93,7 +93,7 @@ fn secure_cookies(state: &AppState) -> bool {
 
 /// Both tokens as `HttpOnly` cookies, the profile as the body: a body carrying the tokens would
 /// let a script read a fresh pair by calling `/auth/refresh`.
-fn signed_in(state: &AppState, user: User, status: StatusCode) -> ApiResult<Response> {
+fn session_response(state: &AppState, user: User, status: StatusCode) -> ApiResult<Response> {
     let [access, refresh] = cookie::issue(&state.jwt, user.id, user.role, secure_cookies(state))?;
     let cookies = AppendHeaders([(SET_COOKIE, access), (SET_COOKIE, refresh)]);
     Ok((status, cookies, Json(UserProfile::from(user))).into_response())
@@ -132,7 +132,7 @@ async fn post_refresh_token(
     let claims = state.jwt.decode_refresh(token)?;
     let user = user_service::load_active(&state.pool, claims.sub).await?;
 
-    signed_in(&state, user, StatusCode::OK)
+    session_response(&state, user, StatusCode::OK)
 }
 
 /// `POST /auth/logout` — the browser drops both cookies; a token copied elsewhere stays valid until it expires.
@@ -164,7 +164,7 @@ async fn post_dev_login(
     ValidatedJson(body): ValidatedJson<DevLoginRequest>,
 ) -> ApiResult<Response> {
     let user = user_service::login_or_create(&state.pool, body.login.as_deref(), body.role).await?;
-    signed_in(&state, user, StatusCode::OK)
+    session_response(&state, user, StatusCode::OK)
 }
 
 /// `POST /auth/register` — a new password account, signed in at once; a guest's token converts that guest.
@@ -191,7 +191,7 @@ async fn post_register(
     let user =
         user_service::register_with_password(&state.pool, &body.login, &body.password, caller)
             .await?;
-    signed_in(&state, user, StatusCode::CREATED)
+    session_response(&state, user, StatusCode::CREATED)
 }
 
 /// `POST /auth/login` — sign in with a login and password.
@@ -211,7 +211,7 @@ async fn post_login(
     ValidatedJson(body): ValidatedJson<LoginRequest>,
 ) -> ApiResult<Response> {
     let user = user_service::login_with_password(&state.pool, &body.login, &body.password).await?;
-    signed_in(&state, user, StatusCode::OK)
+    session_response(&state, user, StatusCode::OK)
 }
 
 /// `POST /auth/guest` — a guest account under a generated login, signed in at once.
@@ -226,7 +226,7 @@ async fn post_login(
 )]
 async fn post_guest(State(state): State<AppState>) -> ApiResult<Response> {
     let user = user_service::create_guest(&state.pool).await?;
-    signed_in(&state, user, StatusCode::CREATED)
+    session_response(&state, user, StatusCode::CREATED)
 }
 
 /// `GET /auth/providers` — what the sign-in page may offer.
@@ -314,5 +314,5 @@ async fn provider_sign_in(
         caller,
     )
     .await?;
-    signed_in(state, user, StatusCode::OK)
+    session_response(state, user, StatusCode::OK)
 }
