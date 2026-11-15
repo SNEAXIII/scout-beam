@@ -1,4 +1,5 @@
-.PHONY: images deploy down
+.PHONY: help images deploy down
+.DEFAULT_GOAL := help
 
 API_IMAGE   := sneaxiii/scout-beam-api:latest
 FRONT_IMAGE := sneaxiii/scout-beam-front:latest
@@ -11,6 +12,9 @@ GOOGLE_CLIENT_ID ?=
 # `stack rm` returns before its networks are gone: a deploy meanwhile loses them ("network not found").
 STACK_NETWORKS = docker network ls -q --filter label=com.docker.stack.namespace=$(STACK)
 WAIT_REMOVED = while [ -z "$$(docker stack services -q $(STACK) 2>/dev/null)" ] && [ -n "$$($(STACK_NETWORKS))" ]; do sleep 1; done
+
+help: ## Show this help
+	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-8s %s\n", $$1, $$2}'
 
 images: ## Build both images locally
 	docker build -t $(API_IMAGE) api
