@@ -61,7 +61,8 @@ pub fn build_app(state: AppState) -> Result<Router> {
             Duration::from_secs(10),
         ))
         .layer(cors)
-        .layer(TraceLayer::new_for_http())
+        // One line per request: its response, with status and latency.
+        .layer(TraceLayer::new_for_http().on_request(()).on_eos(()))
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::new(
             http::HeaderName::from_static(REQUEST_ID_HEADER),
