@@ -1,21 +1,17 @@
-'use client'
-
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { useI18n } from '@/app/i18n'
+import LanguageSwitcher from '@/components/language-switcher'
+import InspirationSection from './_components/inspiration-section'
+import LandingHero from './_components/landing-hero'
+import RulesSection from './_components/rules-section'
 
 export default function HomePage() {
-  const { t } = useI18n()
   return (
-    <main className='flex min-h-screen items-center justify-center p-4'>
-      <Button asChild>
-        <Link
-          href='/play'
-          data-cy='play-cta'
-        >
-          {t.play.title}
-        </Link>
-      </Button>
+    <main className='relative mx-auto flex w-full max-w-3xl flex-col gap-12 px-4 py-16 md:px-8'>
+      <div className='absolute top-2 right-4'>
+        <LanguageSwitcher />
+      </div>
+      <LandingHero />
+      <RulesSection />
+      <InspirationSection />
     </main>
   )
 }

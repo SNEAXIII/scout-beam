@@ -5,7 +5,7 @@ import { fill, useI18n } from '@/app/i18n'
 import { KEYMAPS, type KeyboardLayout } from '@/app/lib/keyboard'
 import { PIECE_COLOURS, SHAPES } from '@/app/lib/pieces'
 import { cn } from '@/app/lib/utils'
-import ShapeIcon from './shape-icon'
+import ShapeIcon from '@/components/shape-icon'
 import type { Draft } from '../_viewmodels/use-draft'
 
 interface DraftToolbarProps {
