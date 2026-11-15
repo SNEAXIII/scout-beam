@@ -11,7 +11,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PATCH'
   body?: unknown
   /** A sign-in's 401 is an answer to show, not an expired session: no refresh, no /login. */
   noRedirect?: boolean

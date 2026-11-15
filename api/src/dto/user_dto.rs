@@ -74,6 +74,20 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+/// The pseudo the caller wants to go by.
+#[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
+pub struct RenameRequest {
+    #[validate(
+        length(
+            min = 3,
+            max = 30,
+            message = "Le nom d'utilisateur doit faire entre 3 et 30 caractères"
+        ),
+        custom(function = "validate_alphanumeric")
+    )]
+    pub login: String,
+}
+
 /// The code a provider handed the front on its callback.
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct ProviderCodeRequest {

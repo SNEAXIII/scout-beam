@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, CircleHelp, LogOut, Trophy } from 'lucide-react'
+import { CalendarDays, CircleHelp, LogOut, Trophy, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import { logout } from '@/app/services/auth'
@@ -63,6 +63,20 @@ export default function PlayHeader() {
             data-cy='rules-link'
           >
             <CircleHelp />
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant='ghost'
+          size='icon'
+        >
+          <Link
+            href='/profile'
+            aria-label={t.play.profile}
+            title={t.play.profile}
+            data-cy='profile-link'
+          >
+            <UserRound />
           </Link>
         </Button>
         <Button
