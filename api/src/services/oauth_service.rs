@@ -142,8 +142,7 @@ pub async fn sign_in(
         caller,
     )
     .await?;
-    user_repository::touch_last_login(pool, user.id).await?;
-    Ok(user)
+    Ok(user_repository::touch_last_login(pool, user.id).await?)
 }
 
 /// Provider id first, then verified email, then the caller's guest, then a new account.

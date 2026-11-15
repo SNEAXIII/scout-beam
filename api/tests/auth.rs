@@ -398,6 +398,7 @@ async fn register_then_login_returns_a_working_token_pair(pool: PgPool) {
         )
         .await;
     registered.assert_status(StatusCode::CREATED);
+    assert!(registered.body["last_login_date"].is_string());
 
     let logged = app
         .post(
@@ -407,6 +408,10 @@ async fn register_then_login_returns_a_working_token_pair(pool: PgPool) {
         )
         .await;
     logged.assert_status(StatusCode::OK);
+    assert_ne!(
+        logged.body["last_login_date"],
+        registered.body["last_login_date"]
+    );
     let access = &logged.access_token();
     app.get("/auth/session", Some(access))
         .await
