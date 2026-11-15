@@ -38,6 +38,7 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
         (name = "Auth", description = "Sessions and tokens"),
         (name = "Games", description = "Games against the bot, the shots fired at them and the propositions"),
         (name = "Daily", description = "The game of the day, the same layout for every player"),
+        (name = "Rooms", description = "Two players meeting through a code, for a Race or a Duel"),
     ),
     modifiers(&SecurityAddon),
 )]
@@ -60,7 +61,8 @@ pub fn build_app(state: AppState) -> Result<Router> {
             Duration::from_secs(10),
         ))
         .layer(cors)
-        .layer(TraceLayer::new_for_http())
+        // One line per request: its response, with status and latency.
+        .layer(TraceLayer::new_for_http().on_request(()).on_eos(()))
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::new(
             http::HeaderName::from_static(REQUEST_ID_HEADER),

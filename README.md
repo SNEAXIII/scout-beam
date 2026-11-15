@@ -52,6 +52,10 @@ with `ENV=dev`; an omitted login is generated server-side.
 | POST | `/daily/{date}/game` | any signed-in user, guests included — the caller's game of that day: 201 on the first call, the same game with 200 afterwards; today's layout is drawn on first sight, a past day without a daily or a day to come is 404; a daily cannot be surrendered (409) |
 | GET | `/daily/{date}/ranking` | anyone — that day's top 100 by score (seconds to solve plus 60 per wrong proposition), games started that same day by registered players; with a session, `me` is the caller's line even outside the top |
 | GET | `/ranking` | anyone — top 100 by points summed over every solved daily, late ones included, registered players only; same `me` |
+| POST | `/rooms` | any registered user (guests get 403 on every room route) — opens a waiting room for a `race` or a `duel` under a 6-character code, also its invitation link `/rooms/<code>` |
+| GET | `/rooms/{code}` | any registered user — its two players see both logins, the winner and their own game id; anyone else only the mode, status and host |
+| POST | `/rooms/{code}/join` | any registered user but the host — takes the free seat (409 once full); a Race starts both games on one layout, the first correct proposition wins and the other game is `lost`, a surrender hands the win to the opponent |
+| POST | `/rooms/{code}/layout` | either player of a composing Duel — hides their layout once (201; 409 a second time, for a non-player or a room not composing; 422 naming the broken rule, red, blue and yellow required); the second one starts each game on the other's layout. In a Race or a Duel, a player has 15 shots at the start, then earns one after 5 s, the next 5.5 s later, each 0.5 s longer; a proposition waits 5 s + 1 s per wrong one, up to 10 s, after the last. A new shot or a proposition too early: 409 with `retry_after_ms` |
 | GET | `/health` | anyone |
 | GET | `/docs` | anyone — Swagger UI |
 

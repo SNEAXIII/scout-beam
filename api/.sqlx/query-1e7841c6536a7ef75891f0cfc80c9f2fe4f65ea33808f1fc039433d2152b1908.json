@@ -1,0 +1,134 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO game (user_id, layout, daily_date)\n           SELECT $1, layout, date FROM daily WHERE date = $2\n           ON CONFLICT (user_id, daily_date) DO NOTHING\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, NULL::uuid as room_id,\n                     NULL::text as room_code,\n                     0::int8 as \"wrong_propositions!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "layout: SealedLayout",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "layout"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status: GameStatus",
+        "type_info": {
+          "Custom": {
+            "name": "game_status",
+            "kind": {
+              "Enum": [
+                "in_progress",
+                "solved",
+                "surrendered",
+                "lost"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "solved_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "solved_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "daily_date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "daily_date"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "room_id",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "room_code",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "wrong_propositions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1e7841c6536a7ef75891f0cfc80c9f2fe4f65ea33808f1fc039433d2152b1908"
+}

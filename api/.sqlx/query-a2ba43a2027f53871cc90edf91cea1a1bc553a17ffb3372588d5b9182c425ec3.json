@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT CASE WHEN host_id = $2 THEN host_layout ELSE opponent_layout END\n                    as \"layout?: SealedLayout\"\n           FROM room WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "layout?: SealedLayout",
+        "type_info": "Jsonb",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a2ba43a2027f53871cc90edf91cea1a1bc553a17ffb3372588d5b9182c425ec3"
+}

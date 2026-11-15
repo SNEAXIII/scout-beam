@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::Json;
 use uuid::Uuid;
 
-use crate::engine::{BeamColour, Layout};
+use crate::engine::{BeamColour, Layout, pace};
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema,
@@ -18,6 +18,8 @@ pub enum GameStatus {
     InProgress,
     Solved,
     Surrendered,
+    /// A room game whose opponent won.
+    Lost,
 }
 
 /// The hidden layout as stored. No `Serialize`, and a `Debug` that prints nothing: it cannot
@@ -31,7 +33,7 @@ impl SealedLayout {
         Self(Json(layout))
     }
 
-    /// For the engine only: tracing a shot needs the pieces.
+    /// For the engine, which traces shots with it, and for the player who hid it in a Duel.
     pub fn pieces(&self) -> &Layout {
         &self.0
     }
@@ -53,13 +55,41 @@ pub struct Game {
     pub solved_at: Option<DateTime<Utc>>,
     /// The day it was the daily of; `None` for a game against the bot.
     pub daily_date: Option<NaiveDate>,
+    pub room_id: Option<Uuid>,
+    /// The room it is played in; `None` outside a room.
+    pub room_code: Option<String>,
     pub wrong_propositions: i64,
 }
 
 impl Game {
-    /// The hidden layout, once the game is over: solved or surrendered.
+    /// The hidden layout, once the game is over: solved, surrendered or lost.
     pub fn revealed_layout(&self) -> Option<&Layout> {
         (self.status != GameStatus::InProgress).then(|| self.layout.pieces())
+    }
+}
+
+/// Where a room game's shot allowance and proposition cooldown stand, at the database's `now()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pace {
+    pub elapsed_ms: i64,
+    /// New shots fired so far.
+    pub fired: i64,
+    pub wrong_propositions: i64,
+    /// Since the last proposition; `None` before the first.
+    pub since_proposition_ms: Option<i64>,
+}
+
+impl Pace {
+    pub const fn shots_left(&self) -> i64 {
+        pace::shots_left(self.elapsed_ms, self.fired)
+    }
+
+    pub fn next_shot_in_ms(&self) -> u64 {
+        pace::next_shot_in_ms(self.elapsed_ms)
+    }
+
+    pub fn proposition_in_ms(&self) -> u64 {
+        pace::proposition_in_ms(self.wrong_propositions, self.since_proposition_ms)
     }
 }
 
@@ -70,6 +100,9 @@ pub struct GameSummary {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    /// `bot`, `daily`, `race` or `duel`.
+    pub mode: String,
+    pub opponent: Option<String>,
 }
 
 /// The engine's beam colour as the `beam_colour` column stores it.
@@ -131,6 +164,8 @@ mod tests {
             created_at: Utc::now(),
             solved_at: None,
             daily_date: None,
+            room_id: None,
+            room_code: None,
             wrong_propositions: 0,
         };
 

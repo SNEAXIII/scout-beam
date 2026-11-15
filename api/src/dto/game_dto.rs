@@ -6,7 +6,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::engine::{Layout, Piece};
-use crate::models::game_model::{Game, GameStatus, GameSummary, Shot, ShotColour};
+use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, Shot, ShotColour};
 use crate::services::game_service::Verdict;
 
 /// A game as its player sees it.
@@ -19,14 +19,39 @@ pub struct GameView {
     /// The day it is the daily of; null for a game against the bot.
     #[schema(example = "2026-11-15")]
     pub daily_date: Option<NaiveDate>,
+    /// The room it is played in; null outside a room.
+    #[schema(example = "K7RX2M")]
+    pub room_code: Option<String>,
     /// Propositions refused as wrong; each one adds a minute to a daily's score.
     pub wrong_propositions: i64,
     /// In firing order.
     pub shots: Vec<ShotResponse>,
-    /// The hidden layout: absent from the payload until the game is solved or surrendered.
+    /// The hidden layout: absent from the payload until the game is over.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Object>)]
     pub layout: Option<Layout>,
+    /// A room game only: absent from the payload outside a room.
+    #[serde(flatten)]
+    pub pace: Option<PaceView>,
+}
+
+/// A room game's pace, relative to the server's clock: the shots left follow from `elapsed_ms`
+/// and the shot count.
+#[derive(Debug, Clone, Copy, Serialize, utoipa::ToSchema)]
+pub struct PaceView {
+    /// Since the game started.
+    pub elapsed_ms: u64,
+    /// Before the next proposition is taken; 0 when it is now.
+    pub proposition_in_ms: u64,
+}
+
+impl From<Pace> for PaceView {
+    fn from(pace: Pace) -> Self {
+        Self {
+            elapsed_ms: u64::try_from(pace.elapsed_ms).unwrap_or(0),
+            proposition_in_ms: pace.proposition_in_ms(),
+        }
+    }
 }
 
 impl GameView {
@@ -37,9 +62,19 @@ impl GameView {
             created_at: game.created_at,
             solved_at: game.solved_at,
             daily_date: game.daily_date,
+            room_code: game.room_code.clone(),
             wrong_propositions: game.wrong_propositions,
             shots: shots.into_iter().map(Into::into).collect(),
             layout: game.revealed_layout().cloned(),
+            pace: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_pace(self, pace: Option<Pace>) -> Self {
+        Self {
+            pace: pace.map(Into::into),
+            ..self
         }
     }
 }
@@ -51,6 +86,10 @@ pub struct GameSummaryResponse {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    #[schema(example = "race")]
+    pub mode: String,
+    /// The other player's login, in a room only.
+    pub opponent: Option<String>,
 }
 
 impl From<GameSummary> for GameSummaryResponse {
@@ -60,6 +99,8 @@ impl From<GameSummary> for GameSummaryResponse {
             status: summary.status,
             created_at: summary.created_at,
             solved_at: summary.solved_at,
+            mode: summary.mode,
+            opponent: summary.opponent,
         }
     }
 }
@@ -91,19 +132,21 @@ pub struct PropositionResponse {
     /// The hidden layout, only when the proposition was correct.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layout: Option<Layout>,
+    /// A room game only, this proposition counted.
+    #[serde(flatten)]
+    pub pace: Option<PaceView>,
 }
 
-impl From<Verdict> for PropositionResponse {
-    fn from(verdict: Verdict) -> Self {
-        match verdict {
-            Verdict::Wrong => Self {
-                correct: false,
-                layout: None,
-            },
-            Verdict::Correct(game) => Self {
-                correct: true,
-                layout: game.revealed_layout().cloned(),
-            },
+impl PropositionResponse {
+    pub fn new(verdict: &Verdict, pace: Option<Pace>) -> Self {
+        let layout = match verdict {
+            Verdict::Wrong => None,
+            Verdict::Correct(game) => game.revealed_layout().cloned(),
+        };
+        Self {
+            correct: matches!(verdict, Verdict::Correct(_)),
+            layout,
+            pace: pace.map(Into::into),
         }
     }
 }
@@ -123,7 +166,8 @@ pub enum WebSocketClientMessage {
     Surrender,
 }
 
-/// One answer per client message, in order, plus what another socket on the game changed.
+/// One answer per client message, in order, plus what another socket on the game or its room
+/// changed.
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WebSocketServerMessage {
@@ -131,17 +175,26 @@ pub enum WebSocketServerMessage {
     Game {
         game: GameView,
     },
-    /// `replayed` when the entry had been fired before: the stored shot.
+    /// `replayed` when the entry had been fired before: the stored shot. In a room, the pace.
     Shot {
         shot: ShotResponse,
         replayed: bool,
+        #[serde(flatten)]
+        pace: Option<PaceView>,
     },
     Verdict(PropositionResponse),
+    /// A room only: the opponent's shot count, after each of their new shots.
+    Opponent {
+        shots: i64,
+    },
     /// The status and detail an HTTP endpoint would have answered.
     Error {
         action: Action,
         status: u16,
         detail: Value,
+        /// Only on a room's shot or proposition refused for its pace: when to try again.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after_ms: Option<u64>,
     },
 }
 

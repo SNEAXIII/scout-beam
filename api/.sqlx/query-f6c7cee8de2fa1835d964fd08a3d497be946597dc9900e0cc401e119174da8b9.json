@@ -13,7 +13,8 @@
               "Enum": [
                 "in_progress",
                 "solved",
-                "surrendered"
+                "surrendered",
+                "lost"
               ]
             }
           }

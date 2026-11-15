@@ -1,16 +1,25 @@
 import { API_URL, ApiError, renewSession } from '@/app/lib/api'
 import type { Piece } from '@/app/lib/pieces'
-import type { GameView, PropositionVerdict, Shot } from './games'
+import type { GameView, PaceView, PropositionVerdict, Shot } from './games'
 
 /** The client message an error answers; `connect` errors close the socket. */
 export type SocketAction = 'connect' | 'fire' | 'propose' | 'surrender' | 'message'
 
-/** One answer per client message, in order, plus what the player's other tabs changed. */
+/** One answer per client message, in order, plus what the player's other tabs or opponent changed. */
 export type ServerMessage =
   | { type: 'game'; game: GameView }
-  | { type: 'shot'; shot: Shot; replayed: boolean }
+  | ({ type: 'shot'; shot: Shot; replayed: boolean } & PaceView)
   | ({ type: 'verdict' } & PropositionVerdict)
-  | { type: 'error'; action: SocketAction; status: number; detail: unknown }
+  /** A room only: the opponent's shot count, after each of their new shots. */
+  | { type: 'opponent'; shots: number }
+  | {
+      type: 'error'
+      action: SocketAction
+      status: number
+      detail: unknown
+      /** Only on a room's shot or proposition refused for its pace: when to try again. */
+      retry_after_ms?: number
+    }
 
 export type ClientMessage =
   | { type: 'fire'; entry: number }

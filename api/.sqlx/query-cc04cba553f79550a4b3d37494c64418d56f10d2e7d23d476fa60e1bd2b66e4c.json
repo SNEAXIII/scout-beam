@@ -1,0 +1,153 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT room.id, room.code, room.mode as \"mode: RoomMode\",\n                  room.status as \"status: RoomStatus\", room.host_id, host.login as \"host_login!\",\n                  room.opponent_id, opponent.login as \"opponent_login?\",\n                  winner.login as \"winner_login?\",\n                  EXISTS (SELECT 1 FROM game\n                          WHERE game.room_id = room.id AND game.status = 'surrendered')\n                    as \"surrendered!\"\n           FROM room\n           JOIN \"user\" host ON host.id = room.host_id\n           LEFT JOIN \"user\" opponent ON opponent.id = room.opponent_id\n           LEFT JOIN \"user\" winner ON winner.id = room.winner_id\n           WHERE room.code = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "mode: RoomMode",
+        "type_info": {
+          "Custom": {
+            "name": "room_mode",
+            "kind": {
+              "Enum": [
+                "race",
+                "duel"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "mode"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status: RoomStatus",
+        "type_info": {
+          "Custom": {
+            "name": "room_status",
+            "kind": {
+              "Enum": [
+                "waiting",
+                "composing",
+                "playing",
+                "finished"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "host_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "host_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "host_login!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "opponent_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "opponent_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "opponent_login?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "winner_login?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "surrendered!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "cc04cba553f79550a4b3d37494c64418d56f10d2e7d23d476fa60e1bd2b66e4c"
+}

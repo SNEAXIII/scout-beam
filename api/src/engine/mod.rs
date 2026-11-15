@@ -6,6 +6,7 @@ pub mod beam;
 pub mod bot;
 pub mod colour;
 pub mod grid;
+pub mod pace;
 pub mod piece;
 
 pub use beam::{TraceError, same_shots, trace};

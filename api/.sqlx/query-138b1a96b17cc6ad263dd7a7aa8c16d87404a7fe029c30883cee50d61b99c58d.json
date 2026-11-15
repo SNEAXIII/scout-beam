@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH finished AS (\n               UPDATE room SET status = 'finished', winner_id = $2 WHERE id = $1\n           )\n           UPDATE game\n           SET status = CASE WHEN user_id = $2 THEN 'solved' ELSE 'lost' END::game_status,\n               solved_at = CASE WHEN user_id = $2 THEN now() END\n           WHERE room_id = $1 AND status = 'in_progress'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "138b1a96b17cc6ad263dd7a7aa8c16d87404a7fe029c30883cee50d61b99c58d"
+}

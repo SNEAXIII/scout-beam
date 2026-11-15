@@ -5,7 +5,13 @@ import { fill, useI18n } from '@/app/i18n'
 import { beginOAuth, type ProviderLink } from '@/app/services/auth'
 import ProviderLogo from './provider-logo'
 
-export default function ProviderButtons({ providers }: Readonly<{ providers: ProviderLink[] }>) {
+interface ProviderButtonsProps {
+  readonly providers: ProviderLink[]
+  /** Kept across the provider's round trip, checked again on the way back. */
+  readonly next: string | null
+}
+
+export default function ProviderButtons({ providers, next }: ProviderButtonsProps) {
   const { t } = useI18n()
   if (providers.length === 0) return null
 
@@ -16,7 +22,7 @@ export default function ProviderButtons({ providers }: Readonly<{ providers: Pro
         <Button
           key={provider.name}
           variant='outline'
-          onClick={() => beginOAuth(provider)}
+          onClick={() => beginOAuth(provider, next)}
           data-cy={`provider-${provider.name}`}
         >
           <ProviderLogo name={provider.name} />

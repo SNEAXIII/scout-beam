@@ -56,8 +56,11 @@ export async function refreshSession(): Promise<boolean> {
   return true
 }
 
+/** Back to the page left once signed in again. */
 function toLogin(): never {
-  if (window.location.pathname !== '/login') window.location.assign('/login')
+  const { pathname, search } = window.location
+  if (pathname !== '/login')
+    window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`)
   throw new ApiError(401, 'Session expirée')
 }
 

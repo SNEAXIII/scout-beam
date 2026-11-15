@@ -5,10 +5,10 @@ use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
-use crate::models::game_model::{Game, GameStatus, GameSummary, SealedLayout, Shot};
-use crate::repositories::game_repository;
+use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, SealedLayout, Shot};
+use crate::repositories::{game_repository, room_repository};
 
-/// Whether a shot was just fired or had been fired before.
+/// Whether a shot was just fired, or had been fired before.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Firing {
     New,
@@ -40,14 +40,28 @@ pub async fn get_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> Result<Ga
         .ok_or(GameError::NotFound)
 }
 
+/// A room game's pace; `None` outside a room.
+pub async fn pace_of(pool: &PgPool, game: &Game) -> Result<Option<Pace>, GameError> {
+    if game.room_id.is_none() {
+        return Ok(None);
+    }
+    Ok(game_repository::pace_of(pool, game.id).await?)
+}
+
 /// Shots in firing order.
 pub async fn shots_of(pool: &PgPool, game: &Game) -> Result<Vec<Shot>, GameError> {
     Ok(game_repository::shots_of(pool, game.id).await?)
 }
 
 /// Trace a beam from `entry` and store it, unless that entry was already fired.
+///
+/// In a room a new shot spends the allowance, and the pace comes along, this shot counted.
 /// A shot racing the end of the game is harmless: the layout is revealed then anyway.
-pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Firing), GameError> {
+pub async fn fire(
+    pool: &PgPool,
+    game: &Game,
+    entry: Entry,
+) -> Result<(Shot, Firing, Option<Pace>), GameError> {
     playable(game.status)?;
 
     let traced = engine::trace(game.layout.pieces(), entry)?;
@@ -57,39 +71,77 @@ pub async fn fire(pool: &PgPool, game: &Game, entry: Entry) -> Result<(Shot, Fir
         colour: traced.beam_colour.into(),
     };
 
-    if let Some(stored) = game_repository::insert_shot_if_absent(pool, game.id, &shot).await? {
-        return Ok((stored, Firing::New));
+    let mut tx = pool.begin().await?;
+    // Locked on its own first: the pace read next then sees a racing tab's committed shot.
+    if game.room_id.is_some() {
+        game_repository::lock_status(&mut *tx, game.id).await?;
     }
+    let before = game_repository::pace_of(&mut *tx, game.id).await?;
+    if let Some(stored) = game_repository::insert_shot_if_absent(&mut *tx, game.id, &shot).await? {
+        if let Some(pace) = before
+            && pace.shots_left() <= 0
+        {
+            tx.rollback().await?;
+            return Err(GameError::NoShotLeft {
+                retry_after_ms: pace.next_shot_in_ms(),
+            });
+        }
+        let pace = game_repository::pace_of(&mut *tx, game.id).await?;
+        tx.commit().await?;
+        return Ok((stored, Firing::New, pace));
+    }
+    tx.rollback().await?;
     game_repository::find_shot(pool, game.id, shot.entry)
         .await?
-        .map(|stored| (stored, Firing::Replayed))
+        .map(|stored| (stored, Firing::Replayed, before))
         .ok_or(GameError::NotFound)
 }
 
-/// Store a valid proposition; a correct one solves the game in the same transaction.
-pub async fn propose(pool: &PgPool, game: &Game, layout: &Layout) -> Result<Verdict, GameError> {
+/// Store a valid proposition, once a room's cooldown is over; a correct one solves the game in the
+/// same transaction, and wins its room. The pace comes along in a room, this proposition counted.
+pub async fn propose(
+    pool: &PgPool,
+    game: &Game,
+    layout: &Layout,
+) -> Result<(Verdict, Option<Pace>), GameError> {
     playable(game.status)?;
     layout.validate()?;
     let correct = engine::same_shots(game.layout.pieces(), layout)?;
 
     let mut tx = pool.begin().await?;
+    // Room before game, here and in `surrender`: both players' endings lock in the same order.
+    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
     // The lock holds a racing proposition or surrender until this one commits; it then reads the end.
     let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
     }
+    if let Some(pace) = game_repository::pace_of(&mut *tx, game.id).await?
+        && pace.proposition_in_ms() > 0
+    {
+        tx.rollback().await?;
+        return Err(GameError::PropositionCooldown {
+            retry_after_ms: pace.proposition_in_ms(),
+        });
+    }
     game_repository::insert_proposition(&mut *tx, game.id, layout, correct).await?;
+    let pace = game_repository::pace_of(&mut *tx, game.id).await?;
     let verdict = if correct {
-        Verdict::Correct(game_repository::mark_solved(&mut *tx, game.id).await?)
+        let solved = game_repository::mark_solved(&mut *tx, game.id).await?;
+        if let Some(room) = room {
+            room_repository::finish(&mut *tx, room.id, game.user_id).await?;
+        }
+        Verdict::Correct(solved)
     } else {
         Verdict::Wrong
     };
     tx.commit().await?;
-    Ok(verdict)
+    Ok((verdict, pace))
 }
 
-/// Give up: the game ends unsolved and its layout is revealed. A daily is never given up.
+/// Give up: the game ends unsolved and its layout is revealed; in a room, the opponent wins.
+/// A daily is never given up.
 pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     if game.daily_date.is_some() {
         return Err(GameError::DailySurrender);
@@ -97,13 +149,17 @@ pub async fn surrender(pool: &PgPool, game: &Game) -> Result<Game, GameError> {
     playable(game.status)?;
 
     let mut tx = pool.begin().await?;
-    // Same lock as `propose`: whichever of the two commits first ends the game.
+    // Same locks as `propose`: whichever of the two commits first ends the game.
+    let room = room_repository::lock_for_game(&mut *tx, game.id).await?;
     let status = game_repository::lock_status(&mut *tx, game.id).await?;
     if let Err(refusal) = status.ok_or(GameError::NotFound).and_then(playable) {
         tx.rollback().await?;
         return Err(refusal);
     }
     let surrendered = game_repository::mark_surrendered(&mut *tx, game.id).await?;
+    if let Some(room) = room {
+        room_repository::finish(&mut *tx, room.id, room.opponent_id).await?;
+    }
     tx.commit().await?;
     Ok(surrendered)
 }
@@ -114,6 +170,7 @@ const fn playable(status: GameStatus) -> Result<(), GameError> {
         GameStatus::InProgress => Ok(()),
         GameStatus::Solved => Err(GameError::AlreadySolved),
         GameStatus::Surrendered => Err(GameError::Surrendered),
+        GameStatus::Lost => Err(GameError::Lost),
     }
 }
 

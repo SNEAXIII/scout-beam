@@ -1,4 +1,4 @@
-import { CheckCircle2, Flag, Hourglass } from 'lucide-react'
+import { CheckCircle2, Flag, Hourglass, XCircle } from 'lucide-react'
 import { useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import type { GameStatus } from '@/app/services/games'
@@ -7,6 +7,7 @@ const BADGES = {
   in_progress: { Icon: Hourglass, tone: 'bg-secondary text-secondary-foreground' },
   solved: { Icon: CheckCircle2, tone: 'bg-info text-info-foreground' },
   surrendered: { Icon: Flag, tone: 'bg-muted text-muted-foreground' },
+  lost: { Icon: XCircle, tone: 'bg-muted text-muted-foreground' },
 } as const
 
 interface GameStatusBadgeProps {

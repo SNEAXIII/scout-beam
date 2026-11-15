@@ -2,14 +2,19 @@ import { apiRequest } from '@/app/lib/api'
 import type { BeamColour } from '@/app/lib/colours'
 import type { Layout } from '@/app/lib/pieces'
 
-export type GameStatus = 'in_progress' | 'solved' | 'surrendered'
+export type GameStatus = 'in_progress' | 'solved' | 'surrendered' | 'lost'
 
 export interface GameSummary {
   id: string
   status: GameStatus
   created_at: string
   solved_at: string | null
+  mode: GameMode
+  /** The other player's login, in a room only. */
+  opponent: string | null
 }
+
+export type GameMode = 'bot' | 'daily' | 'race' | 'duel'
 
 export const listGames = (): Promise<GameSummary[]> => apiRequest<GameSummary[]>('/games')
 
@@ -19,14 +24,24 @@ export interface Shot {
   colour: BeamColour
 }
 
-export interface GameView extends GameSummary {
+/** A room game only, by the server's clock: the shots left follow from these and the shot count. */
+export interface PaceView {
+  /** Since the game started. */
+  elapsed_ms?: number
+  /** Before the next proposition is taken; 0 when it is now. */
+  proposition_in_ms?: number
+}
+
+export interface GameView extends Omit<GameSummary, 'mode' | 'opponent'>, PaceView {
   /** The day it is the daily of, `YYYY-MM-DD`; null for a game against the bot. */
   daily_date: string | null
+  /** The room it is played in; null outside a room. */
+  room_code: string | null
   /** Each one adds a minute to a daily's score. */
   wrong_propositions: number
   /** In firing order. */
   shots: Shot[]
-  /** Only once over: solved or surrendered. */
+  /** Only once over. */
   layout?: Layout
 }
 
@@ -35,7 +50,7 @@ export const createGame = (): Promise<GameView> =>
 
 export const getGame = (id: string): Promise<GameView> => apiRequest<GameView>(`/games/${id}`)
 
-export interface PropositionVerdict {
+export interface PropositionVerdict extends PaceView {
   correct: boolean
   /** Only when correct. */
   layout?: Layout

@@ -10,12 +10,17 @@ auth → home page → daily → rooms (Race and Duel). Vocabulary: `CONTEXT.md`
 | --- | --- | --- |
 | Auth | `docs/plans/2026-11-14-auth.md` | merged, PR #10 |
 | Home page | `docs/plans/2026-11-15-home-page.md` | merged, PR #11 |
-| Daily | `docs/plans/2026-11-15-daily.md` | done on `feat/daily`, PR to open |
-| Rooms | `docs/plans/2026-11-15-duel-race.md` | planned, starts after the daily is merged |
+| Daily | `docs/plans/2026-11-15-daily.md` | merged, PR #12 |
+| Rooms | `docs/plans/2026-11-15-duel-race.md` | done on `feat/rooms`, PR to open |
 
-On `feat/daily`, the six tasks are committed (task 6: the grid on `/` from the start, the first
-shot starts the daily, the day's ranking beside it); nothing was checked in a browser yet.
-Next: a manual pass (`make dev` + `pnpm dev`), the PR, then the rooms plan from `main`.
+On `feat/rooms`, the five tasks are committed and reviewed; nothing was checked in a browser yet.
+Next: a manual pass with two browsers (Race, then Duel), then the PR.
+On surrender, the winner's game is `solved` and the surrenderer's stays `surrendered`; only a
+correct proposition of the opponent makes a game `lost`. Every 401 now lands on
+`/login?next=<page>`, for every page.
+
+Known gaps of the rooms, left for later: the opponent's shot count is unknown until their next
+shot; API error texts are French in the English interface.
 
 ## How the work runs
 
@@ -41,8 +46,8 @@ junction (`mklink /J`), removed with `rmdir` before the worktree. Agent worktree
   `max(100, 1000 - floor(score/6))`, global ranking = sum of points, late dailies included; the day
   ranking only counts games played on their day. No surrender. A past day can be replayed only if
   someone played it on its day (the daily is drawn lazily).
-- **Rooms**: everything is in their plan. Duel priority: after an action, the same player waits
-  until the opponent acts or `10 s × fired / 36`, capped at 10 s by construction.
+- **Rooms**: everything is in their plan. Task 6 replaced the Duel priority with a shot allowance
+  and a proposition cooldown per game (see `CONTEXT.md`); 5 s base and 0.5 s step may change.
 - **Auth, kept for later**: whether to store the email in clear is undecided (hash only for now);
   no account linking between password accounts and providers; logout does not revoke tokens
   server-side; v1 accounts made by dev-login are abandoned (no credentials, cannot sign in).

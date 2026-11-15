@@ -2,13 +2,14 @@
 
 import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/app/i18n'
+import { nextPath } from '@/app/lib/utils'
 import { register } from '@/app/services/auth'
 
 interface FieldProps {
@@ -41,6 +42,7 @@ function Field({ id, label, value, onChange, type = 'text', autoComplete }: Read
 export default function RegisterForm() {
   const { t } = useI18n()
   const router = useRouter()
+  const next = useSearchParams().get('next')
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -57,7 +59,7 @@ export default function RegisterForm() {
     setError(null)
     try {
       await register(login.trim(), password)
-      router.push('/play')
+      router.push(nextPath(next))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.register.failed)
       setPending(false)
@@ -120,7 +122,7 @@ export default function RegisterForm() {
         <p className='text-center text-sm text-muted-foreground'>
           {t.register.haveAccount}{' '}
           <Link
-            href='/login'
+            href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
             className='text-primary underline-offset-4 hover:underline'
             data-cy='login-link'
           >

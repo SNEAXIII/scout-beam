@@ -174,6 +174,7 @@ async fn a_guest_can_start_the_daily_and_it_is_listed(pool: PgPool) {
     let games = app.get("/games", Some(&token)).await;
     games.assert_status(StatusCode::OK);
     assert_eq!(games.body[0]["id"], game_id.to_string());
+    assert_eq!(games.body[0]["mode"], "daily");
 }
 
 #[sqlx::test]
@@ -257,6 +258,28 @@ async fn only_wrong_propositions_are_counted(pool: PgPool) {
     let game = app.game(game_id, &token).await;
     assert_eq!(game.body["wrong_propositions"], 2);
     assert_eq!(game.body["status"], "solved");
+}
+
+#[sqlx::test]
+async fn a_daily_fires_every_entry_at_once_and_has_no_pace(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_daily(today, &token).await;
+
+    for entry in 1..=36 {
+        app.play(
+            game_id,
+            Some(&token),
+            json!({ "type": "fire", "entry": entry }),
+        )
+        .await
+        .assert_status(StatusCode::CREATED);
+    }
+
+    let game = app.game(game_id, &token).await;
+    assert!(game.body.get("elapsed_ms").is_none(), "{}", game.body);
+    assert!(game.body.get("proposition_in_ms").is_none());
 }
 
 #[sqlx::test]

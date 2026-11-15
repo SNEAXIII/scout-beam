@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useI18n } from '@/app/i18n'
-import { isProviderName, oauthLogin, takeOAuthState } from '@/app/services/auth'
+import { isProviderName, oauthLogin, takeOAuthNext, takeOAuthState } from '@/app/services/auth'
 
 /** Where the provider sends the browser back: `state` is checked before anything is sent. */
 export default function OAuthCallbackPage() {
@@ -23,13 +23,14 @@ export default function OAuthCallbackPage() {
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
     const expected = takeOAuthState()
+    const next = takeOAuthNext()
     if (!isProviderName(provider) || !code || !expected || params.get('state') !== expected) {
       setError(t.callback.invalid)
       return
     }
 
     oauthLogin(provider, code).then(
-      () => router.replace('/play'),
+      () => router.replace(next),
       (caught: unknown) => setError(caught instanceof Error ? caught.message : t.callback.failed)
     )
   }, [provider, router, t])

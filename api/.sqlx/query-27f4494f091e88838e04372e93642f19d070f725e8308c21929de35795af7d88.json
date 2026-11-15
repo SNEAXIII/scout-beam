@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch from now() - created_at) * 1000)::int8 as \"elapsed_ms!\",\n                  (SELECT count(*) FROM shot WHERE game_id = game.id) as \"fired!\",\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\",\n                  (SELECT (extract(epoch from now() - max(created_at)) * 1000)::int8\n                   FROM proposition WHERE game_id = game.id) as since_proposition_ms\n           FROM game\n           WHERE id = $1 AND room_id IS NOT NULL\n           FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "elapsed_ms!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "fired!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "wrong_propositions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "since_proposition_ms",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "27f4494f091e88838e04372e93642f19d070f725e8308c21929de35795af7d88"
+}

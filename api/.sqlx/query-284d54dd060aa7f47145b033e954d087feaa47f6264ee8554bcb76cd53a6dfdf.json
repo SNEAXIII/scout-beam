@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO game (user_id, layout)\n           VALUES ($1, $2)\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, daily_date, 0::int8 as \"wrong_propositions!\"",
+  "query": "SELECT g.id, g.status as \"status: GameStatus\", g.created_at, g.solved_at,\n                  CASE WHEN g.daily_date IS NOT NULL THEN 'daily'\n                       WHEN r.id IS NULL THEN 'bot'\n                       ELSE r.mode::text END as \"mode!\",\n                  o.login as \"opponent?\"\n           FROM game g\n           LEFT JOIN room r ON r.id = g.room_id\n           LEFT JOIN \"user\" o\n             ON o.id = CASE WHEN r.host_id = g.user_id THEN r.opponent_id ELSE r.host_id END\n           WHERE g.user_id = $1\n           ORDER BY g.created_at DESC, g.id DESC",
   "describe": {
     "columns": [
       {
@@ -16,28 +16,6 @@
       },
       {
         "ordinal": 1,
-        "name": "user_id",
-        "type_info": "Uuid",
-        "origin": {
-          "Table": {
-            "table": "game",
-            "name": "user_id"
-          }
-        }
-      },
-      {
-        "ordinal": 2,
-        "name": "layout: SealedLayout",
-        "type_info": "Jsonb",
-        "origin": {
-          "Table": {
-            "table": "game",
-            "name": "layout"
-          }
-        }
-      },
-      {
-        "ordinal": 3,
         "name": "status: GameStatus",
         "type_info": {
           "Custom": {
@@ -46,7 +24,8 @@
               "Enum": [
                 "in_progress",
                 "solved",
-                "surrendered"
+                "surrendered",
+                "lost"
               ]
             }
           }
@@ -59,7 +38,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 2,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +49,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 3,
         "name": "solved_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,39 +60,36 @@
         }
       },
       {
-        "ordinal": 6,
-        "name": "daily_date",
-        "type_info": "Date",
-        "origin": {
-          "Table": {
-            "table": "game",
-            "name": "daily_date"
-          }
-        }
+        "ordinal": 4,
+        "name": "mode!",
+        "type_info": "Text",
+        "origin": "Expression"
       },
       {
-        "ordinal": 7,
-        "name": "wrong_propositions!",
-        "type_info": "Int8",
-        "origin": "Expression"
+        "ordinal": 5,
+        "name": "opponent?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Jsonb"
+        "Uuid"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false,
-      false,
       true,
-      true,
-      null
+      null,
+      false
     ]
   },
-  "hash": "34c13b8020820bb3c92275ccfa276b04f87f5edd8f37bd6967fc244fcb725b72"
+  "hash": "284d54dd060aa7f47145b033e954d087feaa47f6264ee8554bcb76cd53a6dfdf"
 }

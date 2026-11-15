@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE room SET opponent_id = $2, status = $3\n         WHERE code = $1 AND opponent_id IS NULL AND host_id <> $2\n         RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "room",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "room_status",
+            "kind": {
+              "Enum": [
+                "waiting",
+                "composing",
+                "playing",
+                "finished"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "995603ad1bd6359fde537b89896e7c49a8f2d694e98a1f6391f8030780f6b750"
+}

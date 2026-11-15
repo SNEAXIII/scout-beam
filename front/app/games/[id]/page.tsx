@@ -7,6 +7,8 @@ import DraftPanel from './_components/draft-panel'
 import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
 import GuestSaveCard from './_components/guest-save-card'
+import RoomBanner from './_components/room-banner'
+import RoomLine from './_components/room-line'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
@@ -15,7 +17,8 @@ import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useI18n()
-  const { game, error, connected, surrendering, load, fire, surrender, propose } = useGame(id)
+  const { game, room, pace, error, connected, surrendering, load, fire, surrender, propose } =
+    useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
   const router = useRouter()
@@ -46,6 +49,7 @@ export default function GamePage() {
         keyboardLayout={keyboardLayout}
         onToggleKeyboardLayout={toggle}
       />
+      {game?.room_code && <RoomLine room={room} />}
       {error && (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
@@ -79,12 +83,19 @@ export default function GamePage() {
                 layout={game.layout}
                 disabled
               />
-              <p
-                className='text-sm text-muted-foreground'
-                data-cy={`game-${game.status}`}
-              >
-                {t.game[game.status]}
-              </p>
+              {game.room_code ? (
+                <RoomBanner
+                  status={game.status}
+                  surrendered={room.surrendered}
+                />
+              ) : (
+                <p
+                  className='text-sm text-muted-foreground'
+                  data-cy={`game-${game.status}`}
+                >
+                  {t.game[game.status]}
+                </p>
+              )}
               {game.daily_date && game.status === 'solved' && <GuestSaveCard />}
             </div>
           ) : (
@@ -92,6 +103,7 @@ export default function GamePage() {
               {...board}
               gameId={id}
               keyboardLayout={keyboardLayout}
+              pace={pace}
               onSolved={() => void load()}
               onPropose={propose}
             />
