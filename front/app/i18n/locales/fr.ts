@@ -99,7 +99,7 @@ const fr: Translations = {
     against: 'Contre {{login}}',
     opponentShots: 'Ses tirs : {{count}}',
     priority: 'Votre adversaire a la priorité : {{seconds}} s',
-    won: 'Gagné : vous avez trouvé le premier. Voici les pièces cachées.',
+    won: 'Gagné ! Voici les pièces cachées.',
     lost: 'Perdu : votre adversaire a trouvé avant vous. Voici les pièces cachées.',
     surrendered: 'Vous avez abandonné : votre adversaire gagne. Voici les pièces cachées.',
     surrenderDescription:

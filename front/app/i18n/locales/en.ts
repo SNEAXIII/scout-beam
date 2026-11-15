@@ -93,7 +93,7 @@ const en = {
     against: 'Against {{login}}',
     opponentShots: 'Their shots: {{count}}',
     priority: 'Your opponent has priority: {{seconds}} s',
-    won: 'You won: you found the layout first. Here are the hidden pieces.',
+    won: 'You won! Here are the hidden pieces.',
     lost: 'You lost: your opponent found first. Here are the hidden pieces.',
     surrendered: 'You surrendered: your opponent wins. Here are the hidden pieces.',
     surrenderDescription: 'Your opponent wins the game, and the hidden pieces will be revealed.',
