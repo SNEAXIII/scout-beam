@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { CalendarDays, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import { logout } from '@/app/services/auth'
@@ -23,6 +24,18 @@ export default function PlayHeader() {
     <header className='flex flex-wrap items-center justify-between gap-3'>
       <h1 className='text-2xl font-semibold tracking-tight'>{t.play.title}</h1>
       <div className='flex items-start gap-2'>
+        <Button
+          asChild
+          variant='outline'
+        >
+          <Link
+            href='/daily'
+            data-cy='daily-link'
+          >
+            <CalendarDays />
+            {t.play.daily}
+          </Link>
+        </Button>
         <NewGameButton />
         <Button
           variant='ghost'

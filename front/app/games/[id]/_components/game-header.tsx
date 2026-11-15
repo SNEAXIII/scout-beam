@@ -7,12 +7,13 @@ import LanguageSwitcher from '@/components/language-switcher'
 import GameStatusBadge from '@/app/play/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
-import type { GameStatus } from '@/app/services/games'
+import type { GameView } from '@/app/services/games'
+import DailyTimer from './daily-timer'
 import KeyboardLayoutToggle from './keyboard-layout-toggle'
 
 interface GameHeaderProps {
-  readonly status: GameStatus | null
-  /** Shown only while the game is in progress. */
+  readonly game: GameView | null
+  /** Shown only while the game is in progress, and never on a daily. */
   readonly onSurrender: () => void
   readonly surrendering: boolean
   readonly keyboardLayout: KeyboardLayout
@@ -20,7 +21,7 @@ interface GameHeaderProps {
 }
 
 export default function GameHeader({
-  status,
+  game,
   onSurrender,
   surrendering,
   keyboardLayout,
@@ -28,6 +29,8 @@ export default function GameHeader({
 }: GameHeaderProps) {
   const { t } = useI18n()
   const [confirming, setConfirming] = useState(false)
+  const status = game?.status ?? null
+  const daily = game?.daily_date != null
   return (
     <header className='flex flex-wrap items-center gap-2 pt-2'>
       <Button
@@ -36,7 +39,7 @@ export default function GameHeader({
         size='icon'
       >
         <Link
-          href='/play'
+          href={daily ? '/daily' : '/play'}
           aria-label={t.game.back}
           title={t.game.back}
           data-cy='back-to-games'
@@ -46,8 +49,15 @@ export default function GameHeader({
       </Button>
       <h1 className='text-xl font-semibold tracking-tight'>{t.game.title}</h1>
       {status && <GameStatusBadge status={status} />}
+      {game && daily && (
+        <DailyTimer
+          createdAt={game.created_at}
+          solvedAt={game.solved_at}
+          wrongPropositions={game.wrong_propositions}
+        />
+      )}
       <div className='ml-auto flex items-center gap-2'>
-        {status === 'in_progress' && (
+        {status === 'in_progress' && !daily && (
           <Button
             variant='outline'
             size='sm'

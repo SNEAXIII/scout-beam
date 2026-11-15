@@ -6,6 +6,7 @@ import { useI18n } from '@/app/i18n'
 import DraftPanel from './_components/draft-panel'
 import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
+import GuestSaveCard from './_components/guest-save-card'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
@@ -30,7 +31,7 @@ export default function GamePage() {
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <GameHeader
-        status={game?.status ?? null}
+        game={game}
         onSurrender={surrender}
         surrendering={surrendering}
         keyboardLayout={keyboardLayout}
@@ -75,6 +76,7 @@ export default function GamePage() {
               >
                 {t.game[game.status]}
               </p>
+              {game.daily_date && game.status === 'solved' && <GuestSaveCard />}
             </div>
           ) : (
             <DraftPanel

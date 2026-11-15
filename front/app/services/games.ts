@@ -20,6 +20,10 @@ export interface Shot {
 }
 
 export interface GameView extends GameSummary {
+  /** The day it is the daily of, `YYYY-MM-DD`; null for a game against the bot. */
+  daily_date: string | null
+  /** Each one adds a minute to a daily's score. */
+  wrong_propositions: number
   /** In firing order. */
   shots: Shot[]
   /** Only once over: solved or surrendered. */
