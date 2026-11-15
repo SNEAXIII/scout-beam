@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button'
 import { fill, useI18n } from '@/app/i18n'
 import { beginOAuth, type ProviderLink } from '@/app/services/auth'
+import ProviderLogo from './provider-logo'
 
-/** Brand logos are absent from lucide-react: each button carries the provider's name only. */
 export default function ProviderButtons({ providers }: Readonly<{ providers: ProviderLink[] }>) {
   const { t } = useI18n()
   if (providers.length === 0) return null
@@ -19,6 +19,7 @@ export default function ProviderButtons({ providers }: Readonly<{ providers: Pro
           onClick={() => beginOAuth(provider)}
           data-cy={`provider-${provider.name}`}
         >
+          <ProviderLogo name={provider.name} />
           {fill(t.login.continueWith, { provider: t.providers[provider.name] })}
         </Button>
       ))}
