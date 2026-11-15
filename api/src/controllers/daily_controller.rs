@@ -7,7 +7,8 @@ use http::StatusCode;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::dto::daily_dto::DailyTodayResponse;
+use crate::auth::Identity;
+use crate::dto::daily_dto::{DailyTodayResponse, DayRankingResponse, GlobalRankingResponse};
 use crate::dto::game_dto::GameView;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::{daily_service, game_service};
@@ -19,6 +20,8 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(get_daily_today))
         .routes(routes!(post_daily_game))
+        .routes(routes!(get_daily_ranking))
+        .routes(routes!(get_ranking))
 }
 
 /// `GET /daily/today` — today's date in Paris, so the front never computes it.
@@ -60,4 +63,46 @@ async fn post_daily_game(
     }
     let shots = game_service::shots_of(&state.pool, &game).await?;
     Ok((StatusCode::OK, Json(GameView::new(&game, shots))))
+}
+
+/// `GET /daily/{date}/ranking` — that day's ranking by score.
+#[utoipa::path(
+    get,
+    path = "/daily/{date}/ranking",
+    tag = "Daily",
+    params(("date" = NaiveDate, Path, description = "Day of the daily, in Paris")),
+    security((), ("bearer" = [])),
+    description = "Solved dailies of that day, started on that same day, by registered players. With a token, `me` is the caller's line even outside the top.",
+    responses(
+        (status = 200, description = "The top 100, and the caller's line", body = DayRankingResponse),
+    ),
+)]
+async fn get_daily_ranking(
+    State(state): State<AppState>,
+    caller: Option<Identity>,
+    Path(date): Path<NaiveDate>,
+) -> ApiResult<Json<DayRankingResponse>> {
+    let caller = caller.map(|identity| identity.user_id);
+    let ranking = daily_service::day_ranking(&state.pool, date, caller).await?;
+    Ok(Json(ranking.into()))
+}
+
+/// `GET /ranking` — every registered player's points over the dailies they solved.
+#[utoipa::path(
+    get,
+    path = "/ranking",
+    tag = "Daily",
+    security((), ("bearer" = [])),
+    description = "Points summed over every solved daily, late ones included. With a token, `me` is the caller's line even outside the top.",
+    responses(
+        (status = 200, description = "The top 100, and the caller's line", body = GlobalRankingResponse),
+    ),
+)]
+async fn get_ranking(
+    State(state): State<AppState>,
+    caller: Option<Identity>,
+) -> ApiResult<Json<GlobalRankingResponse>> {
+    let caller = caller.map(|identity| identity.user_id);
+    let ranking = daily_service::global_ranking(&state.pool, caller).await?;
+    Ok(Json(ranking.into()))
 }

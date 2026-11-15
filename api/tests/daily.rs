@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! `/daily/*` end to end: the day's layout, one game per player, no surrender.
+//! `/daily/*` and `/ranking` end to end: the day's layout, one game per player, no surrender, and
+//! the rankings by score and by points.
 
 mod common;
 
@@ -8,7 +9,7 @@ use common::{Response, TestApp};
 use http::StatusCode;
 use scout_beam::engine::Layout;
 use scout_beam::shared::role::Role;
-use serde_json::json;
+use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -28,6 +29,60 @@ impl TestApp {
         let created = self.post_daily(date, token).await;
         created.assert_status(StatusCode::CREATED);
         created.body["id"].as_str().unwrap().parse().unwrap()
+    }
+
+    /// Started `offset` seconds past noon, Paris time, on its daily's day, solved `seconds` later.
+    async fn time_game(&self, game_id: Uuid, offset: f64, seconds: f64) {
+        sqlx::query(
+            "UPDATE game
+             SET created_at = ((daily_date + time '12:00') AT TIME ZONE 'Europe/Paris')
+                              + make_interval(secs => $2),
+                 solved_at = ((daily_date + time '12:00') AT TIME ZONE 'Europe/Paris')
+                             + make_interval(secs => $2 + $3)
+             WHERE id = $1",
+        )
+        .bind(game_id)
+        .bind(offset)
+        .bind(seconds)
+        .execute(&self.pool)
+        .await
+        .unwrap();
+    }
+
+    /// A new account that solved that day's daily in `seconds`, started `offset` past noon.
+    async fn solved_daily(
+        &self,
+        login: &str,
+        date: NaiveDate,
+        offset: f64,
+        seconds: f64,
+    ) -> String {
+        let (_, token) = self.seed_with_token(login, Role::User).await;
+        let game_id = self.start_daily(date, &token).await;
+        self.solve(game_id, &token).await;
+        self.time_game(game_id, offset, seconds).await;
+        token
+    }
+
+    async fn insert_daily(&self, date: NaiveDate) {
+        sqlx::query("INSERT INTO daily (date, layout) VALUES ($1, $2)")
+            .bind(date)
+            .bind(serde_json::to_value(layout_with_square("red")).unwrap())
+            .execute(&self.pool)
+            .await
+            .unwrap();
+    }
+
+    async fn day_ranking(&self, date: NaiveDate, token: Option<&str>) -> Response {
+        let ranking = self.get(&format!("/daily/{date}/ranking"), token).await;
+        ranking.assert_status(StatusCode::OK);
+        ranking
+    }
+
+    async fn ranking(&self, token: Option<&str>) -> Response {
+        let ranking = self.get("/ranking", token).await;
+        ranking.assert_status(StatusCode::OK);
+        ranking
     }
 
     async fn game(&self, game_id: Uuid, token: &str) -> Response {
@@ -191,4 +246,140 @@ async fn a_game_against_the_bot_has_no_daily_date(pool: PgPool) {
     created.assert_status(StatusCode::CREATED);
     assert!(created.body["daily_date"].is_null());
     assert_eq!(created.body["wrong_propositions"], 0);
+}
+
+/// One field of every line of the top.
+fn column(ranking: &Response, field: &str) -> Vec<Value> {
+    ranking.body["top"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row[field].clone())
+        .collect()
+}
+
+// --- rankings -------------------------------------------------------------------
+
+#[sqlx::test]
+async fn equal_scores_share_a_rank_and_the_first_solved_comes_first(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    app.solved_daily("alice", today, 0.0, 100.0).await;
+    app.solved_daily("bob", today, -50.0, 100.0).await;
+    app.solved_daily("carol", today, 0.0, 200.0).await;
+
+    let day = app.day_ranking(today, None).await;
+    let global = app.ranking(None).await;
+
+    assert_eq!(
+        column(&day, "login"),
+        [json!("bob"), json!("alice"), json!("carol")]
+    );
+    assert_eq!(column(&day, "rank"), [json!(1), json!(1), json!(3)]);
+    assert_eq!(
+        column(&global, "login"),
+        [json!("alice"), json!("bob"), json!("carol")]
+    );
+    assert_eq!(column(&global, "rank"), [json!(1), json!(1), json!(3)]);
+    assert!(day.body["me"].is_null());
+}
+
+#[sqlx::test]
+async fn a_guest_appears_in_no_ranking(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (_, token) = app.guest().await;
+    let game_id = app.start_daily(today, &token).await;
+    app.solve(game_id, &token).await;
+
+    let day = app.day_ranking(today, Some(&token)).await;
+    let global = app.ranking(Some(&token)).await;
+
+    assert_eq!(day.body["top"], json!([]));
+    assert!(day.body["me"].is_null());
+    assert_eq!(global.body["top"], json!([]));
+    assert!(global.body["me"].is_null());
+}
+
+#[sqlx::test]
+async fn a_daily_played_late_counts_in_points_only(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let yesterday = app.today().await.pred_opt().unwrap();
+    app.insert_daily(yesterday).await;
+    let (_, token) = app.seed_with_token("late", Role::User).await;
+    let game_id = app.start_daily(yesterday, &token).await;
+    app.solve(game_id, &token).await;
+
+    let day = app.day_ranking(yesterday, Some(&token)).await;
+    let global = app.ranking(Some(&token)).await;
+
+    assert_eq!(day.body["top"], json!([]));
+    assert!(day.body["me"].is_null());
+    assert_eq!(column(&global, "login"), [json!("late")]);
+    assert_eq!(global.body["me"]["dailies_solved"], 1);
+}
+
+#[sqlx::test]
+async fn a_wrong_proposition_adds_a_minute_and_points_follow_the_score(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let yesterday = today.pred_opt().unwrap();
+    app.insert_daily(yesterday).await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_daily(today, &token).await;
+    app.hide_layout(game_id, &layout_with_square("red")).await;
+    let wrong = app
+        .propose(game_id, Some(&token), &layout_with_square("blue"))
+        .await;
+    assert_eq!(wrong.body["correct"], false, "{}", wrong.body);
+    app.solve(game_id, &token).await;
+    app.time_game(game_id, 0.0, 100.4).await;
+    let slow_id = app.start_daily(yesterday, &token).await;
+    app.solve(slow_id, &token).await;
+    app.time_game(slow_id, 0.0, 10_000.0).await;
+
+    let day = app.day_ranking(today, Some(&token)).await;
+    let global = app.ranking(Some(&token)).await;
+
+    assert_eq!(day.body["me"]["seconds"], 100);
+    assert_eq!(day.body["me"]["wrong_propositions"], 1);
+    assert_eq!(day.body["me"]["score"], 160);
+    // 1000 - 160 / 6 for today's, the floor of 100 for the slow one.
+    assert_eq!(global.body["me"]["points"], 974 + 100);
+    assert_eq!(global.body["me"]["dailies_solved"], 2);
+}
+
+#[sqlx::test]
+async fn the_caller_outside_the_top_still_gets_their_line(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let token = app.solved_daily("caller", today, 0.0, 1000.0).await;
+    sqlx::query(
+        r#"WITH players AS (
+               INSERT INTO "user" (login) SELECT 'player' || i FROM generate_series(1, 100) i
+               RETURNING id
+           )
+           INSERT INTO game (user_id, layout, daily_date, status, created_at, solved_at)
+           SELECT p.id, d.layout, d.date, 'solved', n.noon, n.noon + interval '60 seconds'
+           FROM players p, daily d,
+                LATERAL (SELECT (d.date + time '12:00') AT TIME ZONE 'Europe/Paris' AS noon) n
+           WHERE d.date = $1"#,
+    )
+    .bind(today)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let day = app.day_ranking(today, Some(&token)).await;
+    let global = app.ranking(Some(&token)).await;
+    let anonymous = app.ranking(None).await;
+
+    for ranking in [&day, &global] {
+        let logins = column(ranking, "login");
+        assert_eq!(logins.len(), 100);
+        assert!(!logins.contains(&json!("caller")));
+        assert_eq!(ranking.body["me"]["login"], "caller");
+        assert_eq!(ranking.body["me"]["rank"], 101);
+    }
+    assert!(anonymous.body["me"].is_null());
 }

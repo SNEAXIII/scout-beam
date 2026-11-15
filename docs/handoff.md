@@ -13,9 +13,9 @@ auth → home page → daily → rooms (Race and Duel). Vocabulary: `CONTEXT.md`
 | Daily | `docs/plans/2026-11-15-daily.md` | **in progress** on `feat/daily` |
 | Rooms | `docs/plans/2026-11-15-duel-race.md` | planned, starts after the daily is merged |
 
-On `feat/daily`, the plan is committed and **Task 1 (daily games, API)** was handed to an
-implementer subagent when this was written: its work may sit uncommitted in the tree. Check
-`git status` and finish or review it before starting Task 2.
+On `feat/daily`, Task 1 (daily games, API) is committed; **Task 2 (rankings, API)** was handed to
+an implementer subagent when this was last updated: its work may sit uncommitted in the tree.
+Check `git status` and finish or review it before starting Task 3.
 
 ## How the work runs
 

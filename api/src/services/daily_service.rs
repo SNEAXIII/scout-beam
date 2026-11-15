@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::engine;
 use crate::errors::game_error::GameError;
+use crate::models::daily_model::{DayRankingRow, GlobalRankingRow};
 use crate::models::game_model::{Game, SealedLayout};
 use crate::repositories::{daily_repository, game_repository};
 
@@ -40,4 +41,34 @@ pub async fn start(
         .await?
         .map(|game| (game, false))
         .ok_or(GameError::DailyNotFound)
+}
+
+/// The first 100 rows, and the caller's own wherever it falls; `me` is `None` when unranked.
+#[derive(Debug, Clone)]
+pub struct Ranking<T> {
+    pub top: Vec<T>,
+    pub me: Option<T>,
+}
+
+pub async fn day_ranking(
+    pool: &PgPool,
+    date: NaiveDate,
+    caller: Option<Uuid>,
+) -> Result<Ranking<DayRankingRow>, GameError> {
+    let rows = daily_repository::day_ranking(pool, date, caller).await?;
+    Ok(split(rows, |row| row.in_top, |row| row.mine))
+}
+
+pub async fn global_ranking(
+    pool: &PgPool,
+    caller: Option<Uuid>,
+) -> Result<Ranking<GlobalRankingRow>, GameError> {
+    let rows = daily_repository::global_ranking(pool, caller).await?;
+    Ok(split(rows, |row| row.in_top, |row| row.mine))
+}
+
+fn split<T: Clone>(rows: Vec<T>, in_top: fn(&T) -> bool, mine: fn(&T) -> bool) -> Ranking<T> {
+    let me = rows.iter().find(|row| mine(row)).cloned();
+    let top = rows.into_iter().filter(in_top).collect();
+    Ranking { top, me }
 }
