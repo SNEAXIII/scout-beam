@@ -81,7 +81,7 @@ export default function GameHeader({
         open={confirming}
         onOpenChange={setConfirming}
         title={t.game.surrenderTitle}
-        description={t.game.surrenderDescription}
+        description={game?.room_code ? t.rooms.surrenderDescription : t.game.surrenderDescription}
         confirmText={t.game.surrender}
         variant='destructive'
         onConfirm={onSurrender}

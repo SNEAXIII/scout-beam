@@ -5,12 +5,23 @@ import type { GameView, PropositionVerdict, Shot } from './games'
 /** The client message an error answers; `connect` errors close the socket. */
 export type SocketAction = 'connect' | 'fire' | 'propose' | 'surrender' | 'message'
 
-/** One answer per client message, in order, plus what the player's other tabs changed. */
+/** One answer per client message, in order, plus what the player's other tabs or opponent changed. */
 export type ServerMessage =
   | { type: 'game'; game: GameView }
   | { type: 'shot'; shot: Shot; replayed: boolean }
   | ({ type: 'verdict' } & PropositionVerdict)
-  | { type: 'error'; action: SocketAction; status: number; detail: unknown }
+  /** A room only: the opponent's shot count, after each of their new shots. */
+  | { type: 'opponent'; shots: number }
+  /** A Duel only: `actor`, a login, may act again at the RFC 3339 `until`. */
+  | { type: 'priority'; actor: string; until: string }
+  | {
+      type: 'error'
+      action: SocketAction
+      status: number
+      detail: unknown
+      /** Only on a Duel action refused while the opponent has priority. */
+      retry_after_ms?: number
+    }
 
 export type ClientMessage =
   | { type: 'fire'; entry: number }

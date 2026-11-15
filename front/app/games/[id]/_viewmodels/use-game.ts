@@ -5,6 +5,7 @@ import { clearDraft } from '@/app/lib/draft'
 import type { Piece } from '@/app/lib/pieces'
 import { openGameSocket, type GameSocket, type ServerMessage } from '@/app/services/game-socket'
 import { getGame, type GameView, type PropositionVerdict } from '@/app/services/games'
+import { useRoomGame } from './use-room-game'
 
 const message = (caught: unknown, fallback: string) =>
   caught instanceof Error ? caught.message : fallback
@@ -24,6 +25,7 @@ export function useGame(id: string) {
   const socket = useRef<GameSocket | null>(null)
   const inFlight = useRef(new Set<number>())
   const verdict = useRef<PendingVerdict | null>(null)
+  const { room, receive: receiveRoom, hold } = useRoomGame(game?.room_code ?? null)
 
   const load = useCallback(async () => {
     try {
@@ -33,13 +35,27 @@ export function useGame(id: string) {
     }
   }, [id, t])
 
-  const refused = (status: number, detail: unknown, fallback: string) => {
+  const failed = (received: Extract<ServerMessage, { type: 'error' }>) => {
+    const wait = received.retry_after_ms
+    if (wait !== undefined) hold(wait)
+    if (received.action === 'fire') inFlight.current.clear()
+    if (received.action === 'surrender') setSurrendering(false)
+    if (received.action === 'propose') {
+      const text = detailMessage(received.detail) ?? t.draft.proposeFailed
+      // 429, not the 409 that tells the draft panel the game is over.
+      verdict.current?.reject(new ApiError(wait === undefined ? received.status : 429, text))
+      verdict.current = null
+      return
+    }
+    if (wait !== undefined || (received.action === 'connect' && received.status === 401)) return
     // 409: over meanwhile, in another tab — reload to show the layout.
-    if (status === 409) void load()
-    else setError(detailMessage(detail) ?? fallback)
+    if (received.status === 409) return void load()
+    const fallback = received.action === 'surrender' ? t.game.surrenderFailed : t.game.shotFailed
+    setError(detailMessage(received.detail) ?? fallback)
   }
 
   const receive = useEffectEvent((received: ServerMessage) => {
+    receiveRoom(received)
     switch (received.type) {
       case 'game':
         setGame(received.game)
@@ -64,17 +80,7 @@ export function useGame(id: string) {
         verdict.current = null
         return
       case 'error':
-        if (received.action === 'fire') inFlight.current.clear()
-        if (received.action === 'surrender') setSurrendering(false)
-        if (received.action === 'propose') {
-          const text = detailMessage(received.detail) ?? t.draft.proposeFailed
-          verdict.current?.reject(new ApiError(received.status, text))
-          verdict.current = null
-        } else if (received.action !== 'connect' || received.status !== 401) {
-          const fallback =
-            received.action === 'surrender' ? t.game.surrenderFailed : t.game.shotFailed
-          refused(received.status, received.detail, fallback)
-        }
+        failed(received)
     }
   })
 
@@ -132,5 +138,5 @@ export function useGame(id: string) {
     if (over) clearDraft(id)
   }, [over, id])
 
-  return { game, error, connected, over, surrendering, load, fire, surrender, propose }
+  return { game, room, error, connected, over, surrendering, load, fire, surrender, propose }
 }

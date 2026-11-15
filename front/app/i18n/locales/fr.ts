@@ -93,6 +93,17 @@ const fr: Translations = {
       'Composez votre disposition : cachez cinq pièces que votre adversaire devra trouver.',
     starting: 'La partie commence…',
     register: 'Créer un compte pour jouer',
+    hide: 'Cacher cette disposition',
+    hideFailed: 'Impossible de cacher la disposition',
+    hidden: 'Disposition cachée : en attente de celle de votre adversaire…',
+    against: 'Contre {{login}}',
+    opponentShots: 'Ses tirs : {{count}}',
+    priority: 'Votre adversaire a la priorité : {{seconds}} s',
+    won: 'Gagné : vous avez trouvé le premier. Voici les pièces cachées.',
+    lost: 'Perdu : votre adversaire a trouvé avant vous. Voici les pièces cachées.',
+    surrendered: 'Vous avez abandonné : votre adversaire gagne. Voici les pièces cachées.',
+    surrenderDescription:
+      'Votre adversaire remporte la partie, et les pièces cachées seront révélées.',
   },
   landing: {
     title: 'Scout Beam',

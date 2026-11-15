@@ -14,6 +14,8 @@ import { useDraft } from '../_viewmodels/use-draft'
 interface DraftPanelProps extends Omit<GameBoardProps, 'layout' | 'draft' | 'disabled'> {
   readonly gameId: string
   readonly keyboardLayout: KeyboardLayout
+  /** A Duel's opponent has priority: no shot, no proposition. */
+  readonly locked: boolean
   /** Called once the game is solved, by this proposition or meanwhile elsewhere; the page clears the draft. */
   readonly onSolved: () => void
   readonly onPropose: (pieces: readonly Piece[]) => Promise<PropositionVerdict>
@@ -29,6 +31,7 @@ interface Verdict {
 export default function DraftPanel({
   gameId,
   keyboardLayout,
+  locked,
   onSolved,
   onPropose,
   ...board
@@ -72,13 +75,13 @@ export default function DraftPanel({
       <GameBoard
         {...board}
         draft={draft}
-        disabled={false}
+        disabled={locked}
       />
       <div className='flex flex-wrap items-center gap-2'>
         <Button
           size='sm'
           onClick={() => void propose()}
-          disabled={!complete || pending}
+          disabled={!complete || pending || locked}
           data-cy='propose'
         >
           <Send />

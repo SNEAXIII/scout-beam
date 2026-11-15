@@ -61,14 +61,18 @@ export function useRoom(code: string) {
     if (gameId) router.replace(`/games/${gameId}`)
   }, [gameId, router])
 
+  /** The room an action answered; a poll sent before it would answer the room as it was. */
+  const update = (seen: RoomView) => {
+    generation.current += 1
+    setRoom(seen)
+  }
+
   const join = async () => {
     setJoining(true)
     setError(null)
     generation.current += 1
     try {
-      const seen = await joinRoom(code)
-      generation.current += 1
-      setRoom(seen)
+      update(await joinRoom(code))
     } catch (caught) {
       setError(toError(caught))
     } finally {
@@ -77,5 +81,5 @@ export function useRoom(code: string) {
   }
 
   const member = room !== null && me !== null && (me === room.host || me === room.opponent)
-  return { room, member, joining, error, join }
+  return { room, member, joining, error, join, update }
 }
