@@ -60,7 +60,7 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
           </p>
         )}
       </div>
-      {game && (
+      {game?.status === 'in_progress' && (
         <Button
           asChild
           className='w-fit'
@@ -69,7 +69,7 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
             href={`/games/${game.id}`}
             data-cy='daily-resume'
           >
-            {game.status === 'in_progress' ? t.daily.resume : t.daily.seeGame}
+            {t.daily.resume}
             <ArrowRight />
           </Link>
         </Button>

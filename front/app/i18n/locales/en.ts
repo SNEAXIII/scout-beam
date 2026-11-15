@@ -99,7 +99,6 @@ const en = {
     pickDay: 'Day — today’s, or an earlier one',
     fireToStart: 'Fire a shot by selecting a number',
     resume: 'Resume my game',
-    seeGame: 'See my game',
     noDaily: 'There was no daily that day',
     startFailed: 'Could not start the daily',
     timer: 'Time since the start; each wrong proposition adds a minute',

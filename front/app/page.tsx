@@ -24,7 +24,7 @@ export default function HomePage() {
             data-cy='play-link'
           >
             <Gamepad2 />
-            {t.play.title}
+            {t.landing.play}
           </Link>
         </Button>
         <Button

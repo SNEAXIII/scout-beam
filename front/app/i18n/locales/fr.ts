@@ -104,7 +104,6 @@ const fr: Translations = {
     pickDay: 'Jour — aujourd’hui, ou un jour passé',
     fireToStart: 'Tirez en sélectionnant un numéro',
     resume: 'Reprendre ma partie',
-    seeGame: 'Voir ma partie',
     noDaily: 'Pas de quotidienne ce jour-là',
     startFailed: 'Impossible de lancer la quotidienne',
     timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',
