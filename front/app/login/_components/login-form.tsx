@@ -2,19 +2,21 @@
 
 import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/app/i18n'
+import { nextPath } from '@/app/lib/utils'
 import { login as signIn, type ProviderLink } from '@/app/services/auth'
 import ProviderButtons from './provider-buttons'
 
 export default function LoginForm({ providers }: Readonly<{ providers: ProviderLink[] }>) {
   const { t } = useI18n()
   const router = useRouter()
+  const next = useSearchParams().get('next')
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +28,7 @@ export default function LoginForm({ providers }: Readonly<{ providers: ProviderL
     setError(null)
     try {
       await signIn(login.trim(), password)
-      router.push('/play')
+      router.push(nextPath(next))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.login.failed)
       setPending(false)
@@ -86,11 +88,14 @@ export default function LoginForm({ providers }: Readonly<{ providers: ProviderL
             {t.login.submit}
           </Button>
         </form>
-        <ProviderButtons providers={providers} />
+        <ProviderButtons
+          providers={providers}
+          next={next}
+        />
         <p className='text-center text-sm text-muted-foreground'>
           {t.login.noAccount}{' '}
           <Link
-            href='/register'
+            href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'}
             className='text-primary underline-offset-4 hover:underline'
             data-cy='register-link'
           >

@@ -1,19 +1,21 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/app/i18n'
+import { nextPath } from '@/app/lib/utils'
 import { devLogin } from '@/app/services/auth'
 
 /** Only rendered when `GET /auth/providers` says the API mounts the dev login. */
 export default function DevLoginForm() {
   const { t } = useI18n()
   const router = useRouter()
+  const next = useSearchParams().get('next')
   const [login, setLogin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -24,7 +26,7 @@ export default function DevLoginForm() {
     setError(null)
     try {
       await devLogin(login.trim())
-      router.push('/play')
+      router.push(nextPath(next))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.login.failed)
       setPending(false)

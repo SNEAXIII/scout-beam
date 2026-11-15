@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import LanguageSwitcher from '@/components/language-switcher'
 import RegisterForm from './_components/register-form'
 
@@ -7,7 +8,9 @@ export default function RegisterPage() {
       <div className='absolute top-2 right-4'>
         <LanguageSwitcher />
       </div>
-      <RegisterForm />
+      <Suspense>
+        <RegisterForm />
+      </Suspense>
     </main>
   )
 }

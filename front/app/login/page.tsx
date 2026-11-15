@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import LanguageSwitcher from '@/components/language-switcher'
 import { listProviders, type Providers } from '@/app/services/auth'
 import DevLoginForm from './_components/dev-login-form'
@@ -22,8 +22,10 @@ export default function LoginPage() {
         <LanguageSwitcher />
       </div>
       <div className='flex w-full max-w-sm flex-col gap-4'>
-        <LoginForm providers={offer.providers} />
-        {offer.dev_login && <DevLoginForm />}
+        <Suspense>
+          <LoginForm providers={offer.providers} />
+          {offer.dev_login && <DevLoginForm />}
+        </Suspense>
       </div>
     </main>
   )
