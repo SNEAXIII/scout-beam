@@ -10,12 +10,12 @@ auth → home page → daily → rooms (Race and Duel). Vocabulary: `CONTEXT.md`
 | --- | --- | --- |
 | Auth | `docs/plans/2026-11-14-auth.md` | merged, PR #10 |
 | Home page | `docs/plans/2026-11-15-home-page.md` | merged, PR #11 |
-| Daily | `docs/plans/2026-11-15-daily.md` | done on `feat/daily`, PR to open |
-| Rooms | `docs/plans/2026-11-15-duel-race.md` | planned, starts after the daily is merged |
+| Daily | `docs/plans/2026-11-15-daily.md` | merged, PR #12 |
+| Rooms | `docs/plans/2026-11-15-duel-race.md` | in progress on `feat/rooms` |
 
-On `feat/daily`, the six tasks are committed (task 6: the grid on `/` from the start, the first
-shot starts the daily, the day's ranking beside it); nothing was checked in a browser yet.
-Next: a manual pass (`make dev` + `pnpm dev`), the PR, then the rooms plan from `main`.
+On `feat/rooms`, task 1 (rooms and Race, API only) is committed and reviewed. Next: task 2 (Duel).
+On surrender, the winner's game is `solved` and the surrenderer's stays `surrendered`; only a
+correct proposition of the opponent makes a game `lost`.
 
 ## How the work runs
 
