@@ -9,7 +9,12 @@ export interface GameSummary {
   status: GameStatus
   created_at: string
   solved_at: string | null
+  mode: GameMode
+  /** The other player's login, in a room only. */
+  opponent: string | null
 }
+
+export type GameMode = 'bot' | 'daily' | 'race' | 'duel'
 
 export const listGames = (): Promise<GameSummary[]> => apiRequest<GameSummary[]>('/games')
 
@@ -19,7 +24,7 @@ export interface Shot {
   colour: BeamColour
 }
 
-export interface GameView extends GameSummary {
+export interface GameView extends Omit<GameSummary, 'mode' | 'opponent'> {
   /** The day it is the daily of, `YYYY-MM-DD`; null for a game against the bot. */
   daily_date: string | null
   /** The room it is played in; null outside a room. */

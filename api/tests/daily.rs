@@ -174,6 +174,7 @@ async fn a_guest_can_start_the_daily_and_it_is_listed(pool: PgPool) {
     let games = app.get("/games", Some(&token)).await;
     games.assert_status(StatusCode::OK);
     assert_eq!(games.body[0]["id"], game_id.to_string());
+    assert_eq!(games.body[0]["mode"], "daily");
 }
 
 #[sqlx::test]

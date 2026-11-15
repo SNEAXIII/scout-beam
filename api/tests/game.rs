@@ -97,6 +97,8 @@ async fn the_game_list_holds_only_the_callers_games_newest_first_without_layout(
     for game in games {
         assert!(game.get("layout").is_none(), "{game}");
         assert_eq!(game["status"], "in_progress");
+        assert_eq!(game["mode"], "bot");
+        assert!(game["opponent"].is_null(), "{game}");
     }
 }
 

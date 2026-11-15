@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, status as \"status: GameStatus\", created_at, solved_at\n           FROM game\n           WHERE user_id = $1\n           ORDER BY created_at DESC, id DESC",
+  "query": "SELECT g.id, g.status as \"status: GameStatus\", g.created_at, g.solved_at,\n                  CASE WHEN g.daily_date IS NOT NULL THEN 'daily'\n                       WHEN r.id IS NULL THEN 'bot'\n                       ELSE r.mode::text END as \"mode!\",\n                  o.login as \"opponent?\"\n           FROM game g\n           LEFT JOIN room r ON r.id = g.room_id\n           LEFT JOIN \"user\" o\n             ON o.id = CASE WHEN r.host_id = g.user_id THEN r.opponent_id ELSE r.host_id END\n           WHERE g.user_id = $1\n           ORDER BY g.created_at DESC, g.id DESC",
   "describe": {
     "columns": [
       {
@@ -58,6 +58,23 @@
             "name": "solved_at"
           }
         }
+      },
+      {
+        "ordinal": 4,
+        "name": "mode!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "opponent?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
       }
     ],
     "parameters": {
@@ -69,8 +86,10 @@
       false,
       false,
       false,
-      true
+      true,
+      null,
+      false
     ]
   },
-  "hash": "d541f83ff23c55d68201889a2ddb3e82c3994343660850c20a120ca9e5e1cd1b"
+  "hash": "284d54dd060aa7f47145b033e954d087feaa47f6264ee8554bcb76cd53a6dfdf"
 }

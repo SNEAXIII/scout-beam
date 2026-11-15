@@ -75,6 +75,9 @@ pub struct GameSummary {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    /// `bot`, `daily`, `race` or `duel`.
+    pub mode: String,
+    pub opponent: Option<String>,
 }
 
 /// The engine's beam colour as the `beam_colour` column stores it.

@@ -157,6 +157,8 @@ async fn the_first_correct_proposition_wins_the_room(pool: PgPool) {
     let games = app.get("/games", Some(&bob)).await;
     assert_eq!(games.body[0]["id"], bob_game.to_string());
     assert_eq!(games.body[0]["status"], "lost");
+    assert_eq!(games.body[0]["mode"], "race");
+    assert_eq!(games.body[0]["opponent"], "alice");
 }
 
 #[sqlx::test]

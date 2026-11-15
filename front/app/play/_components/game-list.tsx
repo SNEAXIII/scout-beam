@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import type { GameSummary } from '@/app/services/games'
-import { useI18n } from '@/app/i18n'
+import { fill, useI18n } from '@/app/i18n'
 import GameStatusBadge from './game-status-badge'
 
 const DATE_STYLE = { dateStyle: 'long', timeStyle: 'short' } as const
@@ -40,8 +40,17 @@ export default function GameList({ games }: GameListProps) {
               className='flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none'
               data-cy={`game-row-${game.id}`}
             >
-              <span className='text-sm'>
-                {new Date(game.created_at).toLocaleString(locale, DATE_STYLE)}
+              <span className='flex flex-col gap-0.5'>
+                <span className='text-sm'>
+                  {new Date(game.created_at).toLocaleString(locale, DATE_STYLE)}
+                </span>
+                <span
+                  className='text-xs text-muted-foreground'
+                  data-cy='game-mode'
+                >
+                  {t.play.modes[game.mode]}
+                  {game.opponent && ` · ${fill(t.play.versus, { login: game.opponent })}`}
+                </span>
               </span>
               <span className='flex items-center gap-2'>
                 <GameStatusBadge status={game.status} />

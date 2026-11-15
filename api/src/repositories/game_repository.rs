@@ -29,10 +29,17 @@ pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Re
 pub async fn list_for_user(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Vec<GameSummary>> {
     sqlx::query_as!(
         GameSummary,
-        r#"SELECT id, status as "status: GameStatus", created_at, solved_at
-           FROM game
-           WHERE user_id = $1
-           ORDER BY created_at DESC, id DESC"#,
+        r#"SELECT g.id, g.status as "status: GameStatus", g.created_at, g.solved_at,
+                  CASE WHEN g.daily_date IS NOT NULL THEN 'daily'
+                       WHEN r.id IS NULL THEN 'bot'
+                       ELSE r.mode::text END as "mode!",
+                  o.login as "opponent?"
+           FROM game g
+           LEFT JOIN room r ON r.id = g.room_id
+           LEFT JOIN "user" o
+             ON o.id = CASE WHEN r.host_id = g.user_id THEN r.opponent_id ELSE r.host_id END
+           WHERE g.user_id = $1
+           ORDER BY g.created_at DESC, g.id DESC"#,
         user_id
     )
     .fetch_all(pool)

@@ -64,6 +64,8 @@ const fr: Translations = {
     title: 'Mes parties',
     signOut: 'Se déconnecter',
     newGame: 'Nouvelle partie',
+    modes: { bot: 'Contre le bot', daily: 'Quotidienne', race: 'Course', duel: 'Duel' },
+    versus: 'contre {{login}}',
     createFailed: 'Création impossible',
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',

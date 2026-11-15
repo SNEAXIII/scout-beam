@@ -55,6 +55,10 @@ pub struct GameSummaryResponse {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    #[schema(example = "race")]
+    pub mode: String,
+    /// The other player's login, in a room only.
+    pub opponent: Option<String>,
 }
 
 impl From<GameSummary> for GameSummaryResponse {
@@ -64,6 +68,8 @@ impl From<GameSummary> for GameSummaryResponse {
             status: summary.status,
             created_at: summary.created_at,
             solved_at: summary.solved_at,
+            mode: summary.mode,
+            opponent: summary.opponent,
         }
     }
 }

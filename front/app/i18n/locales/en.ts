@@ -60,6 +60,8 @@ const en = {
     title: 'My games',
     signOut: 'Sign out',
     newGame: 'New game',
+    modes: { bot: 'Against the bot', daily: 'Daily', race: 'Race', duel: 'Duel' },
+    versus: 'vs {{login}}',
     createFailed: 'Could not create the game',
     empty: 'No games yet. Start one!',
     daily: 'Daily',
