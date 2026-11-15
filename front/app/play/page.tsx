@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '@/app/i18n'
 import { listGames, type GameSummary } from '@/app/services/games'
+import { listRooms, type RoomView } from '@/app/services/rooms'
 import GameList from './_components/game-list'
 import PlayHeader from './_components/play-header'
 import RoomActions from './_components/room-actions'
@@ -10,12 +11,15 @@ import RoomActions from './_components/room-actions'
 export default function PlayPage() {
   const { t } = useI18n()
   const [games, setGames] = useState<GameSummary[] | null>(null)
+  const [rooms, setRooms] = useState<RoomView[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
       setError(null)
+      // One after the other: two 401s at once would race for the refresh cookie.
       setGames(await listGames())
+      setRooms(await listRooms())
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t.common.loadFailed)
     }
@@ -39,7 +43,12 @@ export default function PlayPage() {
           {error}
         </p>
       )}
-      {!error && <GameList games={games} />}
+      {!error && (
+        <GameList
+          games={games}
+          rooms={rooms}
+        />
+      )}
     </main>
   )
 }

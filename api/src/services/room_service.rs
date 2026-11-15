@@ -53,6 +53,19 @@ pub async fn see(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomEr
     })
 }
 
+/// The caller's rooms not playing yet, newest first.
+pub async fn open_rooms(pool: &PgPool, caller: Uuid) -> Result<Vec<Seen>, RoomError> {
+    let rooms = room_repository::list_open_for(pool, caller).await?;
+    Ok(rooms
+        .into_iter()
+        .map(|room| Seen {
+            room,
+            member: true,
+            game_id: None,
+        })
+        .collect())
+}
+
 /// Take the free seat. A Race starts at once, both games on one layout; a Duel is composed first.
 pub async fn join(pool: &PgPool, code: &str, caller: Uuid) -> Result<Seen, RoomError> {
     let room = find(pool, code).await?;

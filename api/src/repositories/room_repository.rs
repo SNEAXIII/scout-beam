@@ -27,6 +27,26 @@ pub async fn find_by_code(pool: &PgPool, code: &str) -> sqlx::Result<Option<Room
     .await
 }
 
+/// The caller's rooms still without a game: waiting for an opponent, or composing a Duel.
+pub async fn list_open_for(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Vec<Room>> {
+    sqlx::query_as!(
+        Room,
+        r#"SELECT room.id, room.code, room.mode as "mode: RoomMode",
+                  room.status as "status: RoomStatus", room.host_id, host.login as "host_login!",
+                  room.opponent_id, opponent.login as "opponent_login?",
+                  NULL::text as "winner_login?", false as "surrendered!"
+           FROM room
+           JOIN "user" host ON host.id = room.host_id
+           LEFT JOIN "user" opponent ON opponent.id = room.opponent_id
+           WHERE $1 IN (room.host_id, room.opponent_id)
+             AND room.status IN ('waiting', 'composing')
+           ORDER BY room.created_at DESC, room.id DESC"#,
+        user_id
+    )
+    .fetch_all(pool)
+    .await
+}
+
 /// A unique violation means the code is taken: draw another.
 pub async fn insert(pool: &PgPool, code: &str, mode: RoomMode, host_id: Uuid) -> sqlx::Result<()> {
     sqlx::query!(

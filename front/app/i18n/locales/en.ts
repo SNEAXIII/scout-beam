@@ -62,6 +62,8 @@ const en = {
     newGame: 'New game',
     modes: { bot: 'Against the bot', daily: 'Daily', race: 'Race', duel: 'Duel' },
     versus: 'vs {{login}}',
+    roomWaiting: 'Waiting for an opponent',
+    roomComposing: 'Hiding the layouts',
     createFailed: 'Could not create the game',
     empty: 'No games yet. Start one!',
     daily: 'Daily',

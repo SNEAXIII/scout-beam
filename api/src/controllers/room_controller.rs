@@ -20,7 +20,7 @@ use crate::state::AppState;
 
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .routes(routes!(post_room))
+        .routes(routes!(post_room, get_rooms))
         .routes(routes!(get_room))
         .routes(routes!(post_room_join))
         .routes(routes!(post_room_layout))
@@ -47,6 +47,26 @@ async fn post_room(
 ) -> ApiResult<(StatusCode, Json<RoomView>)> {
     let seen = room_service::create(&state.pool, registered(&user)?, body.mode).await?;
     Ok((StatusCode::CREATED, Json(seen.into())))
+}
+
+/// `GET /rooms` — the caller's rooms still without a game, so they can go back to them.
+#[utoipa::path(
+    get,
+    path = "/rooms",
+    tag = "Rooms",
+    security(("bearer" = [])),
+    responses(
+        (status = 200, description = "Waiting or composing rooms, newest first", body = [RoomView]),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+        (status = 403, description = "A guest may only play the daily", body = ErrorResponse),
+    ),
+)]
+async fn get_rooms(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Json<Vec<RoomView>>> {
+    let rooms = room_service::open_rooms(&state.pool, registered(&user)?).await?;
+    Ok(Json(rooms.into_iter().map(RoomView::from).collect()))
 }
 
 /// `GET /rooms/{code}` — the room; a non-member sees only what the link needs to offer joining.

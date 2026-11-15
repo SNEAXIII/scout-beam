@@ -86,10 +86,48 @@ async fn a_guest_gets_403_on_every_room_route(pool: PgPool) {
         .await;
     let read = app.get(&format!("/rooms/{code}"), Some(&guest)).await;
     let joined = app.join_room(&code, &guest).await;
+    let listed = app.get("/rooms", Some(&guest)).await;
 
-    for refused in [created, read, joined] {
+    for refused in [created, read, joined, listed] {
         refused.assert_status(StatusCode::FORBIDDEN);
     }
+}
+
+#[sqlx::test]
+async fn the_rooms_without_a_game_are_listed_to_their_players_only(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, host) = app.seed_with_token("host", Role::User).await;
+    let (_, opponent) = app.seed_with_token("opponent", Role::User).await;
+    let (_, third) = app.seed_with_token("third", Role::User).await;
+    let race = app.open_room(&host, "race").await;
+    let duel = app.open_room(&host, "duel").await;
+    app.join_room(&duel, &opponent)
+        .await
+        .assert_status(StatusCode::OK);
+    let started = app.open_room(&host, "race").await;
+    app.join_room(&started, &opponent)
+        .await
+        .assert_status(StatusCode::OK);
+
+    let codes = |listed: &Response| -> Vec<String> {
+        listed
+            .body
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|room| room["code"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let hosted = app.get("/rooms", Some(&host)).await;
+    hosted.assert_status(StatusCode::OK);
+    assert_eq!(codes(&hosted), [duel.clone(), race]);
+    assert_eq!(hosted.body[0]["status"], "composing");
+    assert_eq!(hosted.body[0]["opponent"], "opponent");
+    assert_eq!(codes(&app.get("/rooms", Some(&opponent)).await), [duel]);
+    assert_eq!(
+        codes(&app.get("/rooms", Some(&third)).await),
+        Vec::<String>::new()
+    );
 }
 
 #[sqlx::test]

@@ -1,4 +1,4 @@
-import { apiRequest } from '@/app/lib/api'
+import { ApiError, apiRequest } from '@/app/lib/api'
 import type { Piece } from '@/app/lib/pieces'
 
 export type RoomMode = 'race' | 'duel'
@@ -26,6 +26,13 @@ export const isRoomCode = (code: string) =>
 
 export const createRoom = (mode: RoomMode) =>
   apiRequest<RoomView>('/rooms', { method: 'POST', body: { mode } })
+
+/** The caller's rooms without a game yet; a guest has none. */
+export const listRooms = () =>
+  apiRequest<RoomView[]>('/rooms').catch((caught: unknown) => {
+    if (caught instanceof ApiError && caught.status === 403) return []
+    throw caught
+  })
 
 export const getRoom = (code: string) => apiRequest<RoomView>(`/rooms/${code}`)
 

@@ -66,6 +66,8 @@ const fr: Translations = {
     newGame: 'Nouvelle partie',
     modes: { bot: 'Contre le bot', daily: 'Quotidienne', race: 'Course', duel: 'Duel' },
     versus: 'contre {{login}}',
+    roomWaiting: 'En attente d’un adversaire',
+    roomComposing: 'Dispositions en cours de dissimulation',
     createFailed: 'Création impossible',
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',
