@@ -313,12 +313,22 @@ impl GameSocket {
 
     /// Send and read the answer, mapped to the status and body the HTTP endpoint had.
     pub async fn request(&mut self, message: Value) -> Response {
+        let fired = (message["type"] == "fire").then(|| message["entry"].clone());
         self.send(message).await;
-        let answer = self
-            .next()
-            .await
-            .expect("the server answers before closing");
-        answered(answer)
+        loop {
+            let answer = self
+                .next()
+                .await
+                .expect("the server answers before closing");
+            // Another tab's shot pushed to this socket is not this fire's answer.
+            let pushed = answer["type"] == "shot"
+                && fired
+                    .as_ref()
+                    .is_some_and(|entry| answer["shot"]["entry"] != *entry);
+            if !pushed {
+                return answered(answer);
+            }
+        }
     }
 
     /// Nothing arrives for a moment: no push is on its way.
