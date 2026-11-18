@@ -3,6 +3,7 @@ import { ENTRIES } from '@/app/lib/entries'
 import type { Layout } from '@/app/lib/pieces'
 import { traceBeam, type Trace } from '@/app/lib/trace'
 import { pairKey } from '../_components/shot-paths'
+import type { TraceMode } from './use-trace-mode'
 
 export interface KeyedTrace extends Trace {
   /** `pairKey` of its two ends: the key of the shot path it draws, when one was fired. */
@@ -63,4 +64,17 @@ export function useTraces(layout?: Layout): Traces {
     return trace ? orient(trace, selection.from) : undefined
   }, [traces, selection])
   return { traces, keyAt, selected: selection?.key ?? null, selectedTrace, toggle }
+}
+
+/** All mode puts the highlighted trace, else the selected one, last so it is drawn on top. */
+export function drawnTraces(
+  { traces, selected, selectedTrace }: Traces,
+  mode: TraceMode,
+  highlighted: string | null
+): readonly KeyedTrace[] {
+  if (mode === 'selected') return selectedTrace ? [selectedTrace] : []
+  const top = highlighted ?? selected
+  const others = traces.filter(({ key }) => key !== top)
+  const raised = top === selected ? selectedTrace : traces.find(({ key }) => key === top)
+  return raised ? [...others, raised] : others
 }

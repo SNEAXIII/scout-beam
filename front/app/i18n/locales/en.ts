@@ -202,6 +202,9 @@ const en = {
     removePiece: 'Right-click or Space to remove the {{shape}} piece',
     entry: 'Entry {{entry}}',
     entryShot: 'Entry {{entry}}, beam {{label}}: {{entry}} → {{other}}, {{colour}}',
+    traceModes: 'Traces',
+    traceSelected: 'Selected',
+    traceAll: 'All',
   },
   shots: {
     title: 'Shots',

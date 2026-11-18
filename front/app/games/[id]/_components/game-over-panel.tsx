@@ -5,8 +5,10 @@ import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
 import GuestSaveCard from './guest-save-card'
 import RoomBanner from './room-banner'
 import TraceLines from './trace-lines'
+import TraceModeToggle from './trace-mode-toggle'
 import type { RoomGame } from '../_viewmodels/use-room-game'
-import type { Traces } from '../_viewmodels/use-traces'
+import { useTraceMode } from '../_viewmodels/use-trace-mode'
+import { drawnTraces, type Traces } from '../_viewmodels/use-traces'
 
 interface GameOverPanelProps extends Omit<
   GameBoardProps,
@@ -30,6 +32,7 @@ export default function GameOverPanel({
 }: GameOverPanelProps) {
   const { t } = useI18n()
   const { layout } = game
+  const { mode, choose } = useTraceMode()
 
   return (
     <div
@@ -44,23 +47,33 @@ export default function GameOverPanel({
         onSelect={layout && traces.toggle}
       >
         <TraceLines
-          traces={traces.selectedTrace ? [traces.selectedTrace] : []}
-          animated={traces.selected}
+          traces={drawnTraces(traces, mode, board.highlighted)}
+          animated={mode === 'selected' ? traces.selected : null}
         />
       </GameBoard>
-      {game.room_code ? (
-        <RoomBanner
-          status={status}
-          surrendered={room.surrendered}
-        />
-      ) : (
-        <p
-          className='text-sm text-muted-foreground'
-          data-cy={`game-${status}`}
-        >
-          {t.game[status]}
-        </p>
-      )}
+      <div className='flex items-start gap-3'>
+        <div className='min-w-0 flex-1'>
+          {game.room_code ? (
+            <RoomBanner
+              status={status}
+              surrendered={room.surrendered}
+            />
+          ) : (
+            <p
+              className='text-sm text-muted-foreground'
+              data-cy={`game-${status}`}
+            >
+              {t.game[status]}
+            </p>
+          )}
+        </div>
+        {layout && (
+          <TraceModeToggle
+            mode={mode}
+            onChange={choose}
+          />
+        )}
+      </div>
       {status === 'solved' && proposed && layout && !sameLook(proposed, layout.pieces) && (
         <p
           className='text-sm text-muted-foreground'
