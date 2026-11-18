@@ -70,7 +70,8 @@ It also checks, for one case of each kind, that the `points` match the rules abo
   selecting another key replaces the selection, the same key clears it.
 - `trace-lines.tsx`: an SVG `<g>` drawing traces as polylines in their beam colour, non-scaling
   stroke, round joins. A colour with an `outline` in `BEAM_SWATCHES` (`black`) gets that outline
-  as a wider stroke underneath; `none` is drawn as a dashed `outline` stroke. The selected trace
+  as a wider stroke underneath. A trace of colour `none` (it touched no piece) is never drawn,
+  in either mode: selecting it shows nothing. The selected trace
   is animated drawing from its entry to its exit, under `motion-safe:` only, with a new
   `trace-draw` keyframe in `global.css` (pattern of `beam-a`: `pathLength=1`, dash offset), and
   restarts when the selection changes. Each trace carries `data-cy="trace"`, `data-entry`,
@@ -86,8 +87,8 @@ It also checks, for one case of each kind, that the `points` match the rules abo
   note, guest card) into `game-over-panel.tsx`, which owns `useTraces`, and pass the selection
   to `ShotList` through the page.
 
-**Done when:** on a mocked finished game, clicking entry 3 draws one trace from 3 to its exit in
-the shot's final colour, clicking it again removes it, clicking another entry (fired or not)
+**Done when:** on a mocked finished game, clicking an entry whose shot touched a piece draws one trace from it to its exit in
+the shot's final colour, one that touched nothing draws none, clicking it again removes it, clicking another entry (fired or not)
 replaces it, clicking a shot in the list does the same, the in-progress board still fires on
 click, and `tsc` and `oxlint` are clean.
 
@@ -106,13 +107,13 @@ click, and `tsc` and `oxlint` are clean.
   `ghost`, `aria-pressed`), lucide `MousePointerClick` for Selected and `Layers` for All, in a
   group labelled by `t.game.traceModes`. Placed under the board in `game-over-panel.tsx`, on the
   line of the status message. `data-cy="trace-mode-selected"` and `data-cy="trace-mode-all"`.
-- In All mode every deduplicated trace is drawn, opaque, without animation; the highlighted key
+- In All mode every deduplicated trace except those of colour `none` is drawn, opaque, without animation; the highlighted key
   (hovered entry or shot), else the selected one, is drawn last so it sits on top. Clicking still
   toggles the selection. Selected mode behaves as in Task 2.
 - i18n keys, in `game`: `traceModes` ("Traces" / "Tracés"), `traceSelected` ("Selected" /
   "Sélection"), `traceAll` ("All" / "Tout").
 
-**Done when:** on a mocked finished game, All draws one trace per distinct pair of entries, the
+**Done when:** on a mocked finished game, All draws one trace per distinct pair of entries whose beam touched a piece, the
 hovered one comes on top, the choice survives a reload, the labels switch with the language, and
 `tsc` and `oxlint` are clean; screenshots at 1366×700 and 390×844 show the toggle fitting under
 the board.
