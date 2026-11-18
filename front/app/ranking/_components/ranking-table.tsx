@@ -12,6 +12,7 @@ interface RankingTableProps<T extends RankingEntry> {
   readonly headers: readonly string[]
   readonly cells: (entry: T) => readonly ReactNode[]
   readonly cy: string
+  readonly rowClass?: (entry: T) => string | false
 }
 
 /** Rank and login, then the given columns; the caller's line highlighted, pinned below when outside the top. */
@@ -20,6 +21,7 @@ export default function RankingTable<T extends RankingEntry>({
   headers,
   cells,
   cy,
+  rowClass,
 }: RankingTableProps<T>) {
   const { t } = useI18n()
   if (ranking === null) return <p className='text-sm text-muted-foreground'>{t.common.loading}</p>
@@ -38,7 +40,11 @@ export default function RankingTable<T extends RankingEntry>({
   const row = (entry: T, pinned: boolean) => (
     <tr
       key={pinned ? 'me' : entry.login}
-      className={cn('border-t', entry.login === me?.login && 'bg-accent text-accent-foreground')}
+      className={cn(
+        'border-t',
+        entry.login === me?.login && 'bg-accent text-accent-foreground',
+        rowClass?.(entry)
+      )}
       data-cy={pinned ? `${cy}-me` : `${cy}-row`}
     >
       <td className='px-3 py-2 tabular-nums'>{entry.rank}</td>

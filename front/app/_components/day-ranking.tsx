@@ -74,8 +74,17 @@ export default function DayRanking({ date }: DayRankingProps) {
           ranking={shown?.ranking ?? null}
           headers={[t.ranking.time]}
           cells={(entry) => [time(entry)]}
+          rowClass={(entry) => entry.late && 'text-amber-500'}
           cy='day-ranking'
         />
+      )}
+      {shown?.ranking?.top.some((entry) => entry.late) && (
+        <p
+          className='text-xs text-amber-500'
+          data-cy='day-ranking-late'
+        >
+          {t.ranking.late}
+        </p>
       )}
     </section>
   )

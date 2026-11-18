@@ -8,6 +8,7 @@ pub struct DayRankingRow {
     pub score: i64,
     pub seconds: i64,
     pub wrong_propositions: i64,
+    pub late: bool,
     /// Within the first 100, ties cut by `solved_at` then login.
     pub in_top: bool,
     pub mine: bool,

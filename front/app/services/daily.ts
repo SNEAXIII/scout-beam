@@ -49,6 +49,8 @@ export interface DayRankingEntry extends RankingEntry {
   score: number
   seconds: number
   wrong_propositions: number
+  /** Started after its day: ranked after every on-time player. */
+  late: boolean
 }
 
 export interface GlobalRankingEntry extends RankingEntry {

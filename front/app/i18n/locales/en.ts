@@ -176,6 +176,7 @@ const en = {
     time: 'Time',
     points: 'Points',
     dailiesSolved: 'Dailies solved',
+    late: 'In orange: played after the day, ranked after the others.',
   },
   status: {
     in_progress: 'In progress',

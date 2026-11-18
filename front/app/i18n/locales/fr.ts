@@ -184,6 +184,7 @@ const fr: Translations = {
     time: 'Temps',
     points: 'Points',
     dailiesSolved: 'Quotidiennes résolues',
+    late: 'En orange : jouée après le jour, classée après les autres.',
   },
   status: {
     in_progress: 'En cours',

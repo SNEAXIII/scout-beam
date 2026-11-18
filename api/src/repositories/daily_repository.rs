@@ -33,8 +33,8 @@ pub async fn insert_if_absent(
 // ponytail: score = seconds + 60 per wrong proposition, points = max(100, 1000 - score / 6);
 // weights to refine after real games, e.g. a cost per shot.
 
-/// That day's solved dailies, started on that same Paris date, by registered players: the top 100
-/// and the caller's row wherever it falls.
+/// That day's solved dailies by registered players, those started on a later Paris date ranked
+/// after the others: the top 100 and the caller's row wherever it falls.
 pub async fn day_ranking(
     pool: &PgPool,
     date: NaiveDate,
@@ -46,18 +46,19 @@ pub async fn day_ranking(
                SELECT u.id AS user_id, u.login, g.solved_at,
                       floor(EXTRACT(EPOCH FROM g.solved_at - g.created_at))::int8 AS seconds,
                       (SELECT count(*) FROM proposition p
-                       WHERE p.game_id = g.id AND NOT p.correct) AS wrong
+                       WHERE p.game_id = g.id AND NOT p.correct) AS wrong,
+                      (g.created_at AT TIME ZONE 'Europe/Paris')::date > $1 AS late
                FROM game g
                JOIN "user" u ON u.id = g.user_id
                WHERE g.daily_date = $1 AND g.status = 'solved' AND NOT u.guest
-                 AND (g.created_at AT TIME ZONE 'Europe/Paris')::date = $1
            ), ranked AS (
-               SELECT *, RANK() OVER (ORDER BY seconds + 60 * wrong) AS rank,
-                      ROW_NUMBER() OVER (ORDER BY seconds + 60 * wrong, solved_at, login) AS position
+               SELECT *, RANK() OVER (ORDER BY late, seconds + 60 * wrong) AS rank,
+                      ROW_NUMBER() OVER (ORDER BY late, seconds + 60 * wrong, solved_at, login)
+                          AS position
                FROM timed
            )
            SELECT rank as "rank!", login as "login!", seconds + 60 * wrong as "score!",
-                  seconds as "seconds!", wrong as "wrong_propositions!",
+                  seconds as "seconds!", wrong as "wrong_propositions!", late as "late!",
                   position <= 100 as "in_top!", user_id IS NOT DISTINCT FROM $2 as "mine!"
            FROM ranked
            WHERE position <= 100 OR user_id IS NOT DISTINCT FROM $2

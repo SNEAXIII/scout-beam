@@ -24,6 +24,8 @@ pub struct DayRankingEntry {
     /// Seconds between the start and the correct proposition.
     pub seconds: i64,
     pub wrong_propositions: i64,
+    /// Started after its day: ranked after every player who played it on time.
+    pub late: bool,
 }
 
 impl From<DayRankingRow> for DayRankingEntry {
@@ -34,11 +36,12 @@ impl From<DayRankingRow> for DayRankingEntry {
             score: row.score,
             seconds: row.seconds,
             wrong_propositions: row.wrong_propositions,
+            late: row.late,
         }
     }
 }
 
-/// The best 100 of a day, by score then by who solved it first.
+/// The best 100 of a day, on time before late, by score then by who solved it first.
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct DayRankingResponse {
     pub top: Vec<DayRankingEntry>,

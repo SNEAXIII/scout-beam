@@ -379,19 +379,21 @@ async fn a_guest_appears_in_no_ranking(pool: PgPool) {
 }
 
 #[sqlx::test]
-async fn a_daily_played_late_counts_in_points_only(pool: PgPool) {
+async fn a_daily_played_late_is_ranked_after_the_day_and_counts_in_points(pool: PgPool) {
     let app = TestApp::new(pool);
     let yesterday = app.today().await.pred_opt().unwrap();
     app.insert_daily(yesterday).await;
+    app.solved_daily("ontime", yesterday, 0.0, 600.0).await;
     let (late, token) = app.seed_with_token("late", Role::User).await;
     app.insert_daily_game(late, yesterday).await;
 
     let day = app.day_ranking(yesterday, Some(&token)).await;
-    let global = app.ranking(Some(&token)).await;
 
-    assert_eq!(day.body["top"], json!([]));
-    assert!(day.body["me"].is_null());
-    assert_eq!(column(&global, "login"), [json!("late")]);
+    assert_eq!(column(&day, "login"), [json!("ontime"), json!("late")]);
+    assert_eq!(column(&day, "late"), [json!(false), json!(true)]);
+    assert_eq!(day.body["me"]["rank"], 2);
+    let global = app.ranking(Some(&token)).await;
+    assert_eq!(global.body["me"]["login"], "late");
     assert_eq!(global.body["me"]["dailies_solved"], 1);
 }
 
