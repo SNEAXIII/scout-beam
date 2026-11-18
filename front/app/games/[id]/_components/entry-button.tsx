@@ -6,10 +6,14 @@ import type { ShotPath } from './shot-paths'
 interface EntryButtonProps {
   readonly entry: number
   readonly path?: ShotPath
+  /** The trace this entry lies on, once the layout is revealed. */
+  readonly traceKey?: string
   readonly fired: boolean
   readonly highlighted: string | null
   readonly disabled: boolean
   readonly onFire: (entry: number) => void
+  /** Once the game is over: a click picks the entry's trace instead of firing. */
+  readonly onSelect?: (entry: number) => void
   readonly onHighlight: (key: string | null) => void
   /** Number and marker side by side, for the top and bottom edges where the ring is short. */
   readonly inline: boolean
@@ -27,17 +31,21 @@ function describe(t: Translations, entry: number, path?: ShotPath): string {
 export default function EntryButton({
   entry,
   path,
+  traceKey,
   fired,
   highlighted,
   disabled,
   onFire,
+  onSelect,
   onHighlight,
   inline,
   style,
 }: EntryButtonProps) {
   const { t } = useI18n()
-  const lit = highlighted !== null && path?.key === highlighted
-  const hover = () => onHighlight(path?.key ?? null)
+  const key = path?.key ?? traceKey ?? null
+  const lit = highlighted !== null && key === highlighted
+  const inert = !onSelect && (fired || disabled)
+  const hover = () => onHighlight(key)
   const leave = () => onHighlight(null)
 
   return (
@@ -48,20 +56,21 @@ export default function EntryButton({
         'm-px flex min-h-0 min-w-0 items-center justify-center gap-0.5 rounded-md text-[9px] leading-none text-muted-foreground transition-colors md:text-xs',
         inline ? 'flex-row' : 'flex-col',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-        !fired && !disabled && 'hover:bg-accent hover:text-accent-foreground',
+        !inert && !fired && 'hover:bg-accent hover:text-accent-foreground',
         fired && 'text-foreground',
         lit && 'bg-accent ring-2 ring-ring',
         highlighted !== null && !lit && 'opacity-40',
-        disabled && !fired && 'cursor-not-allowed'
+        inert && !fired && 'cursor-not-allowed'
       )}
       onClick={() => {
-        if (!fired && !disabled) onFire(entry)
+        if (onSelect) onSelect(entry)
+        else if (!inert) onFire(entry)
       }}
       onMouseEnter={hover}
       onMouseLeave={leave}
       onFocus={hover}
       onBlur={leave}
-      aria-disabled={fired || disabled}
+      aria-disabled={inert}
       aria-label={describe(t, entry, path)}
       data-cy={`entry-${entry}`}
       data-fired={fired}

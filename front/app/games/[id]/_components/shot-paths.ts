@@ -17,8 +17,10 @@ export interface ShotPaths {
   readonly fired: ReadonlySet<number>
 }
 
-const pathKey = (shot: Shot): string =>
-  [shot.entry, shot.exit_entry].sort((a, b) => a - b).join('-')
+/** One key for both ends of a beam, so a shot's path and its trace share it. */
+export const pairKey = (a: number, b: number): string => (a < b ? `${a}-${b}` : `${b}-${a}`)
+
+const pathKey = (shot: Shot): string => pairKey(shot.entry, shot.exit_entry)
 
 /** A, B, … Z, then AA, AB, … — the 36 entries need at most 36 labels. */
 function label(index: number): string {
