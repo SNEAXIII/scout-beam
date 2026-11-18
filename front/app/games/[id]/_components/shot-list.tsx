@@ -11,9 +11,17 @@ interface ShotListProps {
   readonly paths: ShotPaths
   readonly highlighted: string | null
   readonly onHighlight: (key: string | null) => void
+  /** Once the game is over: a click toggles the shot's trace, run from the entry it was fired from. */
+  readonly onSelect?: (entry: number) => void
 }
 
-export default function ShotList({ shots, paths, highlighted, onHighlight }: ShotListProps) {
+export default function ShotList({
+  shots,
+  paths,
+  highlighted,
+  onHighlight,
+  onSelect,
+}: ShotListProps) {
   const { t } = useI18n()
   return (
     <Card className='flex max-h-64 min-h-0 flex-col md:max-h-none'>
@@ -45,7 +53,7 @@ export default function ShotList({ shots, paths, highlighted, onHighlight }: Sho
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       highlighted === path.key && 'bg-accent'
                     )}
-                    onClick={() => onHighlight(path.key)}
+                    onClick={() => (onSelect ? onSelect(shot.entry) : onHighlight(path.key))}
                     onMouseEnter={() => onHighlight(path.key)}
                     onMouseLeave={() => onHighlight(null)}
                     onFocus={() => onHighlight(path.key)}

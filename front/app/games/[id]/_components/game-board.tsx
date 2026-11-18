@@ -17,6 +17,11 @@ export interface GameBoardProps {
   readonly onHighlight: (key: string | null) => void
   /** Leaves the ring empty, its room kept: a Duel's layout is composed without entries. */
   readonly hideEntries?: boolean
+  /** Once the game is over: the trace each entry lies on, picked instead of firing. */
+  readonly traceKeyAt?: (entry: number) => string | undefined
+  readonly onSelect?: (entry: number) => void
+  /** Drawn over the revealed layout. */
+  readonly children?: React.ReactNode
 }
 
 const RING_COLUMNS = GRID_COLUMNS + 2
@@ -57,6 +62,9 @@ export default function GameBoard({
   onFire,
   onHighlight,
   hideEntries = false,
+  traceKeyAt,
+  onSelect,
+  children,
 }: GameBoardProps) {
   return (
     <div
@@ -77,7 +85,10 @@ export default function GameBoard({
         <GridSvg
           layout={layout}
           style={GRID_AREA}
-        />
+          className='overflow-visible'
+        >
+          {layout && children}
+        </GridSvg>
       )}
       {!hideEntries &&
         ENTRIES.map((entry) => (
@@ -85,10 +96,12 @@ export default function GameBoard({
             key={entry}
             entry={entry}
             path={paths.atEntry(entry)}
+            traceKey={traceKeyAt?.(entry)}
             fired={paths.fired.has(entry)}
             highlighted={highlighted}
             disabled={disabled}
             onFire={onFire}
+            onSelect={onSelect}
             onHighlight={onHighlight}
             inline={['top', 'bottom'].includes(entryPlace(entry).edge)}
             style={ringCell(entry)}

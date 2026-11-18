@@ -3,17 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
-import { sameLook, type Piece } from '@/app/lib/pieces'
+import type { Piece } from '@/app/lib/pieces'
 import DraftPanel from './_components/draft-panel'
-import GameBoard, { BOARD_COLUMN } from './_components/game-board'
 import GameHeader from './_components/game-header'
-import GuestSaveCard from './_components/guest-save-card'
-import RoomBanner from './_components/room-banner'
+import GameOverPanel from './_components/game-over-panel'
 import RoomLine from './_components/room-line'
 import ShotList from './_components/shot-list'
 import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
 import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
+import { useTraces } from './_viewmodels/use-traces'
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
@@ -41,6 +40,7 @@ export default function GamePage() {
 
   const shots = useMemo(() => game?.shots ?? [], [game])
   const paths = useMemo(() => shotPaths(shots), [shots])
+  const traces = useTraces(game?.layout)
   const board = {
     paths,
     highlighted,
@@ -82,41 +82,14 @@ export default function GamePage() {
       {game && (
         <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>
           {game.status !== 'in_progress' ? (
-            <div
-              className='mx-auto flex w-full flex-col gap-3'
-              style={BOARD_COLUMN}
-            >
-              <GameBoard
-                {...board}
-                layout={game.layout}
-                disabled
-              />
-              {game.room_code ? (
-                <RoomBanner
-                  status={game.status}
-                  surrendered={room.surrendered}
-                />
-              ) : (
-                <p
-                  className='text-sm text-muted-foreground'
-                  data-cy={`game-${game.status}`}
-                >
-                  {t.game[game.status]}
-                </p>
-              )}
-              {game.status === 'solved' &&
-                proposed &&
-                game.layout &&
-                !sameLook(proposed, game.layout.pieces) && (
-                  <p
-                    className='text-sm text-muted-foreground'
-                    data-cy='game-equivalent'
-                  >
-                    {t.game.equivalent}
-                  </p>
-                )}
-              {game.daily_date && game.status === 'solved' && <GuestSaveCard />}
-            </div>
+            <GameOverPanel
+              {...board}
+              game={game}
+              status={game.status}
+              room={room}
+              proposed={proposed}
+              traces={traces}
+            />
           ) : (
             <DraftPanel
               {...board}
@@ -134,6 +107,7 @@ export default function GamePage() {
               paths={paths}
               highlighted={highlighted}
               onHighlight={setHighlighted}
+              onSelect={game.layout && traces.toggle}
             />
           </div>
         </div>

@@ -27,6 +27,8 @@ interface GridSvgProps {
   readonly onPieceRemove?: (shape: Shape) => void
   /** The piece under the mouse, or null once it leaves. */
   readonly onPieceHover?: (shape: Shape | null) => void
+  /** Drawn over the pieces. */
+  readonly children?: React.ReactNode
 }
 
 const COLUMN_LINES = Array.from({ length: GRID_COLUMNS + 1 }, (_, i) => i)
@@ -52,6 +54,7 @@ export default function GridSvg({
   preview,
   onPieceRemove,
   onPieceHover,
+  children,
 }: GridSvgProps) {
   const { t } = useI18n()
   const pieceHandlers = useLongPress(onPieceRemove)
@@ -105,6 +108,7 @@ export default function GridSvg({
           {cells(piece)}
         </g>
       ))}
+      {children}
       {preview && (
         <g
           fill={PIECE_SWATCHES[preview.piece.colour].fill}

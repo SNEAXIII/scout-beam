@@ -211,6 +211,9 @@ const fr: Translations = {
     removePiece: 'Clic droit ou Espace pour retirer la pièce « {{shape}} »',
     entry: 'Entrée {{entry}}',
     entryShot: 'Entrée {{entry}}, rayon {{label}} : {{entry}} → {{other}}, {{colour}}',
+    traceModes: 'Tracés',
+    traceSelected: 'Sélection',
+    traceAll: 'Tout',
   },
   shots: {
     title: 'Tirs',
