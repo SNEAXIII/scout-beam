@@ -40,6 +40,10 @@ _Avoid_: round, match, party
 A beam fired by the player from one entry, answered with an exit entry and a beam colour.
 _Avoid_: wave, ray, probe
 
+**Trace**:
+The route a beam follows through the revealed layout, from its entry to the entry it leaves by.
+_Avoid_: laser, path, ray
+
 **Beam colour**:
 The mix of the colours of the pieces a beam bounced off: none if it touched nothing, white if it
 touched only white pieces.
