@@ -200,3 +200,80 @@ Loops. The geometry is hand-drawn and must be truthful: each eliminated candidat
 sent that crossing shot elsewhere.
 
 **Done when:** `/rules` shows the rule and its animation, in en and fr, readable under reduced motion.
+
+---
+
+## Round 2 — after the first playtest
+
+Decisions: the tap hint must land on its target; its copy names no hand; the Tutorial opens on
+the five pieces; each shot step plays its Trace on "Next" instead of a button; candidates show one
+at a time, filled, over the outlines of the others; a "Previous" button.
+
+### Task 10: Tap hint lands on its target
+
+**Files:** `front/app/games/[id]/_components/game-board.tsx`, `front/app/i18n/locales/en.ts`,
+`front/app/i18n/locales/fr.ts`
+
+Today the hint is an absolutely positioned grid child given only a start line (`ringCell` returns
+`gridColumn: 3`): for an absolute item the missing end line is the container's edge, so the hint
+lands mid-board. Wrap `TapHint` in an in-flow grid item placed on the target's cell
+(`pointer-events-none relative`, same `gridColumn`/`gridRow`), overlapping the entry or cell; the
+hint stays `absolute inset-0` inside it. `tutorial.fire` names no hand: en
+`Fire from entry {{entry}}: tap the number shown.`, fr
+`Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.` Same for any other tutorial text
+mentioning the hand (`step7`): "the cell shown" / « la case indiquée ».
+
+**Done when:** with `guide={1}` the hint's tip sits on entry 1, with a cell guide on that cell.
+
+### Task 11: The Tutorial opens on the five pieces
+
+**Files:** `front/app/tutorial/_lib/script.ts`, `front/app/tutorial/_lib/script.check.ts`,
+`front/app/tutorial/_viewmodels/use-tutorial.ts`, `front/app/tutorial/page.tsx`,
+`front/app/tutorial/_components/tutorial-intro.tsx`, locales
+
+A first step `{ kind: 'intro' }` in `TUTORIAL_STEPS`; the check accepts it first (intro, shot ×6,
+draft, propose). Its view: a `GridSvg` with `INTRO_LAYOUT` (exported from `script.ts`), the five
+shapes placed apart at fixed spots, each named under it (`t.shapes`), colours spread over red,
+blue, yellow, white. Text `tutorial.steps.intro`: the goal (find where the pieces are hidden by
+firing from the numbers), the five shapes, and "in a real game all five are hidden; here, to learn,
+only two: a red Square and a yellow piece whose shape you will deduce". A "Start" button carries a
+`TapHint`. Step texts are keyed by step, not by index arithmetic, so inserting a step shifts
+nothing.
+
+**Done when:** `/tutorial` opens on the five named pieces, "Start" leads to the first shot, the
+counter counts nine steps, `pnpm check:tutorial` passes.
+
+### Task 12: Shot steps in two beats, and "Previous"
+
+**Files:** `front/app/tutorial/_viewmodels/use-tutorial.ts`,
+`front/app/tutorial/_components/tutorial-shots.tsx`, `front/app/tutorial/page.tsx`, locales
+
+Each shot step has three phases: `aim` (guided entry, `tutorial.fire`), `answer` (markers only;
+text `tutorial.answer`: en `Answer: out by entry {{exit}}, {{colour}}. That is all you will see in
+a real game.`, fr `Réponse : sortie par l’entrée {{exit}}, {{colour}}. C’est tout ce que vous verrez
+en vraie partie.`; a miss says "no colour"), `explain` (the Trace animates by itself with
+`TraceLines` `animated` and `misses`, text = the step's existing explanation). "Next" goes
+answer → explain → next step; the `TapHint` sits on "Next" in `answer` and `explain`. Remove the
+see-trace button and its keys.
+
+"Previous" (`data-cy='tutorial-previous'`) beside "Next", disabled on the intro: explain → answer,
+answer → aim (the step's shot removed), aim → the previous step's last phase (`explain` for a shot
+step). From the draft steps it returns to step 6's `explain`; the draft is kept. Candidates and
+eliminations follow the shots, so they roll back with them.
+
+**Done when:** each shot shows the bare answer first, the Trace on "Next", and "Previous" walks
+back through every phase to the intro with markers and ghosts matching each state.
+
+### Task 13: Candidates one at a time
+
+**Files:** `front/components/ghost-piece.tsx`, `front/app/tutorial/_components/tutorial-shots.tsx`,
+`front/app/tutorial/_viewmodels/use-tutorial.ts` (or a small hook beside it)
+
+All open candidates stay drawn as dashed outlines; one of the non-eliminated ones at a time is
+`highlighted` — solid stroke, strong fill — switching every 1.5 s among the non-eliminated
+(none switch under reduced motion: the first stays highlighted). A "?" badge sits on the turn's
+cell while more than one candidate remains. Eliminated ones are crossed out and leave the rotation.
+`GhostPiece` gains `highlighted?: boolean`; `/rules`' deduce demo is unchanged.
+
+**Done when:** at step 3 the three shapes take turns being filled with a "?" on the spot; after
+steps 4 and 5 the ruled-out ones are crossed and skipped; the Corner alone remains, without "?".
