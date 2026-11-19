@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { traceBeam, type Trace } from '../../lib/trace.ts'
-import type { Layout } from '../../lib/pieces.ts'
-import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from './script.ts'
+import { fitsGrid, overlaps, type Layout } from '../../lib/pieces.ts'
+import { INTRO_LAYOUT, TUTORIAL_LAYOUT, TUTORIAL_STEPS } from './script.ts'
 
 const shots = TUTORIAL_STEPS.flatMap((step) => (step.kind === 'shot' ? [step] : []))
 const fire = (layout: Layout, entry: number): Trace => {
@@ -17,8 +17,27 @@ const hidden = shots.map(({ entry }) => fire(TUTORIAL_LAYOUT, entry))
 
 assert.deepEqual(
   TUTORIAL_STEPS.map((step) => step.kind),
-  ['shot', 'shot', 'shot', 'shot', 'shot', 'shot', 'draft', 'propose']
+  ['intro', 'shot', 'shot', 'shot', 'shot', 'shot', 'shot', 'draft', 'propose']
 )
+
+const intro = INTRO_LAYOUT.pieces
+assert.deepEqual(intro.map((piece) => piece.shape).sort(), [
+  'bar',
+  'corner',
+  'diamond',
+  'spike',
+  'square',
+])
+assert.deepEqual([...new Set(intro.map((piece) => piece.colour))].sort(), [
+  'blue',
+  'red',
+  'white',
+  'yellow',
+])
+intro.forEach((piece, i) => {
+  assert.ok(fitsGrid(piece), `${piece.shape} fits the grid`)
+  assert.ok(!overlaps(piece, intro.slice(i + 1)), `${piece.shape} overlaps no other`)
+})
 
 assert.equal(hidden[0].colour, 'none', 'step 1 touches nothing')
 assert.equal(hidden[1].exit, hidden[1].entry, 'step 2 is a Return')

@@ -268,13 +268,14 @@ const fr: Translations = {
     step: 'Étape {{step}} / {{total}}',
     restart: 'Recommencer',
     next: 'Suivant',
-    intro:
-      'Deux pièces sont cachées sur cette grille. Vous les trouvez en tirant des rayons depuis les numéros tout autour.',
+    begin: 'Commencer',
     fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.',
     fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
     seeTrace: 'Voir le tracé (tutoriel seulement)',
     hideTrace: 'Masquer le tracé',
     steps: {
+      intro:
+        'Trouvez où les pièces sont cachées en tirant des rayons depuis les numéros autour de la grille. Il y a cinq formes : carré, barre, pointe, coin et losange. En vraie partie, les cinq sont cachées ; ici, pour apprendre, seulement deux : un carré rouge et une pièce jaune dont vous déduirez la forme.',
       step1:
         'Un point noir cerclé de blanc : un tir manqué. Le rayon a traversé la grille sans rien toucher et ressort par l’entrée 28. En vraie partie, on ne voit jamais le tracé d’un rayon, seulement sa sortie et sa couleur.',
       step2:

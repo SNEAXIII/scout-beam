@@ -260,13 +260,14 @@ const en = {
     step: 'Step {{step}} / {{total}}',
     restart: 'Restart',
     next: 'Next',
-    intro:
-      'Two pieces are hidden on this grid. You find them by firing beams from the numbers around it.',
+    begin: 'Start',
     fire: 'Fire from entry {{entry}}: tap the number shown.',
     fireFirst: 'Fire first: the pieces are deduced from the shots',
     seeTrace: 'See the trace (tutorial only)',
     hideTrace: 'Hide the trace',
     steps: {
+      intro:
+        'Find where the pieces are hidden by firing beams from the numbers around the grid. There are five shapes: square, bar, spike, corner and diamond. In a real game all five are hidden; here, to learn, only two: a red Square and a yellow piece whose shape you will deduce.',
       step1:
         'A black dot with a white border: a miss. The beam crossed the grid without touching anything and left by entry 28. In a real game you never see a beam’s trace, only where it leaves and its colour.',
       step2:

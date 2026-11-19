@@ -21,7 +21,7 @@ const cells = (piece: Piece) =>
 const same = (a: Piece, b: Piece) =>
   a.shape === b.shape && a.colour === b.colour && cells(a) === cells(b)
 
-/** Steps 7 and 8: the Draft of both pieces, then its Proposition. Mounted only then, storage being read. */
+/** The last two steps: the Draft of both pieces, then its Proposition. Mounted only then, storage being read. */
 export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
   const { keyboardLayout } = useKeyboardLayout()

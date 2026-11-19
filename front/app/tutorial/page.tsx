@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { fill, useI18n } from '@/app/i18n'
 import TutorialDone from './_components/tutorial-done'
 import TutorialDraft from './_components/tutorial-draft'
+import TutorialIntro from './_components/tutorial-intro'
 import TutorialShots from './_components/tutorial-shots'
 import { TUTORIAL_STEPS } from './_lib/script'
 import { useTutorial } from './_viewmodels/use-tutorial'
@@ -14,11 +15,10 @@ export default function TutorialPage() {
   const { t } = useI18n()
   const tutorial = useTutorial()
   const { step, current, fired } = tutorial
-  const steps = t.tutorial.steps
   const text =
     current?.kind === 'shot' && !fired
       ? fill(t.tutorial.fire, { entry: current.entry })
-      : steps[`step${step + 1}` as keyof typeof steps]
+      : current && t.tutorial.steps[current.text]
 
   return (
     <main className='mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 pb-4'>
@@ -62,7 +62,6 @@ export default function TutorialPage() {
       ) : (
         <>
           <div className='flex flex-col gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm'>
-            {step === 0 && !fired && <p data-cy='tutorial-intro'>{t.tutorial.intro}</p>}
             <p
               aria-live='polite'
               data-cy='tutorial-text'
@@ -70,9 +69,9 @@ export default function TutorialPage() {
               {text}
             </p>
           </div>
-          {current?.kind === 'shot' ? (
-            <TutorialShots tutorial={tutorial} />
-          ) : (
+          {current?.kind === 'intro' && <TutorialIntro tutorial={tutorial} />}
+          {current?.kind === 'shot' && <TutorialShots tutorial={tutorial} />}
+          {(current?.kind === 'draft' || current?.kind === 'propose') && (
             <TutorialDraft tutorial={tutorial} />
           )}
         </>

@@ -8,6 +8,8 @@ import { pairKey, shotPaths } from '@/app/games/[id]/_components/shot-paths'
 import type { KeyedTrace } from '@/app/games/[id]/_viewmodels/use-traces'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 
+const SHOT_STEPS = TUTORIAL_STEPS.filter((step) => step.kind === 'shot')
+
 export const TUTORIAL_DRAFT = 'tutorial'
 export const TUTORIAL_KEY = 'scout-beam.tutorial'
 
@@ -33,8 +35,9 @@ export function useTutorial() {
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const current = TUTORIAL_STEPS.at(step)
   const done = current === undefined
-  // Shot steps come first, one shot each: the step's shot is fired once there is one per step so far.
-  const fired = current?.kind === 'shot' ? shots.length > step : false
+  // One shot per shot step: the current one is fired once every shot step so far has its shot.
+  const shotIndex = TUTORIAL_STEPS.slice(0, step).filter((played) => played.kind === 'shot').length
+  const fired = current?.kind === 'shot' && shots.length > shotIndex
 
   // A reload starts the Tutorial over, so a draft left from before would be out of place.
   useEffect(() => clearDraft(TUTORIAL_DRAFT), [])
@@ -44,8 +47,7 @@ export function useTutorial() {
   const ghosts = useMemo(() => {
     const opened: Piece[] = []
     const eliminated = new Set<Shape>()
-    TUTORIAL_STEPS.slice(0, shots.length).forEach((played) => {
-      if (played.kind !== 'shot') return
+    SHOT_STEPS.slice(0, shots.length).forEach((played) => {
       opened.push(...(played.candidates ?? []))
       for (const shape of played.eliminated ?? []) eliminated.add(shape)
     })
@@ -53,10 +55,10 @@ export function useTutorial() {
   }, [shots])
 
   const trace = useMemo((): KeyedTrace | undefined => {
-    const shot = fired ? shots[step] : undefined
+    const shot = fired ? shots[shotIndex] : undefined
     const traced = shot && traceBeam(TUTORIAL_LAYOUT, shot.entry)
     return traced && { ...traced, key: pairKey(traced.entry, traced.exit) }
-  }, [fired, shots, step])
+  }, [fired, shots, shotIndex])
 
   const fire = useCallback(
     (entry: number) => {

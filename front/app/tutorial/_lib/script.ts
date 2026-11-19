@@ -1,7 +1,11 @@
+import type { Translations } from '../../i18n/locales/en.ts'
 import type { Layout, Piece, Shape } from '../../lib/pieces.ts'
 
+type StepText = keyof Translations['tutorial']['steps']
+
 /** One step of the Tutorial; a shot's answer comes from `traceBeam(TUTORIAL_LAYOUT, entry)`. */
-export type TutorialStep =
+export type TutorialStep = { text: StepText } & (
+  | { kind: 'intro' }
   | {
       kind: 'shot'
       /** The only entry the player may fire. */
@@ -13,17 +17,31 @@ export type TutorialStep =
     }
   | { kind: 'draft' }
   | { kind: 'propose' }
+)
 
 const SQUARE: Piece = { shape: 'square', colour: 'red', x: 2, y: 3, rotation: 0 }
 const CORNER: Piece = { shape: 'corner', colour: 'yellow', x: 4, y: 3, rotation: 2 }
 
 export const TUTORIAL_LAYOUT: Layout = { pieces: [SQUARE, CORNER] }
 
+/** The five shapes, apart, a row of names under each row of pieces. */
+export const INTRO_LAYOUT: Layout = {
+  pieces: [
+    { shape: 'square', colour: 'red', x: 1, y: 2, rotation: 0 },
+    { shape: 'bar', colour: 'blue', x: 4, y: 2, rotation: 0 },
+    { shape: 'diamond', colour: 'yellow', x: 7, y: 1, rotation: 0 },
+    { shape: 'spike', colour: 'white', x: 2, y: 5, rotation: 0 },
+    { shape: 'corner', colour: 'blue', x: 6, y: 4, rotation: 0 },
+  ],
+}
+
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
-  { kind: 'shot', entry: 1 },
-  { kind: 'shot', entry: 3 },
+  { kind: 'intro', text: 'intro' },
+  { kind: 'shot', text: 'step1', entry: 1 },
+  { kind: 'shot', text: 'step2', entry: 3 },
   {
     kind: 'shot',
+    text: 'step3',
     entry: 23,
     candidates: [
       { shape: 'spike', colour: 'yellow', x: 5, y: 4, rotation: 2 },
@@ -31,9 +49,9 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
       { shape: 'diamond', colour: 'yellow', x: 5, y: 3, rotation: 0 },
     ],
   },
-  { kind: 'shot', entry: 7, eliminated: ['diamond'] },
-  { kind: 'shot', entry: 5, eliminated: ['spike'] },
-  { kind: 'shot', entry: 24 },
-  { kind: 'draft' },
-  { kind: 'propose' },
+  { kind: 'shot', text: 'step4', entry: 7, eliminated: ['diamond'] },
+  { kind: 'shot', text: 'step5', entry: 5, eliminated: ['spike'] },
+  { kind: 'shot', text: 'step6', entry: 24 },
+  { kind: 'draft', text: 'step7' },
+  { kind: 'propose', text: 'step8' },
 ]
