@@ -7,6 +7,7 @@ import { SHAPES, type PieceColour, type Shape } from '@/app/lib/pieces'
 import ShapeIcon from '@/components/shape-icon'
 import BeamDemo from './beam-demo'
 import ColourMixDemo from './colour-mix-demo'
+import MarkersDemo from './markers-demo'
 import ShotDemo from './shot-demo'
 
 const SHOWCASE: Record<Shape, PieceColour> = {
@@ -92,13 +93,19 @@ export default function RulesSection() {
           text={rules.sides}
           cy='sides'
         >
-          <BeamDemo label={t.landing.beamDemo} />
+          <BeamDemo />
         </Rule>
         <Rule
           text={rules.colours}
           cy='colours'
         >
           <ColourMixDemo label={t.landing.colourMix} />
+        </Rule>
+        <Rule
+          text={rules.markers}
+          cy='markers'
+        >
+          <MarkersDemo />
         </Rule>
         <Rule
           text={rules.draft}

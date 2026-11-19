@@ -131,13 +131,23 @@ const en = {
     signIn: 'Sign in',
     rulesTitle: 'How to play',
     piecesLabel: 'The five pieces',
-    beamDemo:
-      'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet.',
+    beamDemo: {
+      turn: 'A beam enters from the top, turns 90° on a red slanted side, turns 90° again on a blue slanted side and leaves by another entry at the bottom, violet.',
+      turnCaption: 'Out by another entry',
+      return:
+        'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet: a Return.',
+      returnCaption: 'A Return: out by its own entry',
+    },
     shotDemo:
       'A shot from entry 2 runs down, turns 90° on a red slanted side and leaves by entry 7, red. Then its path fades: only its two ends and its colour remain.',
     whatYouSee: 'What you see',
     colourMix:
       'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
+    markers: {
+      miss: 'Touched nothing: black, white border',
+      bounce: 'Out by another entry: dashed ring',
+      return: 'A Return: plain colour',
+    },
     rules: {
       grid: 'Five pieces are hidden on a 10 × 8 grid. Around it, 36 numbered entries are where beams go in and come out.',
       pieces:
@@ -149,6 +159,8 @@ const en = {
         'A straight side sends the beam back where it came from (180°); a slanted side turns it by 90°.',
       colours:
         'The beam colour mixes the colours of the pieces it touched: red and blue give violet, red and yellow orange, blue and yellow green, all three black. Only white pieces give white, nothing at all gives no colour.',
+      markers:
+        'Each shot gets a letter. Both of its ends show that letter in the beam colour, and the shot list repeats them, so you can match an entry with the one it leads to.',
       draft:
         'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries. It need not match the hidden pieces: any layout giving the same results wins.',
       surrender: 'Stuck? Surrender reveals the hidden layout and ends the game.',

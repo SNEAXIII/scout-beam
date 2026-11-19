@@ -139,13 +139,23 @@ const fr: Translations = {
     signIn: 'Se connecter',
     rulesTitle: 'Comment jouer',
     piecesLabel: 'Les cinq pièces',
-    beamDemo:
-      'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet.',
+    beamDemo: {
+      turn: 'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, tourne encore de 90° sur un côté oblique bleu et ressort par une autre entrée en bas, violet.',
+      turnCaption: 'Sort par une autre entrée',
+      return:
+        'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet : un retour.',
+      returnCaption: 'Un retour : sort par sa propre entrée',
+    },
     shotDemo:
       'Un tir depuis l’entrée 2 descend, tourne de 90° sur un côté oblique rouge et ressort par l’entrée 7, rouge. Puis son tracé s’efface : seuls ses deux bouts et sa couleur restent.',
     whatYouSee: 'Ce que vous voyez',
     colourMix:
       'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
+    markers: {
+      miss: 'Rien touché : noir, bord blanc',
+      bounce: 'Sort par une autre entrée : anneau pointillé',
+      return: 'Un retour : couleur pleine',
+    },
     rules: {
       grid: 'Cinq pièces sont cachées sur une grille de 10 × 8. Tout autour, 36 entrées numérotées : c’est par là que les rayons entrent et sortent.',
       pieces:
@@ -157,6 +167,8 @@ const fr: Translations = {
         'Un côté droit renvoie le rayon d’où il vient (180°) ; un côté oblique le fait tourner de 90°.',
       colours:
         'La couleur du rayon mélange celles des pièces touchées : rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir. Des pièces blanches seules donnent blanc, rien du tout ne donne aucune couleur.',
+      markers:
+        'Chaque tir reçoit une lettre. Ses deux bouts affichent cette lettre dans la couleur du rayon, et la liste des tirs les reprend : vous savez ainsi à quelle entrée mène chacune.',
       draft:
         'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées. Inutile de retrouver les pièces cachées : toute disposition qui donne les mêmes résultats gagne.',
       surrender: 'Bloqué ? Abandonner révèle la disposition cachée et termine la partie.',
