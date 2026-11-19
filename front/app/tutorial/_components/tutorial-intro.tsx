@@ -7,6 +7,7 @@ import { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
 import GridSvg from '@/app/games/[id]/_components/grid-svg'
 import { INTRO_LAYOUT } from '../_lib/script'
 import type { Tutorial } from '../_viewmodels/use-tutorial'
+import TutorialNav from './tutorial-nav'
 
 /** The intro step: the five shapes, each named under it, before the first shot. */
 export default function TutorialIntro({ tutorial }: { tutorial: Tutorial }) {
@@ -40,17 +41,19 @@ export default function TutorialIntro({ tutorial }: { tutorial: Tutorial }) {
           )
         })}
       </GridSvg>
-      <span className='relative ml-auto'>
-        <Button
-          size='sm'
-          onClick={tutorial.next}
-          data-cy='tutorial-start-shots'
-        >
-          {t.tutorial.begin}
-          <ArrowRight />
-        </Button>
-        <TapHint />
-      </span>
+      <TutorialNav tutorial={tutorial}>
+        <span className='relative'>
+          <Button
+            size='sm'
+            onClick={tutorial.next}
+            data-cy='tutorial-start-shots'
+          >
+            {t.tutorial.begin}
+            <ArrowRight />
+          </Button>
+          <TapHint />
+        </span>
+      </TutorialNav>
     </div>
   )
 }

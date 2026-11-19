@@ -9,16 +9,25 @@ import TutorialDraft from './_components/tutorial-draft'
 import TutorialIntro from './_components/tutorial-intro'
 import TutorialShots from './_components/tutorial-shots'
 import { TUTORIAL_STEPS } from './_lib/script'
-import { useTutorial } from './_viewmodels/use-tutorial'
+import { useTutorial, type Tutorial } from './_viewmodels/use-tutorial'
+
+/** A shot step reads its guide, then its bare answer, then the step's explanation. */
+function useStepText({ current, phase, shot }: Tutorial) {
+  const { t } = useI18n()
+  if (current?.kind !== 'shot' || phase === 'explain')
+    return current && t.tutorial.steps[current.text]
+  if (!shot) return fill(t.tutorial.fire, { entry: current.entry })
+  return fill(shot.colour === 'none' ? t.tutorial.answerMiss : t.tutorial.answer, {
+    exit: shot.exit_entry,
+    colour: t.colours[shot.colour].toLowerCase(),
+  })
+}
 
 export default function TutorialPage() {
   const { t } = useI18n()
   const tutorial = useTutorial()
-  const { step, current, fired } = tutorial
-  const text =
-    current?.kind === 'shot' && !fired
-      ? fill(t.tutorial.fire, { entry: current.entry })
-      : current && t.tutorial.steps[current.text]
+  const { step, current } = tutorial
+  const text = useStepText(tutorial)
 
   return (
     <main className='mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 pb-4'>

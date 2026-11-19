@@ -268,11 +268,14 @@ const fr: Translations = {
     step: 'Étape {{step}} / {{total}}',
     restart: 'Recommencer',
     next: 'Suivant',
+    previous: 'Précédent',
     begin: 'Commencer',
     fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.',
     fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
-    seeTrace: 'Voir le tracé (tutoriel seulement)',
-    hideTrace: 'Masquer le tracé',
+    answer:
+      'Réponse : sortie par l’entrée {{exit}}, {{colour}}. C’est tout ce que vous verrez en vraie partie.',
+    answerMiss:
+      'Réponse : sortie par l’entrée {{exit}}, sans couleur. C’est tout ce que vous verrez en vraie partie.',
     steps: {
       intro:
         'Trouvez où les pièces sont cachées en tirant des rayons depuis les numéros autour de la grille. Il y a cinq formes : carré, barre, pointe, coin et losange. En vraie partie, les cinq sont cachées ; ici, pour apprendre, seulement deux : un carré rouge et une pièce jaune dont vous déduirez la forme.',

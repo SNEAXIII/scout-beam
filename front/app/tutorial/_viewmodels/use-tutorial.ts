@@ -27,20 +27,29 @@ export function isCorrect(pieces: readonly Piece[]): boolean {
   })
 }
 
+/** Where a shot step stands: before its shot, its bare answer, then its Trace and explanation. */
+export type Phase = 'aim' | 'answer' | 'explain'
+
 /** The Tutorial's progress, played in the browser on `TUTORIAL_LAYOUT`; past the last step, done. */
 export function useTutorial() {
   const [step, setStep] = useState(0)
-  const [shots, setShots] = useState<readonly Shot[]>([])
-  const [traceShown, setTraceShown] = useState(false)
+  const [phase, setPhase] = useState<Phase>('aim')
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const current = TUTORIAL_STEPS.at(step)
   const done = current === undefined
-  // One shot per shot step: the current one is fired once every shot step so far has its shot.
-  const shotIndex = TUTORIAL_STEPS.slice(0, step).filter((played) => played.kind === 'shot').length
-  const fired = current?.kind === 'shot' && shots.length > shotIndex
+  const fired = current?.kind === 'shot' && phase !== 'aim'
 
   // A reload starts the Tutorial over, so a draft left from before would be out of place.
   useEffect(() => clearDraft(TUTORIAL_DRAFT), [])
+
+  // Derived from the position, so stepping back removes the shot with its markers and ghosts.
+  const shots = useMemo(
+    () =>
+      TUTORIAL_STEPS.slice(0, fired ? step + 1 : step).flatMap((played) =>
+        played.kind === 'shot' ? [shotOf(played.entry)] : []
+      ),
+    [step, fired]
+  )
 
   const paths = useMemo(() => shotPaths(shots), [shots])
 
@@ -54,30 +63,42 @@ export function useTutorial() {
     return opened.map((piece) => ({ piece, eliminated: eliminated.has(piece.shape) }))
   }, [shots])
 
+  const shot = fired ? shots.at(-1) : undefined
+
   const trace = useMemo((): KeyedTrace | undefined => {
-    const shot = fired ? shots[shotIndex] : undefined
     const traced = shot && traceBeam(TUTORIAL_LAYOUT, shot.entry)
     return traced && { ...traced, key: pairKey(traced.entry, traced.exit) }
-  }, [fired, shots, shotIndex])
+  }, [shot])
 
   const fire = useCallback(
     (entry: number) => {
-      if (current?.kind !== 'shot' || fired || entry !== current.entry) return
-      setShots((previous) => [...previous, shotOf(entry)])
+      if (current?.kind === 'shot' && !fired && entry === current.entry) setPhase('answer')
     },
     [current, fired]
   )
 
   const next = () => {
-    setTraceShown(false)
-    setStep((previous) => previous + 1)
+    setHighlighted(null)
+    if (current?.kind === 'shot' && phase === 'answer') return setPhase('explain')
+    setStep(step + 1)
+    setPhase('aim')
+  }
+
+  const previous = () => {
+    if (step === 0) return
+    setHighlighted(null)
+    if (current?.kind === 'shot' && phase !== 'aim') {
+      return setPhase(phase === 'explain' ? 'answer' : 'aim')
+    }
+    setStep(step - 1)
+    setPhase('explain')
   }
 
   const restart = () => {
     clearDraft(TUTORIAL_DRAFT)
+    setHighlighted(null)
     setStep(0)
-    setShots([])
-    setTraceShown(false)
+    setPhase('aim')
   }
 
   const finish = () => {
@@ -92,19 +113,19 @@ export function useTutorial() {
 
   return {
     step,
+    phase,
     current,
     done,
     fired,
-    shots,
+    shot,
     paths,
     ghosts,
     trace,
-    traceShown,
-    toggleTrace: () => setTraceShown((shown) => !shown),
     highlighted,
     setHighlighted,
     fire,
     next,
+    previous,
     restart,
     finish,
   }

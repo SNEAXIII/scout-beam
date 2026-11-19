@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import TapHint from '@/components/tap-hint'
 import { useI18n } from '@/app/i18n'
 import { pieceCells, type Piece } from '@/app/lib/pieces'
@@ -11,6 +9,7 @@ import { useDraft } from '@/app/games/[id]/_viewmodels/use-draft'
 import { useKeyboardLayout } from '@/app/games/[id]/_viewmodels/use-keyboard-layout'
 import { TUTORIAL_LAYOUT } from '../_lib/script'
 import { isCorrect, TUTORIAL_DRAFT, type Tutorial } from '../_viewmodels/use-tutorial'
+import TutorialNav from './tutorial-nav'
 
 const cells = (piece: Piece) =>
   pieceCells(piece)
@@ -57,7 +56,10 @@ export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
         onHighlight={tutorial.setHighlighted}
         guide={proposing || !missing ? undefined : { x: missing.x, y: missing.y }}
       />
-      <div className='flex flex-wrap items-center gap-2'>
+      <TutorialNav
+        tutorial={tutorial}
+        nextDisabled={missing !== undefined}
+      >
         {proposing ? (
           <span className='relative'>
             <ProposeButton
@@ -67,19 +69,8 @@ export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
             />
             {complete && wrong === null && <TapHint />}
           </span>
-        ) : (
-          <Button
-            size='sm'
-            className='ml-auto'
-            disabled={missing !== undefined}
-            onClick={tutorial.next}
-            data-cy='tutorial-next'
-          >
-            {t.tutorial.next}
-            <ArrowRight />
-          </Button>
-        )}
-      </div>
+        ) : null}
+      </TutorialNav>
       {wrong === current && (
         <p
           className='rounded-md border border-border px-3 py-2 text-sm font-medium'
