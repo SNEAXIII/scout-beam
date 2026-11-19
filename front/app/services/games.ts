@@ -10,6 +10,9 @@ export interface GameSummary {
   created_at: string
   solved_at: string | null
   mode: GameMode
+  /** In seconds; a finished Bot game only, like `points`. */
+  score: number | null
+  points: number | null
   /** The other player's login, in a room only. */
   opponent: string | null
 }
@@ -32,11 +35,12 @@ export interface PaceView {
   proposition_in_ms?: number
 }
 
-export interface GameView extends Omit<GameSummary, 'mode' | 'opponent'>, PaceView {
+export interface GameView extends Omit<GameSummary, 'mode' | 'opponent' | 'score' | 'points'>, PaceView {
   /** The day it is the daily of, `YYYY-MM-DD`; null for a game against the bot. */
   daily_date: string | null
   /** The room it is played in; null outside a room. */
   room_code: string | null
+  surrendered_at: string | null
   /** Each one adds a minute to a daily's score. */
   wrong_propositions: number
   /** In firing order. */

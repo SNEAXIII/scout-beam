@@ -69,6 +69,7 @@ const en = {
     empty: 'No games yet. Start one!',
     daily: 'Daily',
     ranking: 'Ranking',
+    points: '{{points}} pts',
     profile: 'Profile',
   },
   profile: {
@@ -180,7 +181,6 @@ const en = {
     resume: 'Resume my game',
     noDaily: 'There was no daily that day',
     startFailed: 'Could not start the daily',
-    timer: 'Time since the start; each wrong proposition adds a minute',
     penalty: '+{{count}} min',
     saveTitle: 'Keep this game',
     saveText: 'Sign up to keep your game and enter the ranking.',
@@ -206,6 +206,7 @@ const en = {
     lost: 'Lost',
   },
   game: {
+    timer: 'Time since the start; each wrong proposition adds a minute',
     title: 'Game',
     back: 'Back to games',
     surrender: 'Surrender',

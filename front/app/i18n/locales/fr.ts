@@ -73,6 +73,7 @@ const fr: Translations = {
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',
     ranking: 'Classement',
+    points: '{{points}} pts',
     profile: 'Profil',
   },
   profile: {
@@ -188,7 +189,6 @@ const fr: Translations = {
     resume: 'Reprendre ma partie',
     noDaily: 'Pas de quotidienne ce jour-là',
     startFailed: 'Impossible de lancer la quotidienne',
-    timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',
     penalty: '+{{count}} min',
     saveTitle: 'Gardez cette partie',
     saveText: 'Inscrivez-vous pour garder votre partie et entrer au classement.',
@@ -214,6 +214,7 @@ const fr: Translations = {
     lost: 'Perdue',
   },
   game: {
+    timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',
     title: 'Partie',
     back: 'Retour aux parties',
     surrender: 'Abandonner',

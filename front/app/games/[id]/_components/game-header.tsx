@@ -8,7 +8,7 @@ import GameStatusBadge from '@/app/play/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
 import type { GameView } from '@/app/services/games'
-import DailyTimer from './daily-timer'
+import GameTimer from './game-timer'
 import KeyboardLayoutToggle from './keyboard-layout-toggle'
 
 interface GameHeaderProps {
@@ -49,10 +49,10 @@ export default function GameHeader({
       </Button>
       <h1 className='text-xl font-semibold tracking-tight'>{t.game.title}</h1>
       {status && <GameStatusBadge status={status} />}
-      {game && daily && (
-        <DailyTimer
+      {game && game.room_code === null && (
+        <GameTimer
           createdAt={game.created_at}
-          solvedAt={game.solved_at}
+          endedAt={game.solved_at ?? game.surrendered_at}
           wrongPropositions={game.wrong_propositions}
         />
       )}
