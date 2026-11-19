@@ -237,6 +237,44 @@ const fr: Translations = {
     cellPiece: 'Case {{x}}, {{y}} : pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
   },
+  tutorial: {
+    title: 'Tutoriel',
+    back: 'Retour à la quotidienne du jour',
+    step: 'Étape {{step}} / {{total}}',
+    restart: 'Recommencer',
+    next: 'Suivant',
+    intro:
+      'Deux pièces sont cachées sur cette grille. Vous les trouvez en tirant des rayons depuis les numéros tout autour.',
+    fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro que montre la main.',
+    fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
+    seeTrace: 'Voir le tracé (tutoriel seulement)',
+    hideTrace: 'Masquer le tracé',
+    steps: {
+      step1:
+        'Un point noir cerclé de blanc : un tir manqué. Le rayon a traversé la grille sans rien toucher et ressort par l’entrée 28. En vraie partie, on ne voit jamais le tracé d’un rayon, seulement sa sortie et sa couleur.',
+      step2:
+        'Le rayon ressort par l’entrée 3, rouge : un retour, signalé par un marqueur plein. Il a heurté le côté droit d’une pièce rouge et fait demi-tour.',
+      step3:
+        'Tiré depuis 23, le rayon ressort par 32, jaune : un côté oblique l’a fait tourner de 90°. L’anneau en pointillés signale un rayon sorti par une autre entrée. Une pointe, un coin ou un losange peuvent tous faire ça : voici trois candidats.',
+      step4:
+        'Encore un tir manqué, de 7 à 22. Le losange aurait débordé sur cette colonne et dévié le rayon : il est éliminé.',
+      step5:
+        'Un retour jaune depuis l’entrée 5 : le rayon a heurté un côté droit de la pièce jaune. Seule, la pointe l’aurait laissé passer sans le toucher : il ne reste que le coin.',
+      step6:
+        'L’orange, c’est du rouge plus du jaune : ce rayon a touché les deux pièces. Il ressort aussi par l’entrée 24, c’est donc un retour : le coin l’a dévié vers le carré, qui l’a renvoyé d’où il venait.',
+      step7:
+        'Construisez votre brouillon : placez le carré rouge là où montre la main, puis choisissez le coin, en jaune, tournez-le deux fois et placez-le.',
+      step8:
+        'Votre brouillon est prêt : proposez-le. Une proposition est correcte si elle donne la même réponse que les pièces cachées sur les 36 entrées.',
+    },
+    incorrect:
+      'Pas tout à fait : certains tirs répondraient autrement. Déplacez une pièce et proposez à nouveau.',
+    doneTitle: 'Tutoriel terminé',
+    doneText:
+      'Vous savez tirer, lire les marqueurs, éliminer des candidats et proposer. Cinq pièces vous attendent dans la quotidienne du jour.',
+    playDaily: 'Jouer la quotidienne',
+    readRules: 'Lire les règles',
+  },
   shapes: {
     square: 'carré',
     bar: 'barre',

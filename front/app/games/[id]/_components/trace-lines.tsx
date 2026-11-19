@@ -4,8 +4,10 @@ import { GRID_COLUMNS, GRID_ROWS } from '@/app/lib/pieces'
 import type { KeyedTrace } from '../_viewmodels/use-traces'
 
 interface TraceLinesProps {
-  /** Drawn in order, the last on top; those of colour `none` touched no piece and are skipped. */
+  /** Drawn in order, the last on top; those of colour `none` touched no piece and are skipped unless `misses`. */
   readonly traces: readonly KeyedTrace[]
+  /** Draws the traces of colour `none` too, as hollow grey lines. */
+  readonly misses?: boolean
   /** The trace drawn from its entry to its exit, again each time it changes. */
   readonly animated?: string | null
 }
@@ -75,7 +77,7 @@ function TraceShape({ trace, animated }: { trace: KeyedTrace; animated: boolean 
 }
 
 /** Beams through the revealed layout, each in its final colour. */
-export default function TraceLines({ traces, animated = null }: TraceLinesProps) {
+export default function TraceLines({ traces, animated = null, misses = false }: TraceLinesProps) {
   return (
     <g
       fill='none'
@@ -83,7 +85,7 @@ export default function TraceLines({ traces, animated = null }: TraceLinesProps)
       className='pointer-events-none'
     >
       {traces
-        .filter((trace) => trace.colour !== 'none')
+        .filter((trace) => misses || trace.colour !== 'none')
         .map((trace) => (
           <g
             key={trace.key}

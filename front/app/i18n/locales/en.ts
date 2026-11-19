@@ -229,6 +229,43 @@ const en = {
     cellPiece: 'Cell {{x}}, {{y}}: {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',
   },
+  tutorial: {
+    title: 'Tutorial',
+    back: 'Back to the daily',
+    step: 'Step {{step}} / {{total}}',
+    restart: 'Restart',
+    next: 'Next',
+    intro:
+      'Two pieces are hidden on this grid. You find them by firing beams from the numbers around it.',
+    fire: 'Fire from entry {{entry}}: tap the number the hand points at.',
+    fireFirst: 'Fire first: the pieces are deduced from the shots',
+    seeTrace: 'See the trace (tutorial only)',
+    hideTrace: 'Hide the trace',
+    steps: {
+      step1:
+        'A black dot with a white border: a miss. The beam crossed the grid without touching anything and left by entry 28. In a real game you never see a beam’s trace, only where it leaves and its colour.',
+      step2:
+        'The beam came back out of entry 3, red: a Return, shown by a plain marker. It hit the straight side of a red piece and turned back.',
+      step3:
+        'Fired from 23, the beam left by 32, yellow: a slanted side turned it by 90°. The dashed ring marks a beam that left by another entry. A spike, a corner or a diamond could all do that: here are three candidates.',
+      step4:
+        'A miss again, from 7 to 22. The diamond would have reached into this column and turned the beam: it is ruled out.',
+      step5:
+        'A yellow Return from entry 5: the beam met a straight side of the yellow piece. Alone, the spike would have let it cross untouched: only the corner is left.',
+      step6:
+        'Orange is red plus yellow: this beam touched both pieces. It also came back out of entry 24, so it is a Return too: the corner turned it onto the square, which sent it back the same way.',
+      step7:
+        'Now build your Draft: place the red square where the hand points, then pick the corner, choose yellow, rotate it twice and place it.',
+      step8:
+        'Your Draft is ready: propose it. A Proposition is correct when it gives the same answer as the hidden pieces on all 36 entries.',
+    },
+    incorrect: 'Not quite: some shots would answer differently. Move a piece and propose again.',
+    doneTitle: 'Tutorial complete',
+    doneText:
+      'You know how to fire, read the markers, rule out candidates and propose. Five pieces are waiting in today’s daily.',
+    playDaily: 'Play the daily',
+    readRules: 'Read the rules',
+  },
   shapes: {
     square: 'square',
     bar: 'bar',

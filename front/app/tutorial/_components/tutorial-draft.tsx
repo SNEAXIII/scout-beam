@@ -1,0 +1,94 @@
+import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import TapHint from '@/components/tap-hint'
+import { useI18n } from '@/app/i18n'
+import { pieceCells, type Piece } from '@/app/lib/pieces'
+import DraftToolbar from '@/app/games/[id]/_components/draft-toolbar'
+import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
+import ProposeButton from '@/app/games/[id]/_components/propose-button'
+import { useDraft } from '@/app/games/[id]/_viewmodels/use-draft'
+import { useKeyboardLayout } from '@/app/games/[id]/_viewmodels/use-keyboard-layout'
+import { TUTORIAL_LAYOUT } from '../_lib/script'
+import { isCorrect, TUTORIAL_DRAFT, type Tutorial } from '../_viewmodels/use-tutorial'
+
+const cells = (piece: Piece) =>
+  pieceCells(piece)
+    .map(({ x, y, fill }) => `${x},${y},${fill}`)
+    .toSorted()
+    .join(' ')
+/** By the cells covered, not the rotation: a Square looks the same however it is turned. */
+const same = (a: Piece, b: Piece) =>
+  a.shape === b.shape && a.colour === b.colour && cells(a) === cells(b)
+
+/** Steps 7 and 8: the Draft of both pieces, then its Proposition. Mounted only then, storage being read. */
+export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
+  const { t } = useI18n()
+  const { keyboardLayout } = useKeyboardLayout()
+  const draft = useDraft(TUTORIAL_DRAFT, keyboardLayout)
+  const [wrong, setWrong] = useState<string | null>(null)
+  const proposing = tutorial.current?.kind === 'propose'
+  const current = JSON.stringify(draft.pieces)
+  const complete = draft.pieces.length >= TUTORIAL_LAYOUT.pieces.length
+  const missing = TUTORIAL_LAYOUT.pieces.find(
+    (piece) => !draft.pieces.some((placed) => same(placed, piece))
+  )
+
+  const propose = () => {
+    if (isCorrect(draft.pieces)) tutorial.finish()
+    else setWrong(current)
+  }
+
+  return (
+    <div
+      className='mx-auto flex w-full flex-col gap-2'
+      style={BOARD_COLUMN}
+    >
+      <DraftToolbar
+        draft={draft}
+        keyboardLayout={keyboardLayout}
+      />
+      <GameBoard
+        paths={tutorial.paths}
+        draft={draft}
+        disabled
+        highlighted={tutorial.highlighted}
+        onFire={tutorial.fire}
+        onHighlight={tutorial.setHighlighted}
+        guide={proposing || !missing ? undefined : { x: missing.x, y: missing.y }}
+      />
+      <div className='flex flex-wrap items-center gap-2'>
+        {proposing ? (
+          <span className='relative'>
+            <ProposeButton
+              disabled={!complete}
+              pace={null}
+              onPropose={propose}
+            />
+            {complete && wrong === null && <TapHint />}
+          </span>
+        ) : (
+          <Button
+            size='sm'
+            className='ml-auto'
+            disabled={missing !== undefined}
+            onClick={tutorial.next}
+            data-cy='tutorial-next'
+          >
+            {t.tutorial.next}
+            <ArrowRight />
+          </Button>
+        )}
+      </div>
+      {wrong === current && (
+        <p
+          className='rounded-md border border-border px-3 py-2 text-sm font-medium'
+          role='status'
+          data-cy='tutorial-incorrect'
+        >
+          {t.tutorial.incorrect}
+        </p>
+      )}
+    </div>
+  )
+}
