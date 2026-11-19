@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { Shape } from '@/app/lib/pieces'
-
 const PERIOD = 1500
 
-/** The candidate shown filled, taking turns among `shapes`; the first stays under reduced motion. */
-export function useCandidateCycle(shapes: readonly Shape[]): Shape | undefined {
-  const key = shapes.join()
+/** The candidate shown filled, taking turns among `ids`; the first stays under reduced motion. */
+export function useCandidateCycle(ids: readonly string[]): string | undefined {
+  const key = ids.join()
   const [cycle, setCycle] = useState({ key, tick: 0 })
   const tick = cycle.key === key ? cycle.tick : 0
-  const count = shapes.length
+  const count = ids.length
 
   useEffect(() => {
     if (count < 2 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
@@ -19,5 +17,5 @@ export function useCandidateCycle(shapes: readonly Shape[]): Shape | undefined {
     return () => clearInterval(id)
   }, [key, count])
 
-  return count ? shapes[tick % count] : undefined
+  return count ? ids[tick % count] : undefined
 }

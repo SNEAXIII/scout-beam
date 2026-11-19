@@ -275,9 +275,9 @@ const en = {
       step2:
         'The beam came back out of entry 3, red: a Return, shown by a plain marker. It hit the straight side of a red piece and turned back.',
       step3:
-        'Fired from 23, the beam left by 32, yellow: a slanted side turned it by 90°. The dashed ring marks a beam that left by another entry. A spike, a corner or a diamond could all do that: here are three candidates.',
+        'Fired from 23, the beam left by 32, yellow: a slanted side turned it by 90°. The dashed ring marks a beam that left by another entry. A spike, a diamond or a corner, even a corner in two places, could all do that: here are the candidates.',
       step4:
-        'A miss again, from 7 to 22. The diamond would have reached into this column and turned the beam: it is ruled out.',
+        'A miss again, from 7 to 22. The diamond and the lower corner would have sat in this column and turned the beam: they are ruled out.',
       step5:
         'A yellow Return from entry 5: the beam met a straight side of the yellow piece. Alone, the spike would have let it cross untouched: only the corner is left.',
       step6:

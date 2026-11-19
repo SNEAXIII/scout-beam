@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { clearDraft } from '@/app/lib/draft'
 import { ENTRIES } from '@/app/lib/entries'
-import type { Piece, Shape } from '@/app/lib/pieces'
+import type { Piece } from '@/app/lib/pieces'
 import { traceBeam } from '@/app/lib/trace'
 import type { Shot } from '@/app/services/games'
 import { pairKey, shotPaths } from '@/app/games/[id]/_components/shot-paths'
@@ -55,12 +55,12 @@ export function useTutorial() {
 
   const ghosts = useMemo(() => {
     const opened: Piece[] = []
-    const eliminated = new Set<Shape>()
+    const eliminated = new Set<Piece>()
     SHOT_STEPS.slice(0, shots.length).forEach((played) => {
       opened.push(...(played.candidates ?? []))
-      for (const shape of played.eliminated ?? []) eliminated.add(shape)
+      for (const piece of played.eliminated ?? []) eliminated.add(piece)
     })
-    return opened.map((piece) => ({ piece, eliminated: eliminated.has(piece.shape) }))
+    return opened.map((piece) => ({ piece, eliminated: eliminated.has(piece) }))
   }, [shots])
 
   const shot = fired ? shots.at(-1) : undefined

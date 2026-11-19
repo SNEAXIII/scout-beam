@@ -284,9 +284,9 @@ const fr: Translations = {
       step2:
         'Le rayon ressort par l’entrée 3, rouge : un retour, signalé par un marqueur plein. Il a heurté le côté droit d’une pièce rouge et fait demi-tour.',
       step3:
-        'Tiré depuis 23, le rayon ressort par 32, jaune : un côté oblique l’a fait tourner de 90°. L’anneau en pointillés signale un rayon sorti par une autre entrée. Une pointe, un coin ou un losange peuvent tous faire ça : voici trois candidats.',
+        'Tiré depuis 23, le rayon ressort par 32, jaune : un côté oblique l’a fait tourner de 90°. L’anneau en pointillés signale un rayon sorti par une autre entrée. Une pointe, un losange ou un coin, et même un coin à deux endroits, peuvent tous faire ça : voici les candidats.',
       step4:
-        'Encore un tir manqué, de 7 à 22. Le losange aurait débordé sur cette colonne et dévié le rayon : il est éliminé.',
+        'Encore un tir manqué, de 7 à 22. Le losange et le coin du bas auraient été sur cette colonne et dévié le rayon : ils sont éliminés.',
       step5:
         'Un retour jaune depuis l’entrée 5 : le rayon a heurté un côté droit de la pièce jaune. Seule, la pointe l’aurait laissé passer sans le toucher : il ne reste que le coin.',
       step6:

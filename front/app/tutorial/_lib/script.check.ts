@@ -49,14 +49,19 @@ assert.ok(dot === 0, 'step 3 turns 90°')
 assert.equal(hidden[2].colour, 'yellow', 'step 3 comes off the Corner')
 assert.equal(hidden[5].colour, 'orange', 'step 6 touches both pieces')
 
-const [square] = TUTORIAL_LAYOUT.pieces
+const [square, yellow] = TUTORIAL_LAYOUT.pieces
 const candidates = shots.flatMap((shot) => shot.candidates ?? [])
-assert.deepEqual(candidates.map((piece) => piece.shape).sort(), ['corner', 'diamond', 'spike'])
+assert.deepEqual(candidates.map((piece) => piece.shape).sort(), [
+  'corner',
+  'corner',
+  'diamond',
+  'spike',
+])
 
 for (const candidate of candidates) {
   const layout: Layout = { pieces: [square, candidate] }
-  const out = shots.findIndex((shot) => shot.eliminated?.includes(candidate.shape))
-  if (candidate.shape === 'corner') assert.equal(out, -1, 'the Corner is never eliminated')
+  const out = shots.findIndex((shot) => shot.eliminated?.includes(candidate))
+  assert.equal(out === -1, candidate === yellow, 'only the hidden piece stays')
   const kept = out === -1 ? shots : shots.slice(0, out)
   for (const { entry } of kept)
     assert.equal(

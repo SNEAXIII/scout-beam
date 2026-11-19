@@ -19,69 +19,68 @@ const TURN =
 export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
   const { current, fired, trace, phase, ghosts } = tutorial
-  const remaining = ghosts.filter((ghost) => !ghost.eliminated).map((ghost) => ghost.piece.shape)
-  const shown = useCandidateCycle(remaining)
+  const remaining = ghosts.flatMap((ghost, i) => (ghost.eliminated ? [] : [String(i)]))
+  const shown = ghosts[Number(useCandidateCycle(remaining) ?? -1)]?.piece
   if (current?.kind !== 'shot') return null
   return (
     <div
       className='mx-auto flex w-full flex-col gap-3'
       style={BOARD_COLUMN}
     >
-      <TutorialCandidates
-        ghosts={ghosts}
-        shown={shown}
-      />
-      <GameBoard
-        paths={tutorial.paths}
-        layout={EMPTY}
-        disabled={fired}
-        highlighted={tutorial.highlighted}
-        onFire={tutorial.fire}
-        onHighlight={tutorial.setHighlighted}
-        guide={fired ? undefined : current.entry}
-      >
-        {ghosts
-          .filter(({ piece }) => piece.shape === shown)
-          .map(({ piece }) => (
+      <div className='relative'>
+        <GameBoard
+          paths={tutorial.paths}
+          layout={EMPTY}
+          disabled={fired}
+          highlighted={tutorial.highlighted}
+          onFire={tutorial.fire}
+          onHighlight={tutorial.setHighlighted}
+          guide={fired ? undefined : current.entry}
+        >
+          {shown && (
             <GhostPiece
-              key={piece.shape}
-              piece={piece}
+              piece={shown}
               highlighted
             />
-          ))}
-        {TURN && remaining.length > 1 && (
-          <g
-            className='pointer-events-none'
-            data-cy='tutorial-candidates-unknown'
-            aria-hidden
-          >
-            <circle
-              cx={TURN.x}
-              cy={TURN.y}
-              r={0.3}
-              className='fill-foreground'
-            />
-            <text
-              x={TURN.x}
-              y={TURN.y}
-              fontSize={0.4}
-              fontWeight={700}
-              textAnchor='middle'
-              dominantBaseline='central'
-              className='fill-background'
+          )}
+          {TURN && remaining.length > 1 && (
+            <g
+              className='pointer-events-none'
+              data-cy='tutorial-candidates-unknown'
+              aria-hidden
             >
-              ?
-            </text>
-          </g>
-        )}
-        {phase === 'explain' && trace && (
-          <TraceLines
-            traces={[trace]}
-            animated={trace.key}
-            misses
-          />
-        )}
-      </GameBoard>
+              <circle
+                cx={TURN.x}
+                cy={TURN.y}
+                r={0.3}
+                className='fill-foreground'
+              />
+              <text
+                x={TURN.x}
+                y={TURN.y}
+                fontSize={0.4}
+                fontWeight={700}
+                textAnchor='middle'
+                dominantBaseline='central'
+                className='fill-background'
+              >
+                ?
+              </text>
+            </g>
+          )}
+          {phase === 'explain' && trace && (
+            <TraceLines
+              traces={[trace]}
+              animated={trace.key}
+              misses
+            />
+          )}
+        </GameBoard>
+        <TutorialCandidates
+          ghosts={ghosts}
+          shown={shown?.shape}
+        />
+      </div>
       <p
         className='text-sm text-muted-foreground'
         data-cy='tutorial-fire-first'
