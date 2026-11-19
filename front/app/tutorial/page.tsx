@@ -67,7 +67,7 @@ export default function TutorialPage() {
         </Button>
       </div>
       {tutorial.done ? (
-        <TutorialDone />
+        <TutorialDone tutorial={tutorial} />
       ) : (
         <>
           <div className='flex min-h-40 flex-col gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm sm:min-h-24'>
