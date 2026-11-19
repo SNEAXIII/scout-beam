@@ -36,6 +36,10 @@ _Avoid_: AI, hider
 One attempt by a player to find one hidden layout.
 _Avoid_: round, match, party
 
+**Bot game**:
+A game against the bot outside the daily, as many as the player wants, with surrender allowed.
+_Avoid_: practice, solo game
+
 **Shot**:
 A beam fired by the player from one entry, answered with an exit entry and a beam colour.
 _Avoid_: wave, ray, probe
@@ -76,12 +80,12 @@ The game of the day: one layout drawn by the bot for every player, one attempt e
 _Avoid_: puzzle of the day, challenge
 
 **Score**:
-The time a daily took to solve, plus one minute per wrong proposition; lower is better. It ranks
-the players of that day.
+The time a game against the bot took to end, plus one minute per wrong proposition, plus five
+minutes if it ended in a surrender; lower is better. A daily's score ranks the players of that day.
 
 **Points**:
-What a solved daily earns, decreasing with its score; the global ranking sums them over every
-daily a player solved, on its day or later.
+What a finished game against the bot earns, decreasing logarithmically with its score; the global
+ranking sums only those of dailies, solved on their day or later.
 
 **Race**:
 Two players hunting the same layout drawn by the bot; the first correct proposition wins.
