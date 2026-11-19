@@ -167,6 +167,105 @@
     opacity: 0;
   }
 }
+/* Deduce demo, 9s: a turn, three candidates, two crossing shots each ruling one out. */
+@keyframes deduce-in {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  8%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-out {
+  0%,
+  8% {
+    stroke-dashoffset: 1;
+  }
+  16%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-ghosts {
+  0%,
+  18% {
+    opacity: 0;
+  }
+  24%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes deduce-second {
+  0%,
+  30% {
+    stroke-dashoffset: 1;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-drop-a {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  48%,
+  100% {
+    opacity: 0.3;
+  }
+}
+@keyframes deduce-strike-a {
+  0%,
+  42% {
+    stroke-dashoffset: 1.5;
+  }
+  48%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-third {
+  0%,
+  56% {
+    stroke-dashoffset: 1;
+  }
+  66%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-drop-b {
+  0%,
+  68% {
+    opacity: 1;
+  }
+  74%,
+  100% {
+    opacity: 0.3;
+  }
+}
+@keyframes deduce-strike-b {
+  0%,
+  68% {
+    stroke-dashoffset: 1.5;
+  }
+  74%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-loop {
+  0%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 @keyframes mix-1 {
   0% {
     opacity: 0;

@@ -7,6 +7,7 @@ import { SHAPES, type PieceColour, type Shape } from '@/app/lib/pieces'
 import ShapeIcon from '@/components/shape-icon'
 import BeamDemo from './beam-demo'
 import ColourMixDemo from './colour-mix-demo'
+import DeduceDemo from './deduce-demo'
 import MarkersDemo from './markers-demo'
 import ShotDemo from './shot-demo'
 
@@ -106,6 +107,12 @@ export default function RulesSection() {
           cy='markers'
         >
           <MarkersDemo />
+        </Rule>
+        <Rule
+          text={rules.deduce}
+          cy='deduce'
+        >
+          <DeduceDemo />
         </Rule>
         <Rule
           text={rules.draft}

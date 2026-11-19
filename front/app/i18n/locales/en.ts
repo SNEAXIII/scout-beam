@@ -141,6 +141,8 @@ const en = {
     shotDemo:
       'A shot from entry 2 runs down, turns 90° on a red slanted side and leaves by entry 7, red. Then its path fades: only its two ends and its colour remain.',
     whatYouSee: 'What you see',
+    deduceDemo:
+      'A shot from the top turns 90° to the right, yellow: a Spike, a Corner or a Diamond could each cause it. A second shot runs straight through, ruling out the Corner; a third rules out the Diamond. Only the Spike is left.',
     colourMix:
       'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
     markers: {
@@ -161,6 +163,8 @@ const en = {
         'The beam colour mixes the colours of the pieces it touched: red and blue give violet, red and yellow orange, blue and yellow green, all three black. Only white pieces give white, nothing at all gives no colour.',
       markers:
         'Each shot gets a letter. Both of its ends show that letter in the beam colour, and the shot list repeats them, so you can match an entry with the one it leads to.',
+      deduce:
+        'A turn does not say which piece caused it: a Spike, a Corner or a Diamond can all turn a beam by 90°. Cross more shots through the same spot to rule them out.',
       draft:
         'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries. It need not match the hidden pieces: any layout giving the same results wins.',
       surrender: 'Stuck? Surrender reveals the hidden layout and ends the game.',

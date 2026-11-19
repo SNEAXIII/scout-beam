@@ -149,6 +149,8 @@ const fr: Translations = {
     shotDemo:
       'Un tir depuis l’entrée 2 descend, tourne de 90° sur un côté oblique rouge et ressort par l’entrée 7, rouge. Puis son tracé s’efface : seuls ses deux bouts et sa couleur restent.',
     whatYouSee: 'Ce que vous voyez',
+    deduceDemo:
+      'Un tir depuis le haut tourne de 90° vers la droite, jaune : une pointe, un coin ou un losange pourraient chacun en être la cause. Un deuxième tir passe tout droit et écarte le coin ; un troisième écarte le losange. Seule la pointe reste.',
     colourMix:
       'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
     markers: {
@@ -169,6 +171,8 @@ const fr: Translations = {
         'La couleur du rayon mélange celles des pièces touchées : rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir. Des pièces blanches seules donnent blanc, rien du tout ne donne aucune couleur.',
       markers:
         'Chaque tir reçoit une lettre. Ses deux bouts affichent cette lettre dans la couleur du rayon, et la liste des tirs les reprend : vous savez ainsi à quelle entrée mène chacune.',
+      deduce:
+        'Un virage ne dit pas quelle pièce l’a causé : une pointe, un coin ou un losange peuvent tous faire tourner un rayon de 90°. Croisez d’autres tirs au même endroit pour les écarter.',
       draft:
         'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées. Inutile de retrouver les pièces cachées : toute disposition qui donne les mêmes résultats gagne.',
       surrender: 'Bloqué ? Abandonner révèle la disposition cachée et termine la partie.',
