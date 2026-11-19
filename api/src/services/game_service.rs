@@ -61,17 +61,15 @@ fn bot_stats_of(games: &[GameSummary]) -> BotGameStats {
     });
     let recent = finished.split_off(finished.len().saturating_sub(20));
     BotGameStats {
-        played: tally(bot()),
-        solved: tally(solved()),
-        surrendered: tally(bot().filter(|game| game.status == GameStatus::Surrendered)),
+        played: bot().count(),
+        solved: solved().count(),
+        surrendered: bot()
+            .filter(|game| game.status == GameStatus::Surrendered)
+            .count(),
         best_seconds: solved().filter_map(|game| game.seconds).min(),
         average_points: (n > 0).then(|| (2 * sum + n) / (2 * n)),
         recent,
     }
-}
-
-fn tally<'a>(games: impl Iterator<Item = &'a GameSummary>) -> i64 {
-    games.map(|_| 1).sum()
 }
 
 /// The caller's game; another player's answers `NotFound`, exactly like a missing one.

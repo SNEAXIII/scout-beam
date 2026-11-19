@@ -120,9 +120,9 @@ impl From<GameSummary> for GameSummaryResponse {
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct BotGameStatsResponse {
     /// Games in progress included.
-    pub played: i64,
-    pub solved: i64,
-    pub surrendered: i64,
+    pub played: usize,
+    pub solved: usize,
+    pub surrendered: usize,
     /// Fewest raw seconds of a solved game, penalties not added; null if none.
     pub best_seconds: Option<i64>,
     /// Rounded average points of the 5 latest finished games; null if none.

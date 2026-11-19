@@ -116,9 +116,9 @@ pub struct GameSummary {
 /// The Bot games of one player, finished ones with their score and points, oldest first.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BotGameStats {
-    pub played: i64,
-    pub solved: i64,
-    pub surrendered: i64,
+    pub played: usize,
+    pub solved: usize,
+    pub surrendered: usize,
     /// Fewest raw seconds of a solved Bot game, penalties not added.
     pub best_seconds: Option<i64>,
     pub average_points: Option<i64>,
