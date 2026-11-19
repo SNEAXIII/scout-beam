@@ -352,6 +352,7 @@ async fn a_surrendered_game_reveals_its_layout_and_keeps_its_shots(pool: PgPool)
     let read = app.get(&format!("/games/{game_id}"), Some(&token)).await;
     assert_eq!(read.body["status"], "surrendered");
     assert_eq!(read.body["layout"], surrendered.body["layout"]);
+    assert!(read.body["surrendered_at"].is_string(), "{}", read.body);
 }
 
 #[sqlx::test]

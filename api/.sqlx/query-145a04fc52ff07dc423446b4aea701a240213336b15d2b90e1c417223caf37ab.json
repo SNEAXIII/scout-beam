@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at, daily_date, room_id,\n                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"\n           FROM game\n           WHERE user_id = $1 AND daily_date = $2",
+  "query": "INSERT INTO game (user_id, layout, daily_date)\n           SELECT $1, layout, date FROM daily WHERE date = $2\n           ON CONFLICT (user_id, daily_date) DO NOTHING\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, surrendered_at, daily_date, NULL::uuid as room_id,\n                     NULL::text as room_code,\n                     0::int8 as \"wrong_propositions!\"",
   "describe": {
     "columns": [
       {
@@ -83,6 +83,17 @@
       },
       {
         "ordinal": 6,
+        "name": "surrendered_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "surrendered_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "daily_date",
         "type_info": "Date",
         "origin": {
@@ -93,24 +104,19 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "room_id",
         "type_info": "Uuid",
-        "origin": {
-          "Table": {
-            "table": "game",
-            "name": "room_id"
-          }
-        }
+        "origin": "Expression"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "room_code",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -132,8 +138,9 @@
       true,
       true,
       null,
+      null,
       null
     ]
   },
-  "hash": "962ef9c2452ccf7d45f4025f565a5f264624ae6f5c64edac2633e943eda3f6fe"
+  "hash": "145a04fc52ff07dc423446b4aea701a240213336b15d2b90e1c417223caf37ab"
 }

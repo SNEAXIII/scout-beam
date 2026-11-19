@@ -53,6 +53,7 @@ pub struct Game {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    pub surrendered_at: Option<DateTime<Utc>>,
     /// The day it was the daily of; `None` for a game against the bot.
     pub daily_date: Option<NaiveDate>,
     pub room_id: Option<Uuid>,
@@ -163,6 +164,7 @@ mod tests {
             status: GameStatus::InProgress,
             created_at: Utc::now(),
             solved_at: None,
+            surrendered_at: None,
             daily_date: None,
             room_id: None,
             room_code: None,

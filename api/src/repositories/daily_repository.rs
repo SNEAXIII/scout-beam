@@ -30,9 +30,6 @@ pub async fn insert_if_absent(
     Ok(())
 }
 
-// ponytail: score = seconds + 60 per wrong proposition, points = max(100, 1000 - score / 6);
-// weights to refine after real games, e.g. a cost per shot.
-
 /// That day's solved dailies by registered players, those started on a later Paris date ranked
 /// after the others: the top 100 and the caller's row wherever it falls.
 pub async fn day_ranking(
@@ -87,7 +84,7 @@ pub async fn global_ranking(
                JOIN "user" u ON u.id = g.user_id
                WHERE g.daily_date IS NOT NULL AND g.status = 'solved' AND NOT u.guest
            ), summed AS (
-               SELECT user_id, login, sum(GREATEST(100, 1000 - score / 6))::int8 AS points,
+               SELECT user_id, login, sum(points(score))::int8 AS points,
                       count(*) AS dailies_solved
                FROM scored
                GROUP BY user_id, login

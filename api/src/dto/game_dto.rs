@@ -16,6 +16,7 @@ pub struct GameView {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    pub surrendered_at: Option<DateTime<Utc>>,
     /// The day it is the daily of; null for a game against the bot.
     #[schema(example = "2026-11-15")]
     pub daily_date: Option<NaiveDate>,
@@ -61,6 +62,7 @@ impl GameView {
             status: game.status,
             created_at: game.created_at,
             solved_at: game.solved_at,
+            surrendered_at: game.surrendered_at,
             daily_date: game.daily_date,
             room_code: game.room_code.clone(),
             wrong_propositions: game.wrong_propositions,

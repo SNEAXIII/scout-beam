@@ -15,7 +15,7 @@ pub async fn find_owned(pool: &PgPool, game_id: Uuid, user_id: Uuid) -> sqlx::Re
     sqlx::query_as!(
         Game,
         r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                  created_at, solved_at, daily_date, room_id,
+                  created_at, solved_at, surrendered_at, daily_date, room_id,
                   (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                   (SELECT count(*) FROM proposition
                    WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
@@ -54,7 +54,7 @@ pub async fn insert(pool: &PgPool, user_id: Uuid, layout: &SealedLayout) -> sqlx
         r#"INSERT INTO game (user_id, layout)
            VALUES ($1, $2)
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, NULL::uuid as room_id,
+                     created_at, solved_at, surrendered_at, daily_date, NULL::uuid as room_id,
                      NULL::text as room_code,
                      0::int8 as "wrong_propositions!""#,
         user_id,
@@ -94,7 +94,7 @@ pub async fn find_daily(
     sqlx::query_as!(
         Game,
         r#"SELECT id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                  created_at, solved_at, daily_date, room_id,
+                  created_at, solved_at, surrendered_at, daily_date, room_id,
                   (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                   (SELECT count(*) FROM proposition
                    WHERE game_id = game.id AND NOT correct) as "wrong_propositions!"
@@ -119,7 +119,7 @@ pub async fn insert_daily(
            SELECT $1, layout, date FROM daily WHERE date = $2
            ON CONFLICT (user_id, daily_date) DO NOTHING
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, NULL::uuid as room_id,
+                     created_at, solved_at, surrendered_at, daily_date, NULL::uuid as room_id,
                      NULL::text as room_code,
                      0::int8 as "wrong_propositions!""#,
         user_id,
@@ -240,10 +240,10 @@ where
 {
     sqlx::query_as!(
         Game,
-        r#"UPDATE game SET status = 'surrendered'
+        r#"UPDATE game SET status = 'surrendered', surrendered_at = now()
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, room_id,
+                     created_at, solved_at, surrendered_at, daily_date, room_id,
                      (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                      (SELECT count(*) FROM proposition
                       WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,
@@ -262,7 +262,7 @@ where
         r#"UPDATE game SET status = 'solved', solved_at = now()
            WHERE id = $1
            RETURNING id, user_id, layout as "layout: SealedLayout", status as "status: GameStatus",
-                     created_at, solved_at, daily_date, room_id,
+                     created_at, solved_at, surrendered_at, daily_date, room_id,
                      (SELECT code FROM room WHERE room.id = game.room_id) as room_code,
                      (SELECT count(*) FROM proposition
                       WHERE game_id = game.id AND NOT correct) as "wrong_propositions!""#,

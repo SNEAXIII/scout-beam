@@ -406,23 +406,25 @@ async fn a_wrong_proposition_adds_a_minute_and_points_follow_the_score(pool: PgP
     let (owner, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_daily(today, &token).await;
     app.hide_layout(game_id, &layout_with_square("red")).await;
-    let wrong = app
-        .propose(game_id, Some(&token), &layout_with_square("blue"))
-        .await;
-    assert_eq!(wrong.body["correct"], false, "{}", wrong.body);
+    for colour in ["blue", "yellow"] {
+        let wrong = app
+            .propose(game_id, Some(&token), &layout_with_square(colour))
+            .await;
+        assert_eq!(wrong.body["correct"], false, "{}", wrong.body);
+    }
     app.solve(game_id, &token).await;
-    app.time_game(game_id, 0.0, 100.4).await;
-    let slow_id = app.insert_daily_game(owner, yesterday).await;
-    app.time_game(slow_id, 0.0, 10_000.0).await;
+    app.time_game(game_id, 0.0, 180.4).await;
+    let instant_id = app.insert_daily_game(owner, yesterday).await;
+    app.time_game(instant_id, 0.0, 0.0).await;
 
     let day = app.day_ranking(today, Some(&token)).await;
     let global = app.ranking(Some(&token)).await;
 
-    assert_eq!(day.body["me"]["seconds"], 100);
-    assert_eq!(day.body["me"]["wrong_propositions"], 1);
-    assert_eq!(day.body["me"]["score"], 160);
-    // 1000 - 160 / 6 for today's, the floor of 100 for the slow one.
-    assert_eq!(global.body["me"]["points"], 974 + 100);
+    assert_eq!(day.body["me"]["seconds"], 180);
+    assert_eq!(day.body["me"]["wrong_propositions"], 2);
+    assert_eq!(day.body["me"]["score"], 300);
+    // round(1000 - 200 * ln(1 + score / 60)): 642 for a score of 300, 1000 for 0.
+    assert_eq!(global.body["me"]["points"], 642 + 1000);
     assert_eq!(global.body["me"]["dailies_solved"], 2);
 }
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                  created_at, solved_at, daily_date, room_id,\n                  (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                  (SELECT count(*) FROM proposition\n                   WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"\n           FROM game\n           WHERE id = $1 AND user_id = $2",
+  "query": "UPDATE game SET status = 'solved', solved_at = now()\n           WHERE id = $1\n           RETURNING id, user_id, layout as \"layout: SealedLayout\", status as \"status: GameStatus\",\n                     created_at, solved_at, surrendered_at, daily_date, room_id,\n                     (SELECT code FROM room WHERE room.id = game.room_id) as room_code,\n                     (SELECT count(*) FROM proposition\n                      WHERE game_id = game.id AND NOT correct) as \"wrong_propositions!\"",
   "describe": {
     "columns": [
       {
@@ -83,6 +83,17 @@
       },
       {
         "ordinal": 6,
+        "name": "surrendered_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "surrendered_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "daily_date",
         "type_info": "Date",
         "origin": {
@@ -93,7 +104,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "room_id",
         "type_info": "Uuid",
         "origin": {
@@ -104,13 +115,13 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "room_code",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "wrong_propositions!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -118,7 +129,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -131,9 +141,10 @@
       true,
       true,
       true,
+      true,
       null,
       null
     ]
   },
-  "hash": "09e08b1bc8ecead1ead2dda161f03aec00521356a67d931ff0c00930f04596e7"
+  "hash": "1907474800abfdcfcf10f4a2de6df31c54776d9e50c32ed01856bae0d6574122"
 }
