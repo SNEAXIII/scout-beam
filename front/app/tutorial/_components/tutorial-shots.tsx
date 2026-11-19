@@ -6,6 +6,7 @@ import { traceBeam } from '@/app/lib/trace'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 import { useCandidateCycle } from '../_viewmodels/use-candidate-cycle'
 import type { Tutorial } from '../_viewmodels/use-tutorial'
+import TutorialCandidates from './tutorial-candidates'
 import TutorialNav from './tutorial-nav'
 
 const EMPTY = { pieces: [] }
@@ -26,6 +27,10 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
       className='mx-auto flex w-full flex-col gap-3'
       style={BOARD_COLUMN}
     >
+      <TutorialCandidates
+        ghosts={ghosts}
+        shown={shown}
+      />
       <GameBoard
         paths={tutorial.paths}
         layout={EMPTY}
@@ -36,13 +41,12 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
         guide={fired ? undefined : current.entry}
       >
         {ghosts
-          .toSorted((a, b) => Number(a.piece.shape === shown) - Number(b.piece.shape === shown))
-          .map(({ piece, eliminated }) => (
+          .filter(({ piece }) => piece.shape === shown)
+          .map(({ piece }) => (
             <GhostPiece
               key={piece.shape}
               piece={piece}
-              eliminated={eliminated}
-              highlighted={piece.shape === shown}
+              highlighted
             />
           ))}
         {TURN && remaining.length > 1 && (
