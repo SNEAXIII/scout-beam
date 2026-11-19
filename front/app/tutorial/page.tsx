@@ -70,7 +70,7 @@ export default function TutorialPage() {
         <TutorialDone />
       ) : (
         <>
-          <div className='flex flex-col gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm'>
+          <div className='flex min-h-40 flex-col gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm sm:min-h-24'>
             <p
               aria-live='polite'
               data-cy='tutorial-text'

@@ -8,16 +8,19 @@ interface TutorialCandidatesProps {
   readonly shown?: Shape
 }
 
-/** The candidate shapes side by side: the one on the board is filled, the ruled-out ones crossed. */
+/** The candidate shapes over the board's top rows: the one shown is filled, a ruled-out shape crossed. */
 export default function TutorialCandidates({ ghosts, shown }: TutorialCandidatesProps) {
   const { t } = useI18n()
-  if (!ghosts.length) return null
+  const shapes = [...new Set(ghosts.map((ghost) => ghost.piece.shape))]
+  if (!shapes.length) return null
   return (
     <ul
-      className='flex justify-center gap-3 rounded-md border bg-card p-2'
+      className='pointer-events-none absolute top-[8%] left-1/2 flex -translate-x-1/2 gap-1 rounded-md border bg-card/85 p-1 backdrop-blur-sm sm:gap-3 sm:p-2'
       data-cy='tutorial-candidates'
     >
-      {ghosts.map(({ piece, eliminated }) => {
+      {shapes.map((shape) => {
+        const { piece } = ghosts.find((ghost) => ghost.piece.shape === shape)!
+        const eliminated = ghosts.every((ghost) => ghost.piece.shape !== shape || ghost.eliminated)
         const cells = pieceCells(piece)
         const left = Math.min(...cells.map((cell) => cell.x))
         const top = Math.min(...cells.map((cell) => cell.y))
@@ -28,7 +31,7 @@ export default function TutorialCandidates({ ghosts, shown }: TutorialCandidates
           <li
             key={piece.shape}
             className={cn(
-              'flex w-16 flex-col items-center gap-1 rounded p-1 text-xs',
+              'flex w-12 flex-col items-center gap-0.5 rounded p-1 text-[10px] sm:w-16 sm:text-xs',
               active ? 'bg-muted font-semibold' : 'text-muted-foreground'
             )}
             data-cy={`tutorial-candidate-${piece.shape}`}
@@ -36,7 +39,7 @@ export default function TutorialCandidates({ ghosts, shown }: TutorialCandidates
           >
             <svg
               viewBox={`${left - 0.1} ${top - 0.1} ${width + 0.2} ${height + 0.2}`}
-              className='size-10'
+              className='size-6 sm:size-10'
               aria-hidden
             >
               <GhostPiece
