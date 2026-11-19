@@ -20,7 +20,10 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
   const { current, fired, trace, phase, ghosts } = tutorial
   const remaining = ghosts.flatMap((ghost, i) => (ghost.eliminated ? [] : [String(i)]))
-  const shown = ghosts[Number(useCandidateCycle(remaining) ?? -1)]?.piece
+  // The shot that rules candidates out shows only those, crossed, so the player sees why.
+  const ruledOut = fired && current?.kind === 'shot' ? (current.eliminated ?? []) : []
+  const outIds = ruledOut.map((piece) => String(ghosts.findIndex((ghost) => ghost.piece === piece)))
+  const shown = ghosts[Number(useCandidateCycle(outIds.length ? outIds : remaining) ?? -1)]
   if (current?.kind !== 'shot') return null
   return (
     <div
@@ -39,7 +42,8 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
         >
           {shown && (
             <GhostPiece
-              piece={shown}
+              piece={shown.piece}
+              eliminated={shown.eliminated}
               highlighted
             />
           )}
@@ -78,7 +82,7 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
         </GameBoard>
         <TutorialCandidates
           ghosts={ghosts}
-          shown={shown?.shape}
+          shown={shown?.piece.shape}
         />
       </div>
       <p

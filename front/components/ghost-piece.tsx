@@ -8,7 +8,7 @@ interface GhostPieceProps {
   readonly highlighted?: boolean
 }
 
-/** A piece as a translucent dashed outline, for inside a `GridSvg`; solid when highlighted, crossed out once eliminated. */
+/** A piece as a translucent dashed outline, for inside a `GridSvg`; solid when highlighted, crossed out once eliminated (faded unless highlighted). */
 export default function GhostPiece({
   piece,
   eliminated = false,
@@ -34,7 +34,7 @@ export default function GhostPiece({
         stroke={fill}
         strokeWidth={2}
         strokeDasharray={solid ? undefined : '4 3'}
-        className={cn('motion-safe:transition-opacity', eliminated && 'opacity-30')}
+        className={cn('motion-safe:transition-opacity', eliminated && !highlighted && 'opacity-30')}
       >
         {cells.map((cell) => (
           <polygon

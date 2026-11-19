@@ -26,7 +26,7 @@ export default function TutorialCandidates({ ghosts, shown }: TutorialCandidates
         const top = Math.min(...cells.map((cell) => cell.y))
         const width = Math.max(...cells.map((cell) => cell.x)) + 1 - left
         const height = Math.max(...cells.map((cell) => cell.y)) + 1 - top
-        const active = piece.shape === shown && !eliminated
+        const active = piece.shape === shown
         return (
           <li
             key={piece.shape}
