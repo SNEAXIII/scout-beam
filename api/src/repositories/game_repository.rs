@@ -32,14 +32,27 @@ pub async fn list_for_user(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Vec<Gam
     sqlx::query_as!(
         GameSummary,
         r#"SELECT g.id, g.status as "status: GameStatus", g.created_at, g.solved_at,
+                  COALESCE(g.solved_at, g.surrendered_at) as "ended_at?",
                   CASE WHEN g.daily_date IS NOT NULL THEN 'daily'
                        WHEN r.id IS NULL THEN 'bot'
                        ELSE r.mode::text END as "mode!",
-                  o.login as "opponent?"
+                  o.login as "opponent?",
+                  s.seconds as "seconds?",
+                  s.score as "score?",
+                  CASE WHEN s.score IS NOT NULL THEN points(s.score) END as "points?"
            FROM game g
            LEFT JOIN room r ON r.id = g.room_id
            LEFT JOIN "user" o
              ON o.id = CASE WHEN r.host_id = g.user_id THEN r.opponent_id ELSE r.host_id END
+           JOIN LATERAL (
+               SELECT count(*) AS wrong FROM proposition p WHERE p.game_id = g.id AND NOT p.correct
+           ) w ON true
+           LEFT JOIN LATERAL (
+               SELECT t.seconds, t.seconds + 60 * w.wrong
+                      + CASE WHEN g.status = 'surrendered' THEN 300 ELSE 0 END AS score
+               FROM (SELECT floor(EXTRACT(EPOCH FROM COALESCE(g.solved_at, g.surrendered_at)
+                                          - g.created_at))::int8 AS seconds) t
+           ) s ON g.daily_date IS NULL AND g.room_id IS NULL AND g.status IN ('solved', 'surrendered')
            WHERE g.user_id = $1
            ORDER BY g.created_at DESC, g.id DESC"#,
         user_id

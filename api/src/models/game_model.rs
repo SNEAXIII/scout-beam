@@ -101,9 +101,36 @@ pub struct GameSummary {
     pub status: GameStatus,
     pub created_at: DateTime<Utc>,
     pub solved_at: Option<DateTime<Utc>>,
+    /// When it was solved or surrendered; `None` while in progress.
+    pub ended_at: Option<DateTime<Utc>>,
     /// `bot`, `daily`, `race` or `duel`.
     pub mode: String,
     pub opponent: Option<String>,
+    /// A finished Bot game's seconds to its end, penalties left out; `None` for any other game.
+    pub seconds: Option<i64>,
+    /// A finished Bot game's score; `None` for any other game.
+    pub score: Option<i64>,
+    pub points: Option<i64>,
+}
+
+/// The Bot games of one player, finished ones with their score and points, oldest first.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BotGameStats {
+    pub played: i64,
+    pub solved: i64,
+    pub surrendered: i64,
+    /// Fewest raw seconds of a solved Bot game, penalties not added.
+    pub best_seconds: Option<i64>,
+    pub average_points: Option<i64>,
+    pub recent: Vec<BotGameRecord>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BotGameRecord {
+    pub ended_at: DateTime<Utc>,
+    pub score: i64,
+    pub points: i64,
+    pub surrendered: bool,
 }
 
 /// The engine's beam colour as the `beam_colour` column stores it.

@@ -6,7 +6,9 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::engine::{Layout, Piece};
-use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, Shot, ShotColour};
+use crate::models::game_model::{
+    BotGameRecord, BotGameStats, Game, GameStatus, GameSummary, Pace, Shot, ShotColour,
+};
 use crate::services::game_service::Verdict;
 
 /// A game as its player sees it.
@@ -92,6 +94,11 @@ pub struct GameSummaryResponse {
     pub mode: String,
     /// The other player's login, in a room only.
     pub opponent: Option<String>,
+    /// A finished Bot game only: seconds to its end, plus a minute per wrong proposition, plus five
+    /// minutes if surrendered. Lower is better.
+    pub score: Option<i64>,
+    /// A finished Bot game only, from its score.
+    pub points: Option<i64>,
 }
 
 impl From<GameSummary> for GameSummaryResponse {
@@ -103,6 +110,55 @@ impl From<GameSummary> for GameSummaryResponse {
             solved_at: summary.solved_at,
             mode: summary.mode,
             opponent: summary.opponent,
+            score: summary.score,
+            points: summary.points,
+        }
+    }
+}
+
+/// The caller's Bot games: counts, the best raw time, and the latest finished ones.
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct BotGameStatsResponse {
+    /// Games in progress included.
+    pub played: i64,
+    pub solved: i64,
+    pub surrendered: i64,
+    /// Fewest raw seconds of a solved game, penalties not added; null if none.
+    pub best_seconds: Option<i64>,
+    /// Rounded average points of the 5 latest finished games; null if none.
+    pub average_points: Option<i64>,
+    /// The 20 latest finished games, oldest first.
+    pub recent: Vec<BotGameRecordResponse>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct BotGameRecordResponse {
+    pub ended_at: DateTime<Utc>,
+    pub score: i64,
+    pub points: i64,
+    pub surrendered: bool,
+}
+
+impl From<BotGameStats> for BotGameStatsResponse {
+    fn from(stats: BotGameStats) -> Self {
+        Self {
+            played: stats.played,
+            solved: stats.solved,
+            surrendered: stats.surrendered,
+            best_seconds: stats.best_seconds,
+            average_points: stats.average_points,
+            recent: stats.recent.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<BotGameRecord> for BotGameRecordResponse {
+    fn from(record: BotGameRecord) -> Self {
+        Self {
+            ended_at: record.ended_at,
+            score: record.score,
+            points: record.points,
+            surrendered: record.surrendered,
         }
     }
 }

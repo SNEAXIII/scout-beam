@@ -22,6 +22,36 @@ impl TestApp {
         self.play(game_id, Some(token), message).await
     }
 
+    /// Solve after one wrong proposition, on a layout the test knows.
+    async fn solve_after_a_wrong_proposition(&self, game_id: Uuid, token: &str) {
+        self.hide_layout(game_id, &layout_with_square(5, "red"))
+            .await;
+        let wrong = self
+            .propose(game_id, Some(token), &layout_with_square(5, "blue"))
+            .await;
+        wrong.assert_status(StatusCode::CREATED);
+        assert_eq!(wrong.body["correct"], false);
+        self.solve(game_id, token).await;
+    }
+
+    /// Put a finished game's end `minutes_ago` and its length to `seconds`, whatever its status.
+    async fn end_game(&self, game_id: Uuid, minutes_ago: i32, seconds: f64) {
+        sqlx::query(
+            "WITH ended AS (SELECT now() - make_interval(mins => $2) AS at)
+             UPDATE game
+             SET created_at = (SELECT at FROM ended) - make_interval(secs => $3),
+                 solved_at = CASE WHEN status = 'solved' THEN (SELECT at FROM ended) END,
+                 surrendered_at = CASE WHEN status = 'surrendered' THEN (SELECT at FROM ended) END
+             WHERE id = $1",
+        )
+        .bind(game_id)
+        .bind(minutes_ago)
+        .bind(seconds)
+        .execute(&self.pool)
+        .await
+        .unwrap();
+    }
+
     async fn shot_count(&self, game_id: Uuid) -> i64 {
         sqlx::query_scalar("SELECT count(*) FROM shot WHERE game_id = $1")
             .bind(game_id)
@@ -29,6 +59,17 @@ impl TestApp {
             .await
             .expect("shots are counted")
     }
+}
+
+fn layout_with_square(x: u8, colour: &str) -> Layout {
+    serde_json::from_value(json!({ "pieces": [
+        { "shape": "square", "colour": colour, "x": x, "y": 0, "rotation": 0 },
+        { "shape": "bar", "colour": "red", "x": 7, "y": 3, "rotation": 1 },
+        { "shape": "spike", "colour": "white", "x": 5, "y": 4, "rotation": 0 },
+        { "shape": "corner", "colour": "blue", "x": 3, "y": 2, "rotation": 0 },
+        { "shape": "diamond", "colour": "yellow", "x": 1, "y": 5, "rotation": 0 },
+    ] }))
+    .unwrap()
 }
 
 // --- POST /games --------------------------------------------------------------
@@ -107,6 +148,129 @@ async fn an_anonymous_caller_cannot_list_games(pool: PgPool) {
     let app = TestApp::new(pool);
 
     app.get("/games", None)
+        .await
+        .assert_status(StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
+async fn a_solved_bot_game_scores_its_seconds_and_a_minute_per_wrong_proposition(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+    app.solve_after_a_wrong_proposition(game_id, &token).await;
+    app.end_game(game_id, 10, 100.0).await;
+
+    let listed = app.get("/games", Some(&token)).await;
+
+    listed.assert_status(StatusCode::OK);
+    assert_eq!(listed.body[0]["score"], 160);
+    assert_eq!(listed.body[0]["points"], 740);
+    let stats = app.get("/games/stats", Some(&token)).await;
+    assert_eq!(stats.body["best_seconds"], 100);
+    assert_eq!(stats.body["average_points"], 740);
+}
+
+#[sqlx::test]
+async fn bot_stats_take_the_fewest_raw_seconds_over_solved_games_with_and_without_penalties(
+    pool: PgPool,
+) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let penalised = app.start_game(&token).await;
+    app.solve_after_a_wrong_proposition(penalised, &token).await;
+    app.end_game(penalised, 10, 100.0).await;
+    let clean = app.start_game(&token).await;
+    app.solve(clean, &token).await;
+    app.end_game(clean, 5, 300.0).await;
+
+    let stats = app.get("/games/stats", Some(&token)).await;
+
+    stats.assert_status(StatusCode::OK);
+    assert_eq!(stats.body["solved"], 2);
+    assert_eq!(stats.body["best_seconds"], 100);
+    let recent = stats.body["recent"].as_array().unwrap();
+    assert_eq!(recent[0]["score"], 160);
+    assert_eq!(recent[1]["score"], 300);
+}
+
+#[sqlx::test]
+async fn a_surrendered_bot_game_adds_five_minutes(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.start_game(&token).await;
+    app.surrender(game_id, &token)
+        .await
+        .assert_status(StatusCode::OK);
+    app.end_game(game_id, 10, 100.0).await;
+
+    let listed = app.get("/games", Some(&token)).await;
+    let stats = app.get("/games/stats", Some(&token)).await;
+
+    assert_eq!(listed.body[0]["score"], 400);
+    assert_eq!(listed.body[0]["points"], 593);
+    assert_eq!(stats.body["surrendered"], 1);
+    assert_eq!(stats.body["recent"][0]["surrendered"], true);
+}
+
+#[sqlx::test]
+async fn bot_stats_leave_out_dailies_and_races_and_average_the_five_latest(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let (owner, token) = app.seed_with_token("owner", Role::User).await;
+    let (_, other) = app.seed_with_token("other", Role::User).await;
+    for i in 0..6 {
+        let game_id = app.start_game(&token).await;
+        app.solve(game_id, &token).await;
+        let seconds = if i == 0 { 6000.0 } else { 60.0 };
+        app.end_game(game_id, 100 - 10 * i, seconds).await;
+    }
+    app.start_game(&token).await;
+    let layout = serde_json::to_value(layout_with_square(5, "red")).unwrap();
+    sqlx::query("INSERT INTO daily (date, layout) VALUES ('2026-11-10', $1)")
+        .bind(&layout)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO game (user_id, layout, daily_date, status, created_at, solved_at)
+         VALUES ($1, $2, '2026-11-10', 'solved', now(), now())",
+    )
+    .bind(owner)
+    .bind(&layout)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let code = app
+        .post("/rooms", Some(&token), json!({ "mode": "race" }))
+        .await;
+    let code = code.body["code"].as_str().unwrap().to_owned();
+    app.post(&format!("/rooms/{code}/join"), Some(&other), json!({}))
+        .await
+        .assert_status(StatusCode::OK);
+    let room = app.get(&format!("/rooms/{code}"), Some(&token)).await;
+    let race_game: Uuid = room.body["game_id"].as_str().unwrap().parse().unwrap();
+    app.surrender(race_game, &token)
+        .await
+        .assert_status(StatusCode::OK);
+
+    let stats = app.get("/games/stats", Some(&token)).await;
+
+    stats.assert_status(StatusCode::OK);
+    assert_eq!(stats.body["played"], 7);
+    assert_eq!(stats.body["solved"], 6);
+    assert_eq!(stats.body["surrendered"], 0);
+    assert_eq!(stats.body["best_seconds"], 60);
+    assert_eq!(stats.body["average_points"], 861);
+    let recent = stats.body["recent"].as_array().unwrap();
+    assert_eq!(recent.len(), 6);
+    assert_eq!(recent[0]["score"], 6000);
+    assert_eq!(recent[0]["points"], 77);
+}
+
+#[sqlx::test]
+async fn an_anonymous_caller_cannot_read_bot_stats(pool: PgPool) {
+    let app = TestApp::new(pool);
+
+    app.get("/games/stats", None)
         .await
         .assert_status(StatusCode::UNAUTHORIZED);
 }

@@ -5,7 +5,9 @@ use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
 use crate::errors::game_error::GameError;
-use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, SealedLayout, Shot};
+use crate::models::game_model::{
+    BotGameRecord, BotGameStats, Game, GameStatus, GameSummary, Pace, SealedLayout, Shot,
+};
 use crate::repositories::{game_repository, room_repository};
 
 /// Whether a shot was just fired, or had been fired before.
@@ -31,6 +33,45 @@ pub async fn create(pool: &PgPool, user_id: Uuid) -> Result<Game, GameError> {
 
 pub async fn list(pool: &PgPool, user_id: Uuid) -> Result<Vec<GameSummary>, GameError> {
     Ok(game_repository::list_for_user(pool, user_id).await?)
+}
+
+/// The caller's Bot games, from the same listing as `list`: a game in progress counts only as played.
+pub async fn bot_stats(pool: &PgPool, user_id: Uuid) -> Result<BotGameStats, GameError> {
+    let games = game_repository::list_for_user(pool, user_id).await?;
+    Ok(bot_stats_of(&games))
+}
+
+fn bot_stats_of(games: &[GameSummary]) -> BotGameStats {
+    let bot = || games.iter().filter(|game| game.mode == "bot");
+    let solved = || bot().filter(|game| game.status == GameStatus::Solved);
+    let mut finished: Vec<BotGameRecord> = bot()
+        .filter_map(|game| {
+            Some(BotGameRecord {
+                ended_at: game.ended_at?,
+                score: game.score?,
+                points: game.points?,
+                surrendered: game.status == GameStatus::Surrendered,
+            })
+        })
+        .collect();
+    finished.sort_by_key(|record| record.ended_at);
+    let latest_five = &finished[finished.len().saturating_sub(5)..];
+    let (sum, n) = latest_five.iter().fold((0_i64, 0_i64), |(sum, n), record| {
+        (sum + record.points, n + 1)
+    });
+    let recent = finished.split_off(finished.len().saturating_sub(20));
+    BotGameStats {
+        played: tally(bot()),
+        solved: tally(solved()),
+        surrendered: tally(bot().filter(|game| game.status == GameStatus::Surrendered)),
+        best_seconds: solved().filter_map(|game| game.seconds).min(),
+        average_points: (n > 0).then(|| (2 * sum + n) / (2 * n)),
+        recent,
+    }
+}
+
+fn tally<'a>(games: impl Iterator<Item = &'a GameSummary>) -> i64 {
+    games.map(|_| 1).sum()
 }
 
 /// The caller's game; another player's answers `NotFound`, exactly like a missing one.

@@ -7,7 +7,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::dto::game_dto::{GameSummaryResponse, GameView};
+use crate::dto::game_dto::{BotGameStatsResponse, GameSummaryResponse, GameView};
 use crate::errors::game_error::GameError;
 use crate::extractors::current_user_extractor::CurrentUser;
 use crate::services::game_service;
@@ -19,6 +19,7 @@ use crate::state::AppState;
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(post_game, get_games))
+        .routes(routes!(get_bot_stats))
         .routes(routes!(get_game))
 }
 
@@ -62,6 +63,25 @@ async fn get_games(
 ) -> ApiResult<Json<Vec<GameSummaryResponse>>> {
     let games = game_service::list(&state.pool, user.id).await?;
     Ok(Json(games.into_iter().map(Into::into).collect()))
+}
+
+/// `GET /games/stats` — the caller's Bot games: counts, best time, points and the score curve.
+#[utoipa::path(
+    get,
+    path = "/games/stats",
+    tag = "Games",
+    security(("bearer" = [])),
+    responses(
+        (status = 200, description = "The caller's Bot game stats", body = BotGameStatsResponse),
+        (status = 401, description = "Missing, invalid or expired token", body = ErrorResponse),
+    ),
+)]
+async fn get_bot_stats(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+) -> ApiResult<Json<BotGameStatsResponse>> {
+    let bot_stats = game_service::bot_stats(&state.pool, user.id).await?;
+    Ok(Json(bot_stats.into()))
 }
 
 /// `GET /games/{game_id}` — status and shots; the layout only once the game is over.
