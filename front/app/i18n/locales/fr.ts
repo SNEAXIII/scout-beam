@@ -239,6 +239,10 @@ const fr: Translations = {
   },
   tutorial: {
     title: 'Tutoriel',
+    cardTitle: 'Nouveau ? Apprenez à jouer en 2 minutes',
+    cardText: 'Quelques tirs guidés vous montrent comment trouver les pièces cachées.',
+    start: 'Lancer le tutoriel',
+    later: 'Plus tard',
     back: 'Retour à la quotidienne du jour',
     step: 'Étape {{step}} / {{total}}',
     restart: 'Recommencer',

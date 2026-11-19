@@ -7,6 +7,7 @@ import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
 import DailyBoard from './_components/daily-board'
 import DayRanking from './_components/day-ranking'
+import TutorialCard from './_components/tutorial-card'
 import { useDaily } from './_viewmodels/use-daily'
 
 export default function HomePage() {
@@ -40,6 +41,7 @@ export default function HomePage() {
         </Button>
         <LanguageSwitcher />
       </header>
+      <TutorialCard />
       <div className='grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_18rem]'>
         <DailyBoard daily={daily} />
         <DayRanking date={daily.date} />

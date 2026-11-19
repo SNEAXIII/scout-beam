@@ -231,6 +231,10 @@ const en = {
   },
   tutorial: {
     title: 'Tutorial',
+    cardTitle: 'New here? Learn to play in 2 minutes',
+    cardText: 'A few guided shots show you how to find the hidden pieces.',
+    start: 'Start the tutorial',
+    later: 'Later',
     back: 'Back to the daily',
     step: 'Step {{step}} / {{total}}',
     restart: 'Restart',

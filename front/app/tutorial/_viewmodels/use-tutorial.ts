@@ -9,7 +9,7 @@ import type { KeyedTrace } from '@/app/games/[id]/_viewmodels/use-traces'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 
 export const TUTORIAL_DRAFT = 'tutorial'
-const STORAGE_KEY = 'scout-beam.tutorial'
+export const TUTORIAL_KEY = 'scout-beam.tutorial'
 
 function shotOf(entry: number): Shot {
   const trace = traceBeam(TUTORIAL_LAYOUT, entry)
@@ -81,7 +81,7 @@ export function useTutorial() {
   const finish = () => {
     clearDraft(TUTORIAL_DRAFT)
     try {
-      localStorage.setItem(STORAGE_KEY, 'done')
+      localStorage.setItem(TUTORIAL_KEY, 'done')
     } catch {
       // Blocked storage only means the home page offers the Tutorial again.
     }
