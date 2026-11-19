@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { isProviderName, oauthLogin, takeOAuthNext, takeOAuthState } from '@/app/services/auth'
 
 /** Where the provider sends the browser back: `state` is checked before anything is sent. */
@@ -31,7 +31,7 @@ export default function OAuthCallbackPage() {
 
     oauthLogin(provider, code).then(
       () => router.replace(next),
-      (caught: unknown) => setError(caught instanceof Error ? caught.message : t.callback.failed)
+      (caught: unknown) => setError(errorText(t, caught, t.callback.failed))
     )
   }, [provider, router, t])
 

@@ -396,6 +396,11 @@ impl Response {
             .map_or_else(String::new, ToString::to_string)
     }
 
+    /// The `code` field of an error payload, the reason the front translates.
+    pub fn code(&self) -> &str {
+        self.body["code"].as_str().unwrap_or_default()
+    }
+
     pub fn assert_status(&self, expected: StatusCode) -> &Self {
         assert_eq!(
             self.status, expected,

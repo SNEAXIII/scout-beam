@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { nextPath } from '@/app/lib/utils'
 import { login as signIn, type ProviderLink } from '@/app/services/auth'
 import ProviderButtons from './provider-buttons'
@@ -30,7 +30,7 @@ export default function LoginForm({ providers }: Readonly<{ providers: ProviderL
       await signIn(login.trim(), password)
       router.push(nextPath(next))
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t.login.failed)
+      setError(errorText(t, caught, t.login.failed))
       setPending(false)
     }
   }

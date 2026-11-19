@@ -1,4 +1,4 @@
-import { API_URL, ApiError, renewSession } from '@/app/lib/api'
+import { API_URL, ApiError, renewSession, type ErrorBody } from '@/app/lib/api'
 import type { Piece } from '@/app/lib/pieces'
 import type { GameView, PaceView, PropositionVerdict, Shot } from './games'
 
@@ -12,14 +12,13 @@ export type ServerMessage =
   | ({ type: 'verdict' } & PropositionVerdict)
   /** A room only: the opponent's shot count, after each of their new shots. */
   | { type: 'opponent'; shots: number }
-  | {
+  | ({
       type: 'error'
       action: SocketAction
       status: number
-      detail: unknown
       /** Only on a room's shot or proposition refused for its pace: when to try again. */
       retry_after_ms?: number
-    }
+    } & ErrorBody)
 
 export type ClientMessage =
   | { type: 'fire'; entry: number }

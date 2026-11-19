@@ -204,11 +204,7 @@ async fn a_day_to_come_or_a_past_day_without_daily_is_not_found(pool: PgPool) {
 
     tomorrow.assert_status(StatusCode::NOT_FOUND);
     yesterday.assert_status(StatusCode::NOT_FOUND);
-    assert!(
-        yesterday.detail().contains("quotidienne"),
-        "{}",
-        yesterday.detail()
-    );
+    assert_eq!(yesterday.code(), "daily_not_found", "{}", yesterday.body);
 }
 
 #[sqlx::test]
@@ -256,11 +252,7 @@ async fn a_daily_cannot_be_surrendered(pool: PgPool) {
         .await;
 
     refused.assert_status(StatusCode::CONFLICT);
-    assert!(
-        refused.detail().contains("quotidienne"),
-        "{}",
-        refused.detail()
-    );
+    assert_eq!(refused.code(), "daily_surrender", "{}", refused.body);
     assert_eq!(
         app.game(game_id, &token).await.body["status"],
         "in_progress"

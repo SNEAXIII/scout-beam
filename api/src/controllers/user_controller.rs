@@ -57,7 +57,10 @@ fn sign_in_router() -> OpenApiRouter<AppState> {
     });
 
     let limit = GovernorLayer::new(Arc::new(config)).error_handler(|_| {
-        let body = json!({ "detail": "Trop de tentatives, réessayez dans une minute" });
+        let body = json!({
+            "code": "too_many_attempts",
+            "detail": "Too many attempts, try again in a minute",
+        });
         (StatusCode::TOO_MANY_REQUESTS, Json(body)).into_response()
     });
 

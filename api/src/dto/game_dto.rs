@@ -2,12 +2,12 @@
 
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use uuid::Uuid;
 
 use crate::engine::{Layout, Piece};
 use crate::models::game_model::{Game, GameStatus, GameSummary, Pace, Shot, ShotColour};
 use crate::services::game_service::Verdict;
+use crate::shared::error::ErrorBody;
 
 /// A game as its player sees it.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
@@ -187,14 +187,12 @@ pub enum WebSocketServerMessage {
     Opponent {
         shots: i64,
     },
-    /// The status and detail an HTTP endpoint would have answered.
+    /// The status and body an HTTP endpoint would have answered.
     Error {
         action: Action,
         status: u16,
-        detail: Value,
-        /// Only on a room's shot or proposition refused for its pace: when to try again.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        retry_after_ms: Option<u64>,
+        #[serde(flatten)]
+        body: ErrorBody,
     },
 }
 

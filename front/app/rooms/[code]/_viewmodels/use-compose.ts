@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import { clearDraft } from '@/app/lib/draft'
 import type { Piece } from '@/app/lib/pieces'
@@ -23,7 +23,7 @@ export function useCompose(room: RoomView, onRoom: (room: RoomView) => void) {
     } catch (caught) {
       // Hidden already, from another tab: the room shows it.
       if (caught instanceof ApiError && caught.status === 409) onRoom(await getRoom(room.code))
-      else setError(caught instanceof Error ? caught.message : t.rooms.hideFailed)
+      else setError(errorText(t, caught, t.rooms.hideFailed))
     } finally {
       setPending(false)
     }

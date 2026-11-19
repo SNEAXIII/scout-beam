@@ -4,7 +4,7 @@ import { I18nProvider } from '@/app/i18n'
 
 export const metadata: Metadata = {
   title: 'Scout Beam',
-  description: 'Un jeu de déduction : tirez des rayons, retrouvez les pièces cachées.',
+  description: 'A deduction game: fire beams, find the hidden pieces.',
 }
 
 interface RootLayoutProps {

@@ -39,7 +39,8 @@ pub struct DevLoginRequest {
         length(
             min = 3,
             max = 30,
-            message = "Le nom d'utilisateur doit faire entre 3 et 30 caractères"
+            code = "invalid_login",
+            message = "A login is 3 to 30 characters long"
         ),
         custom(function = "validate_alphanumeric")
     )]
@@ -57,7 +58,8 @@ pub struct RegisterRequest {
         length(
             min = 3,
             max = 30,
-            message = "Le nom d'utilisateur doit faire entre 3 et 30 caractères"
+            code = "invalid_login",
+            message = "A login is 3 to 30 characters long"
         ),
         custom(function = "validate_alphanumeric")
     )]
@@ -91,7 +93,11 @@ pub struct RenameRequest {
 /// The code a provider handed the front on its callback.
 #[derive(Debug, Deserialize, Validate, utoipa::ToSchema)]
 pub struct ProviderCodeRequest {
-    #[validate(length(min = 1, message = "Le code du fournisseur est requis"))]
+    #[validate(length(
+        min = 1,
+        code = "missing_provider_code",
+        message = "The provider code is required"
+    ))]
     pub code: String,
 }
 
@@ -119,9 +125,8 @@ fn validate_alphanumeric(value: &str) -> Result<(), ValidationError> {
     {
         Ok(())
     } else {
-        Err(ValidationError::new("login_non_alphanum").with_message(
-            "Le nom d'utilisateur ne doit contenir que des chiffres et des lettres".into(),
-        ))
+        Err(ValidationError::new("invalid_login")
+            .with_message("A login holds letters and digits only".into()))
     }
 }
 

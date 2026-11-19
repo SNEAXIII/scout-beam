@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fill, useI18n } from '@/app/i18n'
+import { errorText, fill, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import { ENTRIES } from '@/app/lib/entries'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
@@ -61,7 +61,7 @@ export default function DraftPanel({
       if (caught instanceof ApiError && caught.status === 409) return onSolved()
       setVerdict({
         draft: current,
-        error: caught instanceof Error ? caught.message : t.draft.proposeFailed,
+        error: errorText(t, caught, t.draft.proposeFailed),
       })
     }
     setPending(false)

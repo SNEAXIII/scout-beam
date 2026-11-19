@@ -5,7 +5,7 @@ use axum::extract::{FromRequest, Request};
 use serde::de::DeserializeOwned;
 use validator::Validate;
 
-use crate::shared::error::ApiError;
+use crate::shared::error::{ApiError, Reason};
 
 /// `Json<T>` + `T::validate()`.
 #[derive(Debug, Clone, Copy)]
@@ -28,5 +28,5 @@ where
 }
 
 fn json_rejection(rejection: &JsonRejection) -> ApiError {
-    ApiError::UnprocessableBody(rejection.body_text())
+    ApiError::UnprocessableBody(Reason::new("invalid_body", rejection.body_text()))
 }

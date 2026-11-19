@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { ApiError } from '@/app/lib/api'
 import { findDaily, getToday, playDaily } from '@/app/services/daily'
 import type { GameView } from '@/app/services/games'
@@ -21,7 +21,7 @@ export function useDaily() {
   const [error, setError] = useState<string | null>(null)
 
   const failed = useEffectEvent((caught: unknown) =>
-    setError(caught instanceof Error ? caught.message : t.common.loadFailed)
+    setError(errorText(t, caught, t.common.loadFailed))
   )
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function useDaily() {
     } catch (caught) {
       setStarting(false)
       if (caught instanceof ApiError && caught.status === 404) setError(t.daily.noDaily)
-      else setError(caught instanceof Error ? caught.message : t.daily.startFailed)
+      else setError(errorText(t, caught, t.daily.startFailed))
     }
   }
 

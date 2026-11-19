@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import LanguageSwitcher from '@/components/language-switcher'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { getRanking, type GlobalRankingEntry, type Ranking } from '@/app/services/daily'
 import RankingTable from './_components/ranking-table'
 
@@ -15,7 +15,7 @@ export default function RankingPage() {
   const [error, setError] = useState<string | null>(null)
 
   const failed = useEffectEvent((caught: unknown) =>
-    setError(caught instanceof Error ? caught.message : t.common.loadFailed)
+    setError(errorText(t, caught, t.common.loadFailed))
   )
 
   useEffect(() => {

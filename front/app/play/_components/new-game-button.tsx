@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useI18n } from '@/app/i18n'
+import { errorText, useI18n } from '@/app/i18n'
 import { createGame } from '@/app/services/games'
 
 export default function NewGameButton() {
@@ -20,7 +20,7 @@ export default function NewGameButton() {
       const game = await createGame()
       router.push(`/games/${game.id}`)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t.play.createFailed)
+      setError(errorText(t, caught, t.play.createFailed))
       setPending(false)
     }
   }

@@ -257,7 +257,7 @@ async fn a_second_discord_id_on_a_linked_account_is_a_conflict(pool: PgPool) {
     let second = app.sign_in("discord", &verified("d2"), None).await;
 
     second.assert_status(StatusCode::CONFLICT);
-    assert!(second.detail().contains("déjà lié"), "{}", second.detail());
+    assert_eq!(second.code(), "already_linked", "{}", second.body);
     assert_eq!(app.user_count().await, 1);
 }
 

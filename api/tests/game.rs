@@ -258,11 +258,7 @@ async fn firing_on_a_solved_game_is_a_conflict(pool: PgPool) {
     let fired = app.fire(game_id, &token, json!(7)).await;
 
     fired.assert_status(StatusCode::CONFLICT);
-    assert!(
-        fired.detail().contains("déjà résolue"),
-        "{}",
-        fired.detail()
-    );
+    assert_eq!(fired.code(), "already_solved", "{}", fired.body);
     assert_eq!(app.shot_count(game_id).await, 0);
 }
 
@@ -282,11 +278,7 @@ async fn entries_outside_one_to_thirty_six_are_refused(pool: PgPool) {
         );
     }
     let refused = app.fire(game_id, &token, json!(37)).await;
-    assert!(
-        refused.detail().contains("de 1 à 36"),
-        "{}",
-        refused.detail()
-    );
+    assert_eq!(refused.code(), "invalid_entry", "{}", refused.body);
     assert_eq!(app.shot_count(game_id).await, 0);
 }
 
@@ -370,11 +362,7 @@ async fn a_surrendered_game_takes_no_shot_no_proposition_and_no_second_surrender
 
     for refused in [&fired, &proposed, &again] {
         refused.assert_status(StatusCode::CONFLICT);
-        assert!(
-            refused.detail().contains("abandonnée"),
-            "{}",
-            refused.detail()
-        );
+        assert_eq!(refused.code(), "surrendered", "{}", refused.body);
     }
     assert_eq!(app.shot_count(game_id).await, 0);
 }
@@ -389,11 +377,7 @@ async fn surrendering_a_solved_game_is_a_conflict(pool: PgPool) {
     let surrendered = app.surrender(game_id, &token).await;
 
     surrendered.assert_status(StatusCode::CONFLICT);
-    assert!(
-        surrendered.detail().contains("déjà résolue"),
-        "{}",
-        surrendered.detail()
-    );
+    assert_eq!(surrendered.code(), "already_solved", "{}", surrendered.body);
 }
 
 #[sqlx::test]
@@ -421,5 +405,5 @@ async fn a_guest_cannot_start_a_game(pool: PgPool) {
     let refused = app.post("/games", Some(&token), json!({})).await;
 
     refused.assert_status(StatusCode::FORBIDDEN);
-    assert!(refused.detail().contains("compte"), "{}", refused.detail());
+    assert_eq!(refused.code(), "game_account_required", "{}", refused.body);
 }

@@ -186,26 +186,22 @@ async fn an_invalid_layout_is_refused_with_the_rule_it_breaks_and_not_stored(poo
     touching.pieces[0].x = 7;
     touching.pieces[0].y = 2;
 
-    for (layout, rule) in [
-        (without_diamond, "Il manque la pièce « losange »"),
-        (two_squares, "La pièce « carré » est placée plus d'une fois"),
-        (outside, "La pièce « barre » dépasse de la grille"),
+    let pair = json!({ "shape": "square", "other": "bar" });
+    for (layout, rule, params) in [
         (
-            overlapping,
-            "Les pièces « carré » et « barre » se chevauchent",
+            without_diamond,
+            "missing_shape",
+            json!({ "shape": "diamond" }),
         ),
-        (
-            touching,
-            "Les pièces « carré » et « barre » se touchent par un côté",
-        ),
+        (two_squares, "duplicate_shape", json!({ "shape": "square" })),
+        (outside, "shape_outside_grid", json!({ "shape": "bar" })),
+        (overlapping, "shapes_overlap", pair.clone()),
+        (touching, "shapes_share_side", pair),
     ] {
         let proposed = app.propose(game_id, Some(&token), &layout).await;
         proposed.assert_status(StatusCode::UNPROCESSABLE_ENTITY);
-        assert!(
-            proposed.detail().contains(rule),
-            "{rule}: {}",
-            proposed.detail()
-        );
+        assert_eq!(proposed.code(), rule, "{}", proposed.body);
+        assert_eq!(proposed.body["params"], params, "{rule}");
     }
     assert_eq!(app.propositions(game_id).await.len(), 0);
     assert_eq!(
@@ -245,11 +241,7 @@ async fn a_proposition_on_a_solved_game_is_a_conflict(pool: PgPool) {
         .await;
 
     proposed.assert_status(StatusCode::CONFLICT);
-    assert!(
-        proposed.detail().contains("déjà résolue"),
-        "{}",
-        proposed.detail()
-    );
+    assert_eq!(proposed.code(), "already_solved", "{}", proposed.body);
     assert!(proposed.body.get("layout").is_none());
     assert_eq!(app.propositions(game_id).await.len(), 1);
 }

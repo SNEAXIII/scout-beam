@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { useI18n } from '@/app/i18n'
-import { ApiError, detailMessage } from '@/app/lib/api'
+import { errorText, useI18n } from '@/app/i18n'
+import { ApiError, bodyError } from '@/app/lib/api'
 import { clearDraft } from '@/app/lib/draft'
 import type { Piece } from '@/app/lib/pieces'
 import { openGameSocket, type GameSocket, type ServerMessage } from '@/app/services/game-socket'
 import { getGame, type GameView, type PropositionVerdict } from '@/app/services/games'
 import { usePace } from './use-pace'
 import { useRoomGame } from './use-room-game'
-
-const message = (caught: unknown, fallback: string) =>
-  caught instanceof Error ? caught.message : fallback
 
 interface PendingVerdict {
   /** Null when refused as too early. */
@@ -37,7 +34,7 @@ export function useGame(id: string) {
     try {
       setGame(await getGame(id))
     } catch (caught) {
-      setError(message(caught, t.common.loadFailed))
+      setError(errorText(t, caught, t.common.loadFailed))
     }
   }, [id, t])
 
@@ -47,9 +44,8 @@ export function useGame(id: string) {
     if (received.action === 'fire') inFlight.current.clear()
     if (received.action === 'surrender') setSurrendering(false)
     if (received.action === 'propose') {
-      const text = detailMessage(received.detail) ?? t.draft.proposeFailed
       // Too early is no failure: the cooldown, resynced, shows on the button.
-      if (wait === undefined) verdict.current?.reject(new ApiError(received.status, text))
+      if (wait === undefined) verdict.current?.reject(bodyError(received.status, received))
       else verdict.current?.resolve(null)
       verdict.current = null
       return
@@ -57,8 +53,7 @@ export function useGame(id: string) {
     if (wait !== undefined || (received.action === 'connect' && received.status === 401)) return
     // 409: over meanwhile, in another tab — reload to show the layout.
     if (received.status === 409) return void load()
-    const fallback = received.action === 'surrender' ? t.game.surrenderFailed : t.game.shotFailed
-    setError(detailMessage(received.detail) ?? fallback)
+    setError(errorText(t, bodyError(received.status, received)))
   }
 
   const receive = useEffectEvent((received: ServerMessage) => {
