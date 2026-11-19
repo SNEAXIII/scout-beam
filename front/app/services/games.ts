@@ -59,3 +59,24 @@ export interface PropositionVerdict extends PaceView {
   /** Only when correct. */
   layout?: Layout
 }
+
+export interface BotGameResult {
+  ended_at: string
+  /** In seconds. */
+  score: number
+  points: number
+  surrendered: boolean
+}
+
+export interface BotStats {
+  played: number
+  solved: number
+  surrendered: number
+  best_seconds: number | null
+  /** Over the last 5 finished Bot games. */
+  average_points: number | null
+  /** Up to 20 finished Bot games, oldest first. */
+  recent: BotGameResult[]
+}
+
+export const getBotStats = (): Promise<BotStats> => apiRequest<BotStats>('/games/stats')

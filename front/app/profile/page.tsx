@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
+import BotStats from './_components/bot-stats'
 import ProfileSummary from './_components/profile-summary'
 import RenameForm from './_components/rename-form'
 import { useProfile } from './_viewmodels/use-profile'
@@ -39,6 +40,7 @@ export default function ProfilePage() {
         <>
           <ProfileSummary profile={profile.profile} />
           <RenameForm profile={profile} />
+          {!profile.profile.guest && <BotStats />}
         </>
       ) : (
         <p

@@ -86,6 +86,18 @@ const en = {
     submit: 'Save',
     saved: 'Pseudo changed',
     failed: 'Could not change the pseudo',
+    stats: {
+      title: 'Bot games',
+      played: 'Played',
+      solved: 'Solved',
+      surrendered: 'Surrendered',
+      best: 'Best time',
+      average: 'Average points, last 5',
+      curveLabel: 'Score of the last 20 games, lower is better',
+      curveEmpty: 'Finish two Bot games to see your curve.',
+      dot: 'Score {{score}} · {{points}} points',
+      dotSurrendered: 'Surrendered · score {{score}} · {{points}} points',
+    },
   },
   rooms: {
     title: 'Play against someone',

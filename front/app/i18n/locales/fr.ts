@@ -90,6 +90,18 @@ const fr: Translations = {
     submit: 'Enregistrer',
     saved: 'Pseudo modifié',
     failed: 'Impossible de changer de pseudo',
+    stats: {
+      title: 'Parties contre le bot',
+      played: 'Jouées',
+      solved: 'Résolues',
+      surrendered: 'Abandonnées',
+      best: 'Meilleur temps',
+      average: 'Moyenne des points, 5 dernières',
+      curveLabel: 'Score des 20 dernières parties, le plus bas est le meilleur',
+      curveEmpty: 'Terminez deux parties contre le bot pour voir votre courbe.',
+      dot: 'Score {{score}} · {{points}} points',
+      dotSurrendered: 'Abandon · score {{score}} · {{points}} points',
+    },
   },
   rooms: {
     title: 'Jouer contre quelqu’un',
