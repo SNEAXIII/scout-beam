@@ -262,7 +262,7 @@ const en = {
     next: 'Next',
     intro:
       'Two pieces are hidden on this grid. You find them by firing beams from the numbers around it.',
-    fire: 'Fire from entry {{entry}}: tap the number the hand points at.',
+    fire: 'Fire from entry {{entry}}: tap the number shown.',
     fireFirst: 'Fire first: the pieces are deduced from the shots',
     seeTrace: 'See the trace (tutorial only)',
     hideTrace: 'Hide the trace',
@@ -280,7 +280,7 @@ const en = {
       step6:
         'Orange is red plus yellow: this beam touched both pieces. It also came back out of entry 24, so it is a Return too: the corner turned it onto the square, which sent it back the same way.',
       step7:
-        'Now build your Draft: place the red square where the hand points, then pick the corner, choose yellow, rotate it twice and place it.',
+        'Now build your Draft: place the red square on the cell shown, then pick the corner, choose yellow, rotate it twice and place it.',
       step8:
         'Your Draft is ready: propose it. A Proposition is correct when it gives the same answer as the hidden pieces on all 36 entries.',
     },

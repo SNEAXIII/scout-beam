@@ -270,7 +270,7 @@ const fr: Translations = {
     next: 'Suivant',
     intro:
       'Deux pièces sont cachées sur cette grille. Vous les trouvez en tirant des rayons depuis les numéros tout autour.',
-    fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro que montre la main.',
+    fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.',
     fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
     seeTrace: 'Voir le tracé (tutoriel seulement)',
     hideTrace: 'Masquer le tracé',
@@ -288,7 +288,7 @@ const fr: Translations = {
       step6:
         'L’orange, c’est du rouge plus du jaune : ce rayon a touché les deux pièces. Il ressort aussi par l’entrée 24, c’est donc un retour : le coin l’a dévié vers le carré, qui l’a renvoyé d’où il venait.',
       step7:
-        'Construisez votre brouillon : placez le carré rouge là où montre la main, puis choisissez le coin, en jaune, tournez-le deux fois et placez-le.',
+        'Construisez votre brouillon : placez le carré rouge sur la case indiquée, puis choisissez le coin, en jaune, tournez-le deux fois et placez-le.',
       step8:
         'Votre brouillon est prêt : proposez-le. Une proposition est correcte si elle donne la même réponse que les pièces cachées sur les 36 entrées.',
     },

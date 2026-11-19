@@ -116,13 +116,16 @@ export default function GameBoard({
           />
         ))}
       {guide !== undefined && (
-        <TapHint
+        <div
+          className='pointer-events-none relative'
           style={
             typeof guide === 'number'
               ? ringCell(guide)
               : { gridColumn: guide.x + 2, gridRow: guide.y + 2 }
           }
-        />
+        >
+          <TapHint />
+        </div>
       )}
     </div>
   )
