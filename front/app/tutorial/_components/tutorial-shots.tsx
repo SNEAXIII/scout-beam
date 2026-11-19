@@ -3,10 +3,9 @@ import { useI18n } from '@/app/i18n'
 import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
 import TraceLines from '@/app/games/[id]/_components/trace-lines'
 import { traceBeam } from '@/app/lib/trace'
-import { pairKey } from '@/app/games/[id]/_components/shot-paths'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 import { useCandidateCycle } from '../_viewmodels/use-candidate-cycle'
-import type { Tutorial } from '../_viewmodels/use-tutorial'
+import { pastTraces, type Tutorial } from '../_viewmodels/use-tutorial'
 import TutorialCandidates from './tutorial-candidates'
 import TutorialNav from './tutorial-nav'
 
@@ -15,13 +14,6 @@ const OPENER = TUTORIAL_STEPS.find((step) => step.kind === 'shot' && step.candid
 // The candidates sit around the turn of the shot that opened them.
 const TURN =
   OPENER?.kind === 'shot' ? traceBeam(TUTORIAL_LAYOUT, OPENER.entry)?.points[1] : undefined
-
-/** The Traces of the shots before `step`, kept drawn once explained. */
-const pastTraces = (step: number) =>
-  TUTORIAL_STEPS.slice(0, step).flatMap((played) => {
-    const traced = played.kind === 'shot' ? traceBeam(TUTORIAL_LAYOUT, played.entry) : undefined
-    return traced ? [{ ...traced, key: pairKey(traced.entry, traced.exit) }] : []
-  })
 
 /** A shot step: only the guided entry fires, its bare answer shows, then "Next" draws its Trace. */
 export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {

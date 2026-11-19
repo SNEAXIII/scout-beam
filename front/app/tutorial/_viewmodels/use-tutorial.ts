@@ -18,6 +18,13 @@ function shotOf(entry: number): Shot {
   return { entry, exit_entry: trace?.exit ?? entry, colour: trace?.colour ?? 'none' }
 }
 
+/** The Traces of the shots before `step`, kept drawn once explained. */
+export const pastTraces = (step: number) =>
+  TUTORIAL_STEPS.slice(0, step).flatMap((played) => {
+    const traced = played.kind === 'shot' ? traceBeam(TUTORIAL_LAYOUT, played.entry) : undefined
+    return traced ? [{ ...traced, key: pairKey(traced.entry, traced.exit) }] : []
+  })
+
 /** A Proposition is correct when every entry answers as the hidden layout does: same exit, same colour. */
 export function isCorrect(pieces: readonly Piece[]): boolean {
   return ENTRIES.every((entry) => {

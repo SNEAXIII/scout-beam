@@ -88,7 +88,9 @@ export default function GameBoard({
         <DraftBoard
           draft={draft}
           style={GRID_AREA}
-        />
+        >
+          {children}
+        </DraftBoard>
       ) : (
         <GridSvg
           layout={layout}

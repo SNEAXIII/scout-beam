@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import TapHint from '@/components/tap-hint'
+import TraceLines from '@/app/games/[id]/_components/trace-lines'
 import { useI18n } from '@/app/i18n'
 import { pieceCells, type Piece } from '@/app/lib/pieces'
 import DraftToolbar from '@/app/games/[id]/_components/draft-toolbar'
@@ -7,8 +8,8 @@ import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board
 import ProposeButton from '@/app/games/[id]/_components/propose-button'
 import { useDraft } from '@/app/games/[id]/_viewmodels/use-draft'
 import { useKeyboardLayout } from '@/app/games/[id]/_viewmodels/use-keyboard-layout'
-import { TUTORIAL_LAYOUT } from '../_lib/script'
-import { isCorrect, TUTORIAL_DRAFT, type Tutorial } from '../_viewmodels/use-tutorial'
+import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
+import { isCorrect, pastTraces, TUTORIAL_DRAFT, type Tutorial } from '../_viewmodels/use-tutorial'
 import TutorialNav from './tutorial-nav'
 
 const cells = (piece: Piece) =>
@@ -19,6 +20,8 @@ const cells = (piece: Piece) =>
 /** By the cells covered, not the rotation: a Square looks the same however it is turned. */
 const same = (a: Piece, b: Piece) =>
   a.shape === b.shape && a.colour === b.colour && cells(a) === cells(b)
+
+const ALL_TRACES = pastTraces(TUTORIAL_STEPS.length)
 
 /** The last two steps: the Draft of both pieces, then its Proposition. Mounted only then, storage being read. */
 export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
@@ -55,7 +58,14 @@ export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
         onFire={tutorial.fire}
         onHighlight={tutorial.setHighlighted}
         guide={proposing || !missing ? undefined : { x: missing.x, y: missing.y }}
-      />
+      >
+        <g opacity={0.35}>
+          <TraceLines
+            traces={ALL_TRACES}
+            misses
+          />
+        </g>
+      </GameBoard>
       <TutorialNav
         tutorial={tutorial}
         nextDisabled={missing !== undefined}
