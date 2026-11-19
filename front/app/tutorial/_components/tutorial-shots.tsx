@@ -24,6 +24,9 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const ruledOut = fired && current?.kind === 'shot' ? (current.eliminated ?? []) : []
   const outIds = ruledOut.map((piece) => String(ghosts.findIndex((ghost) => ghost.piece === piece)))
   const shown = ghosts[Number(useCandidateCycle(outIds.length ? outIds : remaining) ?? -1)]
+  // When that shot hit something, the candidates left show too: the beam visibly bounces off them.
+  const hit =
+    outIds.length && tutorial.shot?.colour !== 'none' ? remaining.map((i) => ghosts[Number(i)]) : []
   if (current?.kind !== 'shot') return null
   return (
     <div
@@ -40,6 +43,13 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
           onHighlight={tutorial.setHighlighted}
           guide={fired ? undefined : current.entry}
         >
+          {hit.map(({ piece }) => (
+            <GhostPiece
+              key={`${piece.shape}-${piece.x}-${piece.y}`}
+              piece={piece}
+              highlighted
+            />
+          ))}
           {shown && (
             <GhostPiece
               piece={shown.piece}
