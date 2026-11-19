@@ -141,6 +141,9 @@ const fr: Translations = {
     piecesLabel: 'Les cinq pièces',
     beamDemo:
       'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet.',
+    shotDemo:
+      'Un tir depuis l’entrée 2 descend, tourne de 90° sur un côté oblique rouge et ressort par l’entrée 7, rouge. Puis son tracé s’efface : seuls ses deux bouts et sa couleur restent.',
+    whatYouSee: 'Ce que vous voyez',
     colourMix:
       'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
     rules: {
@@ -148,6 +151,8 @@ const fr: Translations = {
       pieces:
         'Les pièces sont le carré, la barre, la pointe, le coin et le losange. Chacune a une couleur : le rouge, le bleu et le jaune sont toujours présents.',
       shot: 'Un tir envoie un rayon depuis une entrée. Il a pour réponse l’entrée par laquelle le rayon ressort et la couleur prise en chemin.',
+      invisible:
+        'Vous ne voyez jamais le tracé du rayon : seulement l’entrée par laquelle il ressort et sa couleur. À vous de déduire ce tracé ; il n’est dessiné qu’une fois la partie terminée.',
       sides:
         'Un côté droit renvoie le rayon d’où il vient (180°) ; un côté oblique le fait tourner de 90°.',
       colours:

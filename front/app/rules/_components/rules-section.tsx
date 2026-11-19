@@ -1,11 +1,13 @@
 'use client'
 
+import { EyeOff } from 'lucide-react'
 import { useI18n } from '@/app/i18n'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
 import { SHAPES, type PieceColour, type Shape } from '@/app/lib/pieces'
 import ShapeIcon from '@/components/shape-icon'
 import BeamDemo from './beam-demo'
 import ColourMixDemo from './colour-mix-demo'
+import ShotDemo from './shot-demo'
 
 const SHOWCASE: Record<Shape, PieceColour> = {
   square: 'red',
@@ -76,7 +78,16 @@ export default function RulesSection() {
         <Rule
           text={rules.shot}
           cy='shot'
-        />
+        >
+          <ShotDemo />
+        </Rule>
+        <li
+          className='flex items-start gap-3 rounded-lg border bg-muted p-4'
+          data-cy='rule-invisible'
+        >
+          <EyeOff className='mt-0.5 size-5 shrink-0 text-muted-foreground' />
+          <p className='leading-relaxed'>{rules.invisible}</p>
+        </li>
         <Rule
           text={rules.sides}
           cy='sides'

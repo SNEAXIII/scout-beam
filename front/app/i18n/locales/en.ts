@@ -133,6 +133,9 @@ const en = {
     piecesLabel: 'The five pieces',
     beamDemo:
       'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet.',
+    shotDemo:
+      'A shot from entry 2 runs down, turns 90° on a red slanted side and leaves by entry 7, red. Then its path fades: only its two ends and its colour remain.',
+    whatYouSee: 'What you see',
     colourMix:
       'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
     rules: {
@@ -140,6 +143,8 @@ const en = {
       pieces:
         'The pieces are the Square, the Bar, the Spike, the Corner and the Diamond. Each has a colour: red, blue and yellow are always present.',
       shot: 'A shot fires a beam from an entry. It is answered with the entry the beam leaves by and the colour it picked up on the way.',
+      invisible:
+        'You never see the beam’s path: only the entry it leaves by and its colour. Deducing the path is up to you; it is drawn only once the game is over.',
       sides:
         'A straight side sends the beam back where it came from (180°); a slanted side turns it by 90°.',
       colours:
