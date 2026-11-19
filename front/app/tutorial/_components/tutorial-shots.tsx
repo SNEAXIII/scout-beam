@@ -45,6 +45,8 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
         >
           {shown && (
             <GhostPiece
+              // A fresh element per piece, so the cross never animates from one onto the next.
+              key={ghosts.indexOf(shown)}
               piece={shown.piece}
               eliminated={shown.eliminated}
               highlighted
