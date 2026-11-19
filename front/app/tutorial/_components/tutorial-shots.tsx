@@ -33,7 +33,9 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const outIds = ruledOut.map((piece) => String(ghosts.findIndex((ghost) => ghost.piece === piece)))
   // When that shot hit something, the candidates left take turns too: the beam visibly bounces off them.
   const hit = outIds.length && tutorial.shot?.colour !== 'none' ? remaining : []
-  const cycled = outIds.length ? [...outIds, ...hit] : remaining
+  // Once its Trace is drawn, the piece it bounced off stays alone.
+  const settled = phase === 'explain' && hit.length ? hit : [...outIds, ...hit]
+  const cycled = outIds.length ? settled : remaining
   const shown = ghosts[Number(useCandidateCycle(cycled) ?? -1)]
   if (current?.kind !== 'shot') return null
   return (
