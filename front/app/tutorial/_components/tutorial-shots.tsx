@@ -2,15 +2,24 @@ import GhostPiece from '@/components/ghost-piece'
 import { useI18n } from '@/app/i18n'
 import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
 import TraceLines from '@/app/games/[id]/_components/trace-lines'
+import { traceBeam } from '@/app/lib/trace'
+import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
+import { useCandidateCycle } from '../_viewmodels/use-candidate-cycle'
 import type { Tutorial } from '../_viewmodels/use-tutorial'
 import TutorialNav from './tutorial-nav'
 
 const EMPTY = { pieces: [] }
+const OPENER = TUTORIAL_STEPS.find((step) => step.kind === 'shot' && step.candidates)
+// The candidates sit around the turn of the shot that opened them.
+const TURN =
+  OPENER?.kind === 'shot' ? traceBeam(TUTORIAL_LAYOUT, OPENER.entry)?.points[1] : undefined
 
 /** A shot step: only the guided entry fires, its bare answer shows, then "Next" draws its Trace. */
 export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
-  const { current, fired, trace, phase } = tutorial
+  const { current, fired, trace, phase, ghosts } = tutorial
+  const remaining = ghosts.filter((ghost) => !ghost.eliminated).map((ghost) => ghost.piece.shape)
+  const shown = useCandidateCycle(remaining)
   if (current?.kind !== 'shot') return null
   return (
     <div
@@ -26,13 +35,41 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
         onHighlight={tutorial.setHighlighted}
         guide={fired ? undefined : current.entry}
       >
-        {tutorial.ghosts.map(({ piece, eliminated }) => (
-          <GhostPiece
-            key={piece.shape}
-            piece={piece}
-            eliminated={eliminated}
-          />
-        ))}
+        {ghosts
+          .toSorted((a, b) => Number(a.piece.shape === shown) - Number(b.piece.shape === shown))
+          .map(({ piece, eliminated }) => (
+            <GhostPiece
+              key={piece.shape}
+              piece={piece}
+              eliminated={eliminated}
+              highlighted={piece.shape === shown}
+            />
+          ))}
+        {TURN && remaining.length > 1 && (
+          <g
+            className='pointer-events-none'
+            data-cy='tutorial-candidates-unknown'
+            aria-hidden
+          >
+            <circle
+              cx={TURN.x}
+              cy={TURN.y}
+              r={0.3}
+              className='fill-foreground'
+            />
+            <text
+              x={TURN.x}
+              y={TURN.y}
+              fontSize={0.4}
+              fontWeight={700}
+              textAnchor='middle'
+              dominantBaseline='central'
+              className='fill-background'
+            >
+              ?
+            </text>
+          </g>
+        )}
         {phase === 'explain' && trace && (
           <TraceLines
             traces={[trace]}

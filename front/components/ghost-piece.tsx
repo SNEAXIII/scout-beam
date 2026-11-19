@@ -5,11 +5,17 @@ import { cn } from '@/app/lib/utils'
 interface GhostPieceProps {
   readonly piece: Piece
   readonly eliminated?: boolean
+  readonly highlighted?: boolean
 }
 
-/** A piece as a translucent dashed outline, for inside a `GridSvg`; crossed out once eliminated. */
-export default function GhostPiece({ piece, eliminated = false }: GhostPieceProps) {
+/** A piece as a translucent dashed outline, for inside a `GridSvg`; solid when highlighted, crossed out once eliminated. */
+export default function GhostPiece({
+  piece,
+  eliminated = false,
+  highlighted = false,
+}: GhostPieceProps) {
   const { fill } = PIECE_SWATCHES[piece.colour]
+  const solid = highlighted && !eliminated
   const cells = pieceCells(piece)
   const left = Math.min(...cells.map((cell) => cell.x))
   const top = Math.min(...cells.map((cell) => cell.y))
@@ -20,13 +26,14 @@ export default function GhostPiece({ piece, eliminated = false }: GhostPieceProp
       className='pointer-events-none'
       data-cy={`ghost-${piece.shape}`}
       data-eliminated={eliminated}
+      data-highlighted={solid}
     >
       <g
         fill={fill}
-        fillOpacity={0.15}
+        fillOpacity={solid ? 0.7 : 0.15}
         stroke={fill}
         strokeWidth={2}
-        strokeDasharray='4 3'
+        strokeDasharray={solid ? undefined : '4 3'}
         className={cn('motion-safe:transition-opacity', eliminated && 'opacity-30')}
       >
         {cells.map((cell) => (
