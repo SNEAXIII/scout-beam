@@ -10,7 +10,8 @@
     "lint:check": "oxlint --type-aware",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check:tutorial": "node app/tutorial/_lib/script.check.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.2.1",

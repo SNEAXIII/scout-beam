@@ -9,7 +9,7 @@ import {
   type CellFill,
   type Layout,
   type PieceColour,
-} from './pieces'
+} from './pieces.ts'
 
 type Direction = 'N' | 'E' | 'S' | 'W'
 
