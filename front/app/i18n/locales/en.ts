@@ -216,6 +216,7 @@ const en = {
     propose: 'Propose',
     proposeFailed: 'Could not propose',
     placed: '{{count}} / {{total}} pieces placed',
+    fireFirst: 'Start by firing from a number around the grid',
     incorrect: 'Incorrect',
     pieceToPlace: 'Piece to place',
     placedSuffix: ' (placed)',

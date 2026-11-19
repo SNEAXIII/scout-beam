@@ -224,6 +224,7 @@ const fr: Translations = {
     propose: 'Proposer',
     proposeFailed: 'Proposition impossible',
     placed: '{{count}} / {{total}} pièces placées',
+    fireFirst: 'Commencez par tirer depuis un numéro autour de la grille',
     incorrect: 'Incorrect',
     pieceToPlace: 'Pièce à placer',
     placedSuffix: ' (placée)',
