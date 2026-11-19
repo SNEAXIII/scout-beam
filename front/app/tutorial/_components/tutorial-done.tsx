@@ -4,12 +4,35 @@ import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 import GameBoard, { BOARD_COLUMN } from '@/app/games/[id]/_components/game-board'
 import TraceLines from '@/app/games/[id]/_components/trace-lines'
+import { pairKey, shotPaths } from '@/app/games/[id]/_components/shot-paths'
+import { ENTRIES } from '@/app/lib/entries'
+import { traceBeam } from '@/app/lib/trace'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
-import { pastTraces, type Tutorial } from '../_viewmodels/use-tutorial'
+import { shotOf, type Tutorial } from '../_viewmodels/use-tutorial'
 
-const ALL_TRACES = pastTraces(TUTORIAL_STEPS.length)
+// Every entry fired, as a finished game shows them; a path met from both ends is drawn once.
+const FIRED = TUTORIAL_STEPS.flatMap((step) => (step.kind === 'shot' ? [step.entry] : []))
+// The Tutorial's shots first, so they keep their letters.
+const ALL_PATHS = shotPaths(
+  [...FIRED, ...ENTRIES.filter((entry) => !FIRED.includes(entry))].map(shotOf)
+)
+const ALL_TRACES = [
+  ...new Map(
+    ENTRIES.flatMap((entry) => {
+      const traced = traceBeam(TUTORIAL_LAYOUT, entry)
+      return traced
+        ? [
+            [
+              pairKey(traced.entry, traced.exit),
+              { ...traced, key: pairKey(traced.entry, traced.exit) },
+            ] as const,
+          ]
+        : []
+    })
+  ).values(),
+]
 
-/** The end of the Tutorial, as a solved game: the revealed pieces under every shot's Trace. */
+/** The end of the Tutorial, as a solved game: the revealed pieces under the Trace of every entry. */
 export default function TutorialDone({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
   return (
@@ -26,17 +49,14 @@ export default function TutorialDone({ tutorial }: { tutorial: Tutorial }) {
         </div>
       </div>
       <GameBoard
-        paths={tutorial.paths}
+        paths={ALL_PATHS}
         layout={TUTORIAL_LAYOUT}
         disabled
         highlighted={tutorial.highlighted}
         onFire={tutorial.fire}
         onHighlight={tutorial.setHighlighted}
       >
-        <TraceLines
-          traces={ALL_TRACES}
-          misses
-        />
+        <TraceLines traces={ALL_TRACES} />
       </GameBoard>
       <div className='flex flex-wrap justify-end gap-2'>
         <Button
