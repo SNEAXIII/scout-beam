@@ -8,6 +8,8 @@ import type { Draft } from '../_viewmodels/use-draft'
 interface DraftBoardProps {
   readonly draft: Draft
   readonly style?: React.CSSProperties
+  /** Drawn over the pieces. */
+  readonly children?: React.ReactNode
 }
 
 const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
@@ -15,7 +17,7 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
 ).flat()
 
 /** The draft grid: a click places the picked shape; a right click, or Space over it, removes a piece. */
-export default function DraftBoard({ draft, style }: DraftBoardProps) {
+export default function DraftBoard({ draft, style, children }: DraftBoardProps) {
   const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
   // A ref, not state: Space right after the mouse lands must already see the piece.
@@ -112,7 +114,9 @@ export default function DraftBoard({ draft, style }: DraftBoardProps) {
         preview={preview}
         onPieceRemove={draft.remove}
         onPieceHover={(shape) => (hoveredPiece.current = shape)}
-      />
+      >
+        {children}
+      </GridSvg>
     </div>
   )
 }

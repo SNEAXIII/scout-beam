@@ -30,3 +30,7 @@ export const PIECE_SWATCHES: Record<PieceColour, Swatch> = {
   yellow: BEAM_SWATCHES.yellow,
   white: BEAM_SWATCHES.white,
 }
+
+/** Markers of shots that are not a Return: a miss, and a beam that bounced out elsewhere. */
+export const MISS_MARKER = { fill: '#000000', border: '#ffffff' } as const
+export const BOUNCE_RING = { dash: '#ffffff', gap: '#000000' } as const

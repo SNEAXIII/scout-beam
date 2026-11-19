@@ -46,6 +46,7 @@ export default function DraftPanel({
   const current = JSON.stringify(draft.pieces)
   const shown = verdict?.draft === current ? verdict : null
   const complete = draft.pieces.length === SHAPES.length
+  const fired = board.paths.fired.size > 0
   // Entries no beam has touched yet: once the shots left cover them, no more are needed.
   const unknown = ENTRIES.filter((entry) => !board.paths.atEntry(entry)).length
 
@@ -91,9 +92,11 @@ export default function DraftPanel({
         />
         <span
           className='text-sm text-muted-foreground'
-          data-cy='draft-count'
+          data-cy={fired ? 'draft-count' : 'fire-first'}
         >
-          {fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })}
+          {fired
+            ? fill(t.draft.placed, { count: draft.pieces.length, total: SHAPES.length })
+            : t.draft.fireFirst}
         </span>
       </div>
       <HotkeyLegend keyboardLayout={keyboardLayout} />

@@ -113,6 +113,159 @@
     opacity: 0;
   }
 }
+/* Shot demo, 5.4s: three tap-hint cycles, so the press lands at 15% every loop. */
+@keyframes shot-hint {
+  0%,
+  30% {
+    opacity: 1;
+  }
+  33%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes shot-in {
+  0%,
+  17% {
+    stroke-dashoffset: 1;
+  }
+  28%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes shot-out {
+  0%,
+  28% {
+    stroke-dashoffset: 1;
+  }
+  48%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes shot-path {
+  0%,
+  68% {
+    opacity: 1;
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes shot-ends {
+  0%,
+  48% {
+    opacity: 0;
+  }
+  52%,
+  95% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* Deduce demo, 9s: a turn, three candidates, two crossing shots each ruling one out. */
+@keyframes deduce-in {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  8%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-out {
+  0%,
+  8% {
+    stroke-dashoffset: 1;
+  }
+  16%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-ghosts {
+  0%,
+  18% {
+    opacity: 0;
+  }
+  24%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes deduce-second {
+  0%,
+  30% {
+    stroke-dashoffset: 1;
+  }
+  40%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-drop-a {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  48%,
+  100% {
+    opacity: 0.3;
+  }
+}
+@keyframes deduce-strike-a {
+  0%,
+  42% {
+    stroke-dashoffset: 1.5;
+  }
+  48%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-third {
+  0%,
+  56% {
+    stroke-dashoffset: 1;
+  }
+  66%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-drop-b {
+  0%,
+  68% {
+    opacity: 1;
+  }
+  74%,
+  100% {
+    opacity: 0.3;
+  }
+}
+@keyframes deduce-strike-b {
+  0%,
+  68% {
+    stroke-dashoffset: 1.5;
+  }
+  74%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes deduce-loop {
+  0%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 @keyframes mix-1 {
   0% {
     opacity: 0;
@@ -201,5 +354,40 @@
   }
   to {
     stroke-dashoffset: 0;
+  }
+}
+/* Tap hint: slides onto its target, presses it, rests there; the ripple only shows while moving. */
+@keyframes tap-move {
+  0% {
+    opacity: 0;
+    transform: translate(70%, 70%);
+  }
+  10% {
+    opacity: 1;
+  }
+  35% {
+    transform: none;
+  }
+  45% {
+    transform: scale(0.85);
+  }
+  55%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes tap-ripple {
+  0%,
+  42% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  48% {
+    opacity: 1;
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
   }
 }

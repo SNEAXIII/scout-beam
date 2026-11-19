@@ -139,19 +139,40 @@ const fr: Translations = {
     signIn: 'Se connecter',
     rulesTitle: 'Comment jouer',
     piecesLabel: 'Les cinq pièces',
-    beamDemo:
-      'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet.',
+    beamDemo: {
+      turn: 'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, tourne encore de 90° sur un côté oblique bleu et ressort par une autre entrée en bas, violet.',
+      turnCaption: 'Sort par une autre entrée',
+      return:
+        'Un rayon entre par le haut, tourne de 90° sur un côté oblique rouge, fait demi-tour sur un côté droit bleu et ressort par sa propre entrée, violet : un retour.',
+      returnCaption: 'Un retour : sort par sa propre entrée',
+    },
+    shotDemo:
+      'Un tir depuis l’entrée 2 descend, tourne de 90° sur un côté oblique rouge et ressort par l’entrée 7, rouge. Puis son tracé s’efface : seuls ses deux bouts et sa couleur restent.',
+    whatYouSee: 'Ce que vous voyez',
+    deduceDemo:
+      'Un tir depuis le haut tourne de 90° vers la droite, jaune : une pointe, un coin ou un losange pourraient chacun en être la cause. Un deuxième tir passe tout droit et écarte le coin ; un troisième écarte le losange. Seule la pointe reste.',
     colourMix:
       'Rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir.',
+    markers: {
+      miss: 'Rien touché : noir, bord blanc',
+      bounce: 'Sort par une autre entrée : anneau pointillé',
+      return: 'Un retour : couleur pleine',
+    },
     rules: {
       grid: 'Cinq pièces sont cachées sur une grille de 10 × 8. Tout autour, 36 entrées numérotées : c’est par là que les rayons entrent et sortent.',
       pieces:
         'Les pièces sont le carré, la barre, la pointe, le coin et le losange. Chacune a une couleur : le rouge, le bleu et le jaune sont toujours présents.',
       shot: 'Un tir envoie un rayon depuis une entrée. Il a pour réponse l’entrée par laquelle le rayon ressort et la couleur prise en chemin.',
+      invisible:
+        'Vous ne voyez jamais le tracé du rayon : seulement l’entrée par laquelle il ressort et sa couleur. À vous de déduire ce tracé ; il n’est dessiné qu’une fois la partie terminée.',
       sides:
         'Un côté droit renvoie le rayon d’où il vient (180°) ; un côté oblique le fait tourner de 90°.',
       colours:
         'La couleur du rayon mélange celles des pièces touchées : rouge et bleu donnent violet, rouge et jaune orange, bleu et jaune vert, les trois noir. Des pièces blanches seules donnent blanc, rien du tout ne donne aucune couleur.',
+      markers:
+        'Chaque tir reçoit une lettre. Ses deux bouts affichent cette lettre dans la couleur du rayon, et la liste des tirs les reprend : vous savez ainsi à quelle entrée mène chacune.',
+      deduce:
+        'Un virage ne dit pas quelle pièce l’a causé : une pointe, un coin ou un losange peuvent tous faire tourner un rayon de 90°. Croisez d’autres tirs au même endroit pour les écarter.',
       draft:
         'Placez un brouillon sur la grille, là où vous pensez que sont les pièces, puis soumettez-le comme proposition : elle est juste si elle donne le même résultat que la disposition cachée sur les 36 entrées. Inutile de retrouver les pièces cachées : toute disposition qui donne les mêmes résultats gagne.',
       surrender: 'Bloqué ? Abandonner révèle la disposition cachée et termine la partie.',
@@ -224,6 +245,7 @@ const fr: Translations = {
     propose: 'Proposer',
     proposeFailed: 'Proposition impossible',
     placed: '{{count}} / {{total}} pièces placées',
+    fireFirst: 'Commencez par tirer depuis un numéro autour de la grille',
     incorrect: 'Incorrect',
     pieceToPlace: 'Pièce à placer',
     placedSuffix: ' (placée)',
@@ -235,6 +257,52 @@ const fr: Translations = {
     cell: 'Case {{x}}, {{y}}',
     cellPiece: 'Case {{x}}, {{y}} : pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
+  },
+  tutorial: {
+    title: 'Tutoriel',
+    cardTitle: 'Nouveau ? Apprenez à jouer en 2 minutes',
+    cardText: 'Quelques tirs guidés vous montrent comment trouver les pièces cachées.',
+    start: 'Lancer le tutoriel',
+    later: 'Plus tard',
+    back: 'Retour à la quotidienne du jour',
+    step: 'Étape {{step}} / {{total}}',
+    restart: 'Recommencer',
+    next: 'Suivant',
+    previous: 'Précédent',
+    begin: 'Commencer',
+    fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.',
+    fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
+    answer:
+      'Réponse : sortie par l’entrée {{exit}}, {{colour}}. C’est tout ce que vous verrez en vraie partie.',
+    answerMiss:
+      'Réponse : sortie par l’entrée {{exit}}, sans couleur. C’est tout ce que vous verrez en vraie partie.',
+    steps: {
+      intro:
+        'Trouvez où les pièces sont cachées en tirant des rayons depuis les numéros autour de la grille. Il y a cinq formes : carré, barre, pointe, coin et losange. En vraie partie, les cinq sont cachées ; ici, pour apprendre, seulement deux : un carré rouge et une pièce jaune dont vous déduirez la forme.',
+      step1:
+        'Un point noir cerclé de blanc : un tir manqué. Le rayon a traversé la grille sans rien toucher et ressort par l’entrée 28. En vraie partie, on ne voit jamais le tracé d’un rayon, seulement sa sortie et sa couleur.',
+      step2:
+        'Le rayon ressort par l’entrée 3, rouge : un retour, signalé par un marqueur plein. Il a heurté le côté droit d’une pièce rouge et fait demi-tour.',
+      step3:
+        'Tiré depuis 23, le rayon ressort par 32, jaune : un côté oblique l’a fait tourner de 90°. L’anneau en pointillés signale un rayon sorti par une autre entrée. Une pointe, un losange ou un coin, et même un coin à deux endroits, peuvent tous faire ça : voici les candidats.',
+      step4:
+        'Encore un tir manqué, de 7 à 22. Le losange et le coin du bas auraient été sur cette colonne et dévié le rayon : ils sont éliminés.',
+      step5:
+        'Un retour jaune depuis l’entrée 5 : le rayon a heurté un côté droit de la pièce jaune. Seule, la pointe l’aurait laissé passer sans le toucher : il ne reste que le coin.',
+      step6:
+        'L’orange, c’est du rouge plus du jaune : ce rayon a touché les deux pièces. Il ressort aussi par l’entrée 24, c’est donc un retour : le coin l’a dévié vers le carré, qui l’a renvoyé d’où il venait.',
+      step7:
+        'Construisez votre brouillon : placez le carré rouge sur la case indiquée, puis choisissez le coin, en jaune, tournez-le deux fois et placez-le.',
+      step8:
+        'Votre brouillon est prêt : proposez-le. Une proposition est correcte si elle donne la même réponse que les pièces cachées sur les 36 entrées.',
+    },
+    incorrect:
+      'Pas tout à fait : certains tirs répondraient autrement. Déplacez une pièce et proposez à nouveau.',
+    doneTitle: 'Tutoriel terminé',
+    doneText:
+      'Vous savez tirer, lire les marqueurs, éliminer des candidats et proposer. Cinq pièces vous attendent dans la quotidienne du jour.',
+    playDaily: 'Jouer la quotidienne',
+    readRules: 'Lire les règles',
   },
   shapes: {
     square: 'carré',

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Play } from 'lucide-react'
+import { GraduationCap, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
 
@@ -22,6 +22,19 @@ export default function LandingHero() {
           >
             <Play />
             {t.landing.play}
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant='outline'
+          size='lg'
+        >
+          <Link
+            href='/tutorial'
+            data-cy='rules-tutorial'
+          >
+            <GraduationCap />
+            {t.tutorial.title}
           </Link>
         </Button>
         <Button

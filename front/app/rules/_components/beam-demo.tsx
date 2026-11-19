@@ -1,94 +1,87 @@
+import { useI18n } from '@/app/i18n'
 import { BEAM_SWATCHES, PIECE_SWATCHES } from '@/app/lib/colours'
 import { cellPoints, pieceCells, type Piece } from '@/app/lib/pieces'
 
-interface BeamDemoProps {
-  readonly label: string
-}
-
 const COLUMNS = 6
 const ROWS = 5
+const SPIKE: Piece = { shape: 'spike', colour: 'red', x: 1, y: 1, rotation: 0 }
+const DIAMOND: Piece = { shape: 'diamond', colour: 'yellow', x: 2, y: 3, rotation: 0 }
+const ENTRY = { x: 1.5, y: -0.55 }
+const DRAW = ['beam-a', 'beam-b', 'beam-c'].map(
+  (name) => `motion-safe:animate-[${name}_6s_linear_infinite]`
+)
 
-const PIECES: readonly Piece[] = [
-  { shape: 'spike', colour: 'red', x: 1, y: 1, rotation: 0 },
-  { shape: 'square', colour: 'blue', x: 4, y: 1, rotation: 0 },
-  { shape: 'diamond', colour: 'yellow', x: 2, y: 3, rotation: 0 },
-]
+interface Example {
+  readonly cy: string
+  readonly pieces: readonly Piece[]
+  /** The beam before, between and after its turns: none, red, then red + blue = violet. */
+  readonly segments: readonly [string, string, string]
+  readonly exit: { x: number; y: number }
+}
 
-// From the top of column 1: the spike's slanted side turns it east, the square sends it back,
-// the spike turns it north again and it leaves by its own entry, red then red + blue = violet.
-const SEGMENTS = [
-  {
-    d: 'M1.4 -0.25V1.4',
-    colour: BEAM_SWATCHES.none.outline,
-    animation: 'motion-safe:animate-[beam-a_6s_linear_infinite]',
-  },
-  {
-    d: 'M1.4 1.4H4',
-    colour: BEAM_SWATCHES.red.fill,
-    animation: 'motion-safe:animate-[beam-b_6s_linear_infinite]',
-  },
-  {
-    d: 'M4 1.4V1.6H1.6V-0.25',
-    colour: BEAM_SWATCHES.violet.fill,
-    animation: 'motion-safe:animate-[beam-c_6s_linear_infinite]',
-  },
-]
+// Both checked against `lib/trace.ts`, from entry 2 of the full grid: out by 24, and a Return.
+const TURN: Example = {
+  cy: 'beam-demo-turn',
+  pieces: [SPIKE, { shape: 'spike', colour: 'blue', x: 4, y: 1, rotation: 2 }, DIAMOND],
+  segments: ['M1.5 -0.25V1.5', 'M1.5 1.5H4.5', 'M4.5 1.5V5.25'],
+  exit: { x: 4.5, y: 5.55 },
+}
+const RETURN: Example = {
+  cy: 'beam-demo-return',
+  pieces: [SPIKE, { shape: 'square', colour: 'blue', x: 4, y: 1, rotation: 0 }, DIAMOND],
+  segments: ['M1.4 -0.25V1.4', 'M1.4 1.4H4', 'M4 1.4V1.6H1.6V-0.25'],
+  exit: ENTRY,
+}
+const COLOURS = [BEAM_SWATCHES.none.outline, BEAM_SWATCHES.red.fill, BEAM_SWATCHES.violet.fill]
 
 const lines = (count: number) => Array.from({ length: count + 1 }, (_, i) => i)
 
-/** A shot on a small grid: one turn on a slanted side, one turn back on a straight side. */
-export default function BeamDemo({ label }: BeamDemoProps) {
+function BeamExample({ example, label }: { readonly example: Example; readonly label: string }) {
   return (
     <svg
-      viewBox='-0.5 -1.1 7 6.6'
-      className='w-full max-w-xs text-border'
+      viewBox='-0.5 -1.1 7 7.2'
+      className='w-full text-border'
       role='img'
       aria-label={label}
-      data-cy='beam-demo'
+      data-cy={example.cy}
     >
       <rect
         width={COLUMNS}
         height={ROWS}
         className='fill-muted/40'
       />
-      {lines(COLUMNS).map((x) => (
-        <line
-          key={`c${x}`}
-          x1={x}
-          y1={0}
-          x2={x}
-          y2={ROWS}
-          stroke='currentColor'
-          vectorEffect='non-scaling-stroke'
-        />
-      ))}
-      {lines(ROWS).map((y) => (
-        <line
-          key={`r${y}`}
-          x1={0}
-          y1={y}
-          x2={COLUMNS}
-          y2={y}
-          stroke='currentColor'
-          vectorEffect='non-scaling-stroke'
-        />
-      ))}
-      {PIECES.map((piece) => (
-        <g
-          key={piece.shape}
-          fill={PIECE_SWATCHES[piece.colour].fill}
-        >
-          {pieceCells(piece).map((cell) => (
-            <polygon
-              key={`${cell.x},${cell.y}`}
-              points={cellPoints(cell)}
-            />
-          ))}
-        </g>
-      ))}
+      <g stroke='currentColor'>
+        {lines(COLUMNS).map((x) => (
+          <line
+            key={`c${x}`}
+            x1={x}
+            x2={x}
+            y2={ROWS}
+            vectorEffect='non-scaling-stroke'
+          />
+        ))}
+        {lines(ROWS).map((y) => (
+          <line
+            key={`r${y}`}
+            y1={y}
+            x2={COLUMNS}
+            y2={y}
+            vectorEffect='non-scaling-stroke'
+          />
+        ))}
+      </g>
+      {example.pieces.flatMap((piece) =>
+        pieceCells(piece).map((cell) => (
+          <polygon
+            key={`${cell.x},${cell.y}`}
+            points={cellPoints(cell)}
+            fill={PIECE_SWATCHES[piece.colour].fill}
+          />
+        ))
+      )}
       <circle
-        cx={1.5}
-        cy={-0.55}
+        cx={ENTRY.x}
+        cy={ENTRY.y}
         r={0.3}
         fill='none'
         stroke={BEAM_SWATCHES.none.outline}
@@ -100,25 +93,57 @@ export default function BeamDemo({ label }: BeamDemoProps) {
         strokeLinejoin='round'
         className='motion-safe:animate-[beam-fade_6s_linear_infinite]'
       >
-        {SEGMENTS.map(({ d, colour, animation }) => (
+        {example.segments.map((d, index) => (
           <path
             key={d}
             d={d}
-            stroke={colour}
+            stroke={COLOURS[index]}
             pathLength={1}
             strokeDasharray='1 1'
-            className={animation}
+            className={DRAW[index]}
           />
         ))}
         <circle
-          cx={1.5}
-          cy={-0.55}
+          cx={example.exit.x}
+          cy={example.exit.y}
           r={0.22}
           fill={BEAM_SWATCHES.violet.fill}
           className='motion-safe:animate-[beam-exit_6s_linear_infinite]'
-          data-cy='beam-demo-exit'
+          data-cy={`${example.cy}-exit`}
         />
       </g>
     </svg>
+  )
+}
+
+/** Two shots on a small grid: one leaves by another entry, the other comes back out, a Return. */
+export default function BeamDemo() {
+  const { t } = useI18n()
+  const examples = [
+    { example: TURN, label: t.landing.beamDemo.turn, caption: t.landing.beamDemo.turnCaption },
+    {
+      example: RETURN,
+      label: t.landing.beamDemo.return,
+      caption: t.landing.beamDemo.returnCaption,
+    },
+  ]
+  return (
+    <div
+      className='grid w-full max-w-sm grid-cols-2 gap-3'
+      data-cy='beam-demo'
+    >
+      {examples.map(({ example, label, caption }) => (
+        <figure
+          key={example.cy}
+          className='flex flex-col items-center gap-1'
+        >
+          <BeamExample
+            example={example}
+            label={label}
+          />
+          <figcaption className='text-center text-sm text-muted-foreground'>{caption}</figcaption>
+        </figure>
+      ))}
+    </div>
   )
 }

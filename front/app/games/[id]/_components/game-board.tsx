@@ -1,10 +1,14 @@
 import { ENTRIES, entryPlace } from '@/app/lib/entries'
 import { GRID_COLUMNS, GRID_ROWS, type Layout } from '@/app/lib/pieces'
+import TapHint from '@/components/tap-hint'
 import DraftBoard from './draft-board'
 import EntryButton from './entry-button'
 import GridSvg from './grid-svg'
 import type { ShotPaths } from './shot-paths'
 import type { Draft } from '../_viewmodels/use-draft'
+
+/** What a guided board points at: an entry to fire from, or a grid cell. */
+export type BoardGuide = number | { readonly x: number; readonly y: number }
 
 export interface GameBoardProps {
   readonly paths: ShotPaths
@@ -22,6 +26,8 @@ export interface GameBoardProps {
   readonly onSelect?: (entry: number) => void
   /** Drawn over the revealed layout. */
   readonly children?: React.ReactNode
+  /** Shows a tap hint there; an entry guide also disables every other entry. */
+  readonly guide?: BoardGuide
 }
 
 const RING_COLUMNS = GRID_COLUMNS + 2
@@ -65,10 +71,12 @@ export default function GameBoard({
   traceKeyAt,
   onSelect,
   children,
+  guide,
 }: GameBoardProps) {
+  const guidedEntry = typeof guide === 'number' ? guide : undefined
   return (
     <div
-      className='mx-auto grid w-full'
+      className='relative mx-auto grid w-full'
       style={{
         gridTemplateColumns: tracks(GRID_COLUMNS),
         gridTemplateRows: tracks(GRID_ROWS),
@@ -80,7 +88,9 @@ export default function GameBoard({
         <DraftBoard
           draft={draft}
           style={GRID_AREA}
-        />
+        >
+          {children}
+        </DraftBoard>
       ) : (
         <GridSvg
           layout={layout}
@@ -99,7 +109,7 @@ export default function GameBoard({
             traceKey={traceKeyAt?.(entry)}
             fired={paths.fired.has(entry)}
             highlighted={highlighted}
-            disabled={disabled}
+            disabled={disabled || (guidedEntry !== undefined && entry !== guidedEntry)}
             onFire={onFire}
             onSelect={onSelect}
             onHighlight={onHighlight}
@@ -107,6 +117,18 @@ export default function GameBoard({
             style={ringCell(entry)}
           />
         ))}
+      {guide !== undefined && (
+        <div
+          className='pointer-events-none relative'
+          style={
+            typeof guide === 'number'
+              ? ringCell(guide)
+              : { gridColumn: guide.x + 2, gridRow: guide.y + 2 }
+          }
+        >
+          <TapHint />
+        </div>
+      )}
     </div>
   )
 }

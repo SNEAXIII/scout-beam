@@ -131,19 +131,40 @@ const en = {
     signIn: 'Sign in',
     rulesTitle: 'How to play',
     piecesLabel: 'The five pieces',
-    beamDemo:
-      'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet.',
+    beamDemo: {
+      turn: 'A beam enters from the top, turns 90° on a red slanted side, turns 90° again on a blue slanted side and leaves by another entry at the bottom, violet.',
+      turnCaption: 'Out by another entry',
+      return:
+        'A beam enters from the top, turns 90° on a red slanted side, turns back on a blue straight side and leaves by its own entry, violet: a Return.',
+      returnCaption: 'A Return: out by its own entry',
+    },
+    shotDemo:
+      'A shot from entry 2 runs down, turns 90° on a red slanted side and leaves by entry 7, red. Then its path fades: only its two ends and its colour remain.',
+    whatYouSee: 'What you see',
+    deduceDemo:
+      'A shot from the top turns 90° to the right, yellow: a Spike, a Corner or a Diamond could each cause it. A second shot runs straight through, ruling out the Corner; a third rules out the Diamond. Only the Spike is left.',
     colourMix:
       'Red and blue make violet, red and yellow orange, blue and yellow green, all three black.',
+    markers: {
+      miss: 'Touched nothing: black, white border',
+      bounce: 'Out by another entry: dashed ring',
+      return: 'A Return: plain colour',
+    },
     rules: {
       grid: 'Five pieces are hidden on a 10 × 8 grid. Around it, 36 numbered entries are where beams go in and come out.',
       pieces:
         'The pieces are the Square, the Bar, the Spike, the Corner and the Diamond. Each has a colour: red, blue and yellow are always present.',
       shot: 'A shot fires a beam from an entry. It is answered with the entry the beam leaves by and the colour it picked up on the way.',
+      invisible:
+        'You never see the beam’s path: only the entry it leaves by and its colour. Deducing the path is up to you; it is drawn only once the game is over.',
       sides:
         'A straight side sends the beam back where it came from (180°); a slanted side turns it by 90°.',
       colours:
         'The beam colour mixes the colours of the pieces it touched: red and blue give violet, red and yellow orange, blue and yellow green, all three black. Only white pieces give white, nothing at all gives no colour.',
+      markers:
+        'Each shot gets a letter. Both of its ends show that letter in the beam colour, and the shot list repeats them, so you can match an entry with the one it leads to.',
+      deduce:
+        'A turn does not say which piece caused it: a Spike, a Corner or a Diamond can all turn a beam by 90°. Cross more shots through the same spot to rule them out.',
       draft:
         'Place a draft on the grid where you believe the pieces are, then submit it as a proposition: it is correct when it gives the same result as the hidden layout on all 36 entries. It need not match the hidden pieces: any layout giving the same results wins.',
       surrender: 'Stuck? Surrender reveals the hidden layout and ends the game.',
@@ -216,6 +237,7 @@ const en = {
     propose: 'Propose',
     proposeFailed: 'Could not propose',
     placed: '{{count}} / {{total}} pieces placed',
+    fireFirst: 'Start by firing from a number around the grid',
     incorrect: 'Incorrect',
     pieceToPlace: 'Piece to place',
     placedSuffix: ' (placed)',
@@ -227,6 +249,50 @@ const en = {
     cell: 'Cell {{x}}, {{y}}',
     cellPiece: 'Cell {{x}}, {{y}}: {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',
+  },
+  tutorial: {
+    title: 'Tutorial',
+    cardTitle: 'New here? Learn to play in 2 minutes',
+    cardText: 'A few guided shots show you how to find the hidden pieces.',
+    start: 'Start the tutorial',
+    later: 'Later',
+    back: 'Back to the daily',
+    step: 'Step {{step}} / {{total}}',
+    restart: 'Restart',
+    next: 'Next',
+    previous: 'Previous',
+    begin: 'Start',
+    fire: 'Fire from entry {{entry}}: tap the number shown.',
+    fireFirst: 'Fire first: the pieces are deduced from the shots',
+    answer: 'Answer: out by entry {{exit}}, {{colour}}. That is all you will see in a real game.',
+    answerMiss:
+      'Answer: out by entry {{exit}}, no colour. That is all you will see in a real game.',
+    steps: {
+      intro:
+        'Find where the pieces are hidden by firing beams from the numbers around the grid. There are five shapes: square, bar, spike, corner and diamond. In a real game all five are hidden; here, to learn, only two: a red Square and a yellow piece whose shape you will deduce.',
+      step1:
+        'A black dot with a white border: a miss. The beam crossed the grid without touching anything and left by entry 28. In a real game you never see a beam’s trace, only where it leaves and its colour.',
+      step2:
+        'The beam came back out of entry 3, red: a Return, shown by a plain marker. It hit the straight side of a red piece and turned back.',
+      step3:
+        'Fired from 23, the beam left by 32, yellow: a slanted side turned it by 90°. The dashed ring marks a beam that left by another entry. A spike, a diamond or a corner, even a corner in two places, could all do that: here are the candidates.',
+      step4:
+        'A miss again, from 7 to 22. The diamond and the lower corner would have sat in this column and turned the beam: they are ruled out.',
+      step5:
+        'A yellow Return from entry 5: the beam met a straight side of the yellow piece. Alone, the spike would have let it cross untouched: only the corner is left.',
+      step6:
+        'Orange is red plus yellow: this beam touched both pieces. It also came back out of entry 24, so it is a Return too: the corner turned it onto the square, which sent it back the same way.',
+      step7:
+        'Now build your Draft: place the red square on the cell shown, then pick the corner, choose yellow, rotate it twice and place it.',
+      step8:
+        'Your Draft is ready: propose it. A Proposition is correct when it gives the same answer as the hidden pieces on all 36 entries.',
+    },
+    incorrect: 'Not quite: some shots would answer differently. Move a piece and propose again.',
+    doneTitle: 'Tutorial complete',
+    doneText:
+      'You know how to fire, read the markers, rule out candidates and propose. Five pieces are waiting in today’s daily.',
+    playDaily: 'Play the daily',
+    readRules: 'Read the rules',
   },
   shapes: {
     square: 'square',

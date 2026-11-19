@@ -1,11 +1,15 @@
 'use client'
 
+import { EyeOff } from 'lucide-react'
 import { useI18n } from '@/app/i18n'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
 import { SHAPES, type PieceColour, type Shape } from '@/app/lib/pieces'
 import ShapeIcon from '@/components/shape-icon'
 import BeamDemo from './beam-demo'
 import ColourMixDemo from './colour-mix-demo'
+import DeduceDemo from './deduce-demo'
+import MarkersDemo from './markers-demo'
+import ShotDemo from './shot-demo'
 
 const SHOWCASE: Record<Shape, PieceColour> = {
   square: 'red',
@@ -76,18 +80,39 @@ export default function RulesSection() {
         <Rule
           text={rules.shot}
           cy='shot'
-        />
+        >
+          <ShotDemo />
+        </Rule>
+        <li
+          className='flex items-start gap-3 rounded-lg border bg-muted p-4'
+          data-cy='rule-invisible'
+        >
+          <EyeOff className='mt-0.5 size-5 shrink-0 text-muted-foreground' />
+          <p className='leading-relaxed'>{rules.invisible}</p>
+        </li>
         <Rule
           text={rules.sides}
           cy='sides'
         >
-          <BeamDemo label={t.landing.beamDemo} />
+          <BeamDemo />
         </Rule>
         <Rule
           text={rules.colours}
           cy='colours'
         >
           <ColourMixDemo label={t.landing.colourMix} />
+        </Rule>
+        <Rule
+          text={rules.markers}
+          cy='markers'
+        >
+          <MarkersDemo />
+        </Rule>
+        <Rule
+          text={rules.deduce}
+          cy='deduce'
+        >
+          <DeduceDemo />
         </Rule>
         <Rule
           text={rules.draft}
