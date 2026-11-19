@@ -1,0 +1,123 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.id, g.status as \"status: GameStatus\", g.created_at, g.solved_at,\n                  COALESCE(g.solved_at, g.surrendered_at) as \"ended_at?\",\n                  CASE WHEN g.daily_date IS NOT NULL THEN 'daily'\n                       WHEN r.id IS NULL THEN 'bot'\n                       ELSE r.mode::text END as \"mode!\",\n                  o.login as \"opponent?\",\n                  s.seconds as \"seconds?\",\n                  s.score as \"score?\",\n                  s.points as \"points?\"\n           FROM game g\n           LEFT JOIN room r ON r.id = g.room_id\n           LEFT JOIN \"user\" o\n             ON o.id = CASE WHEN r.host_id = g.user_id THEN r.opponent_id ELSE r.host_id END\n           LEFT JOIN LATERAL (\n               SELECT seconds, seconds + penalty AS score, points(seconds + penalty) AS points\n               FROM (SELECT floor(EXTRACT(EPOCH FROM COALESCE(g.solved_at, g.surrendered_at)\n                                          - g.created_at))::int8 AS seconds,\n                            60 * (SELECT count(*) FROM proposition p\n                                  WHERE p.game_id = g.id AND NOT p.correct)\n                            + CASE WHEN g.status = 'surrendered' THEN 300 ELSE 0 END AS penalty) t\n           ) s ON g.daily_date IS NULL AND g.room_id IS NULL AND g.status IN ('solved', 'surrendered')\n           WHERE g.user_id = $1\n           ORDER BY g.created_at DESC, g.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status: GameStatus",
+        "type_info": {
+          "Custom": {
+            "name": "game_status",
+            "kind": {
+              "Enum": [
+                "in_progress",
+                "solved",
+                "surrendered",
+                "lost"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "solved_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "game",
+            "name": "solved_at"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "ended_at?",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "mode!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "opponent?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "login"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "seconds?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "score?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "points?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "75307d0e9b8596dc595a9db794c0e232568858a02c4ee2e77fe91aa40bc804da"
+}

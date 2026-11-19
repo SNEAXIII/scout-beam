@@ -69,6 +69,7 @@ const en = {
     empty: 'No games yet. Start one!',
     daily: 'Daily',
     ranking: 'Ranking',
+    points: '{{points}} pts',
     profile: 'Profile',
   },
   profile: {
@@ -85,6 +86,18 @@ const en = {
     submit: 'Save',
     saved: 'Pseudo changed',
     failed: 'Could not change the pseudo',
+    stats: {
+      title: 'Bot games',
+      played: 'Played',
+      solved: 'Solved',
+      surrendered: 'Surrendered',
+      best: 'Best time',
+      average: 'Average points, last 5',
+      curveLabel: 'Score of the last 20 games, lower is better',
+      curveEmpty: 'Finish two Bot games to see your curve.',
+      dot: 'Score {{score}} · {{points}} points',
+      dotSurrendered: 'Surrendered · score {{score}} · {{points}} points',
+    },
   },
   rooms: {
     title: 'Play against someone',
@@ -180,7 +193,6 @@ const en = {
     resume: 'Resume my game',
     noDaily: 'There was no daily that day',
     startFailed: 'Could not start the daily',
-    timer: 'Time since the start; each wrong proposition adds a minute',
     penalty: '+{{count}} min',
     saveTitle: 'Keep this game',
     saveText: 'Sign up to keep your game and enter the ranking.',
@@ -206,6 +218,7 @@ const en = {
     lost: 'Lost',
   },
   game: {
+    timer: 'Time since the start; each wrong proposition adds a minute',
     title: 'Game',
     back: 'Back to games',
     surrender: 'Surrender',

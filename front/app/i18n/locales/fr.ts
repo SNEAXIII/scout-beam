@@ -73,6 +73,7 @@ const fr: Translations = {
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
     daily: 'Quotidienne',
     ranking: 'Classement',
+    points: '{{points}} pts',
     profile: 'Profil',
   },
   profile: {
@@ -89,6 +90,18 @@ const fr: Translations = {
     submit: 'Enregistrer',
     saved: 'Pseudo modifié',
     failed: 'Impossible de changer de pseudo',
+    stats: {
+      title: 'Parties contre le bot',
+      played: 'Jouées',
+      solved: 'Résolues',
+      surrendered: 'Abandonnées',
+      best: 'Meilleur temps',
+      average: 'Moyenne des points, 5 dernières',
+      curveLabel: 'Score des 20 dernières parties, le plus bas est le meilleur',
+      curveEmpty: 'Terminez deux parties contre le bot pour voir votre courbe.',
+      dot: 'Score {{score}} · {{points}} points',
+      dotSurrendered: 'Abandon · score {{score}} · {{points}} points',
+    },
   },
   rooms: {
     title: 'Jouer contre quelqu’un',
@@ -188,7 +201,6 @@ const fr: Translations = {
     resume: 'Reprendre ma partie',
     noDaily: 'Pas de quotidienne ce jour-là',
     startFailed: 'Impossible de lancer la quotidienne',
-    timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',
     penalty: '+{{count}} min',
     saveTitle: 'Gardez cette partie',
     saveText: 'Inscrivez-vous pour garder votre partie et entrer au classement.',
@@ -214,6 +226,7 @@ const fr: Translations = {
     lost: 'Perdue',
   },
   game: {
+    timer: 'Temps depuis le début ; chaque proposition fausse ajoute une minute',
     title: 'Partie',
     back: 'Retour aux parties',
     surrender: 'Abandonner',

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card'
 import type { GameSummary } from '@/app/services/games'
 import type { RoomView } from '@/app/services/rooms'
 import { fill, useI18n } from '@/app/i18n'
+import { clock } from '@/app/lib/clock'
 import GameStatusBadge from './game-status-badge'
 
 const DATE_STYLE = { dateStyle: 'long', timeStyle: 'short' } as const
@@ -79,6 +80,22 @@ export default function GameList({ games, rooms }: GameListProps) {
                 </span>
               </span>
               <span className='flex items-center gap-2'>
+                {game.score !== null && game.points !== null && (
+                  <span className='flex flex-col items-end text-xs tabular-nums'>
+                    <span
+                      className='font-mono'
+                      data-cy='game-score'
+                    >
+                      {clock(game.score)}
+                    </span>
+                    <span
+                      className='text-muted-foreground'
+                      data-cy='game-points'
+                    >
+                      {fill(t.play.points, { points: game.points })}
+                    </span>
+                  </span>
+                )}
                 <GameStatusBadge status={game.status} />
                 <ChevronRight className='size-4 text-muted-foreground' />
               </span>
