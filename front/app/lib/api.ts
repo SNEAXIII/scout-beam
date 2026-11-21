@@ -48,12 +48,22 @@ async function errorMessage(response: Response): Promise<string> {
   return detailMessage(payload?.detail) ?? `Erreur ${response.status}`
 }
 
-/** New session cookies from the refresh cookie; false when it is missing or refused, any other failure throws. */
-export async function refreshSession(): Promise<boolean> {
+async function refreshOnce(): Promise<boolean> {
   const response = await send('/auth/refresh', { method: 'POST' })
   if (response.status === 401) return false
   if (!response.ok) throw new ApiError(response.status, await errorMessage(response))
   return true
+}
+
+let refreshing: Promise<boolean> | null = null
+
+/** New session cookies from the refresh cookie; false when it is missing or refused, any other failure throws.
+ * Concurrent callers share one call: two at once would race for the same refresh cookie. */
+export function refreshSession(): Promise<boolean> {
+  refreshing ??= refreshOnce().finally(() => {
+    refreshing = null
+  })
+  return refreshing
 }
 
 /** Back to the page left once signed in again. */

@@ -55,10 +55,11 @@ export default function EntryButton({
       className={cn(
         'm-px flex min-h-0 min-w-0 items-center justify-center gap-0.5 rounded-md text-[9px] leading-none text-muted-foreground transition-colors md:text-xs',
         inline ? 'flex-row' : 'flex-col',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+        // White, not ring: the primary blue would read as a blue piece.
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60',
         !inert && !fired && 'hover:bg-accent hover:text-accent-foreground',
         fired && 'text-foreground',
-        lit && 'bg-accent ring-2 ring-ring',
+        lit && 'bg-accent ring-2 ring-foreground',
         highlighted !== null && !lit && 'opacity-40',
         inert && !fired && 'cursor-not-allowed'
       )}

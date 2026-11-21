@@ -10,6 +10,24 @@ const fr: Translations = {
   language: {
     switch: 'Switch to English',
   },
+  nav: {
+    label: 'Navigation principale',
+    home: 'Accueil',
+    play: 'Jouer',
+    ranking: 'Classement',
+    tutorial: 'Tutoriel',
+    rules: 'Règles',
+    profile: 'Profil',
+    signIn: 'Se connecter',
+    settings: 'Paramètres',
+    language: 'Langue',
+    theme: 'Thème',
+    keyboard: 'Clavier',
+    signOut: 'Se déconnecter',
+  },
+  theme: {
+    switch: 'Changer de thème',
+  },
   keyboard: {
     switch: 'Changer la disposition du clavier',
     azerty: 'AZERTY',
@@ -29,6 +47,8 @@ const fr: Translations = {
     description: 'Connectez-vous pour retrouver vos parties.',
     login: 'Identifiant',
     password: 'Mot de passe',
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
     submit: 'Se connecter',
     failed: 'Connexion impossible',
     or: 'ou',
@@ -62,23 +82,23 @@ const fr: Translations = {
     back: 'Retour à la connexion',
   },
   play: {
-    title: 'Mes parties',
-    signOut: 'Se déconnecter',
-    newGame: 'Nouvelle partie',
+    title: 'Jouer',
+    subtitle: 'Choisissez un mode de jeu et lancez une partie !',
+    myGames: 'Mes parties',
+    dailyText: 'La même grille pour tout le monde, renouvelée chaque jour.',
+    botText: 'Autant de parties que vous voulez, hors classement.',
+    multi: 'Multijoueur',
+    multiText: 'Défiez un ami en Course ou en Duel, ou rejoignez son salon.',
     modes: { bot: 'Contre le bot', daily: 'Quotidienne', race: 'Course', duel: 'Duel' },
     versus: 'contre {{login}}',
     roomWaiting: 'En attente d’un adversaire',
     roomComposing: 'Dispositions en cours de dissimulation',
     createFailed: 'Création impossible',
     empty: 'Aucune partie pour l’instant. Lancez-en une !',
-    daily: 'Quotidienne',
-    ranking: 'Classement',
     points: '{{points}} pts',
-    profile: 'Profil',
   },
   profile: {
     title: 'Profil',
-    back: 'Retour à mes parties',
     memberSince: 'Membre depuis le {{date}}',
     guest: 'Invité',
     guestHint: 'Inscrivez-vous pour garder vos parties et entrer au classement.',
@@ -113,7 +133,6 @@ const fr: Translations = {
     code: 'Code du salon',
     codeInvalid: '6 lettres ou chiffres, sans 0, O, 1 ni I',
     open: 'Ouvrir',
-    back: 'Retour aux parties',
     copyLink: 'Copier le lien d’invitation',
     copied: 'Lien copié',
     copyFailed: 'Copie impossible : partagez l’adresse de cette page',
@@ -208,7 +227,6 @@ const fr: Translations = {
   },
   ranking: {
     title: 'Classement',
-    back: 'Retour à l’accueil',
     dayTitle: 'Classement du jour',
     global: 'Classement général',
     empty: 'Personne de classé pour l’instant.',
@@ -277,43 +295,39 @@ const fr: Translations = {
     cardText: 'Quelques tirs guidés vous montrent comment trouver les pièces cachées.',
     start: 'Lancer le tutoriel',
     later: 'Plus tard',
-    back: 'Retour à la quotidienne du jour',
     step: 'Étape {{step}} / {{total}}',
     restart: 'Recommencer',
     next: 'Suivant',
     previous: 'Précédent',
     begin: 'Commencer',
-    fire: 'Tirez depuis l’entrée {{entry}} : touchez le numéro indiqué.',
+    fire: 'Tirez depuis l’entrée {{entry}}.',
     fireFirst: "Tirez d'abord : les pièces se déduisent des tirs",
-    answer:
-      'Réponse : sortie par l’entrée {{exit}}, {{colour}}. C’est tout ce que vous verrez en vraie partie.',
-    answerMiss:
-      'Réponse : sortie par l’entrée {{exit}}, sans couleur. C’est tout ce que vous verrez en vraie partie.',
+    answer: 'Sortie par l’entrée {{exit}}, {{colour}}.',
+    answerMiss: 'Sortie par l’entrée {{exit}}, sans couleur.',
+    demoNote:
+      'Les tracés qui clignotent servent à apprendre : en vraie partie, on ne voit que la sortie et la couleur.',
     steps: {
       intro:
-        'Trouvez où les pièces sont cachées en tirant des rayons depuis les numéros autour de la grille. Il y a cinq formes : carré, barre, pointe, coin et losange. En vraie partie, les cinq sont cachées ; ici, pour apprendre, seulement deux : un carré rouge et une pièce jaune dont vous déduirez la forme.',
-      step1:
-        'Un point noir cerclé de blanc : un tir manqué. Le rayon a traversé la grille sans rien toucher et ressort par l’entrée 28. En vraie partie, on ne voit jamais le tracé d’un rayon, seulement sa sortie et sa couleur.',
+        'Des pièces sont cachées sur la grille : tirez des rayons depuis les numéros pour les trouver. Il y a cinq formes : carré, barre, pointe, coin, losange. Ici, deux seulement : un carré rouge et une pièce jaune à identifier.',
+      step1: 'Point noir cerclé de blanc : un tir manqué, le rayon n’a rien touché.',
       step2:
-        'Le rayon ressort par l’entrée 3, rouge : un retour, signalé par un marqueur plein. Il a heurté le côté droit d’une pièce rouge et fait demi-tour.',
+        'Marqueur plein : un retour. Le rayon a heurté le côté droit d’une pièce et fait demi-tour.',
       step3:
-        'Tiré depuis 23, le rayon ressort par 32, jaune : un côté oblique l’a fait tourner de 90°. L’anneau en pointillés signale un rayon sorti par une autre entrée. Une pointe, un losange ou un coin, et même un coin à deux endroits, peuvent tous faire ça : voici les candidats.',
-      step4:
-        'Encore un tir manqué, de 7 à 22. Le losange et le coin du bas auraient été sur cette colonne et dévié le rayon : ils sont éliminés.',
+        'Un côté oblique a fait tourner le rayon de 90°. L’anneau en pointillés marque une sortie par une autre entrée. Une pointe, un losange ou un coin peuvent faire ça : voici les candidats.',
+      step4: 'Le losange et le coin du bas auraient dévié ce rayon : éliminés.',
       step5:
-        'Un retour jaune depuis l’entrée 5 : le rayon a heurté un côté droit de la pièce jaune. Seule, la pointe l’aurait laissé passer sans le toucher : il ne reste que le coin.',
+        'Le rayon a heurté un côté droit jaune. La pointe l’aurait laissé passer : il reste le coin.',
       step6:
-        'L’orange, c’est du rouge plus du jaune : ce rayon a touché les deux pièces. Il ressort aussi par l’entrée 24, c’est donc un retour : le coin l’a dévié vers le carré, qui l’a renvoyé d’où il venait.',
-      step7:
-        'Construisez votre brouillon : placez le carré rouge sur la case indiquée, puis choisissez le coin, en jaune, tournez-le deux fois et placez-le.',
+        'Orange = rouge + jaune : le rayon a touché les deux pièces. Le coin l’a envoyé sur le carré, qui l’a renvoyé.',
+      step7: 'Placez le carré rouge sur la case indiquée, puis le coin jaune, tourné deux fois.',
       step8:
-        'Votre brouillon est prêt : proposez-le. Une proposition est correcte si elle donne la même réponse que les pièces cachées sur les 36 entrées.',
+        'Proposez votre brouillon : il est juste s’il donne les mêmes réponses que les pièces cachées sur les 36 entrées.',
     },
     incorrect:
-      'Pas tout à fait : certains tirs répondraient autrement. Déplacez une pièce et proposez à nouveau.',
+      'Pas tout à fait : certains tirs répondraient autrement. Déplacez une pièce et réessayez.',
     doneTitle: 'Tutoriel terminé',
     doneText:
-      'Vous savez tirer, lire les marqueurs, éliminer des candidats et proposer. Cinq pièces vous attendent dans la quotidienne du jour.',
+      'Vous savez tirer, lire les marqueurs, éliminer des candidats et proposer. La quotidienne du jour vous attend.',
     playDaily: 'Jouer la quotidienne',
     readRules: 'Lire les règles',
   },

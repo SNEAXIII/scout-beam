@@ -41,7 +41,10 @@ export default function DraftToolbar({ draft, keyboardLayout }: DraftToolbarProp
               key={shape}
               variant='outline'
               size='icon'
-              className={cn('relative [&_svg]:size-5', picked && 'bg-accent ring-2 ring-ring')}
+              className={cn(
+                'relative [&_svg]:size-5',
+                picked && 'bg-accent ring-2 ring-foreground'
+              )}
               disabled={placed}
               onClick={() => draft.selectShape(shape)}
               aria-pressed={picked}
@@ -88,7 +91,7 @@ export default function DraftToolbar({ draft, keyboardLayout }: DraftToolbarProp
             className={cn(
               'size-7 rounded-full transition-transform',
               draft.colour === colour
-                ? 'ring-2 ring-ring ring-offset-1 ring-offset-background'
+                ? 'ring-2 ring-foreground ring-offset-1 ring-offset-background'
                 : 'hover:scale-110'
             )}
             style={{ backgroundColor: PIECE_SWATCHES[colour].fill }}

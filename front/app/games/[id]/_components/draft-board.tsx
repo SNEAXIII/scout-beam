@@ -89,7 +89,7 @@ export default function DraftBoard({ draft, style, children }: DraftBoardProps) 
               key={`${x},${y}`}
               type='button'
               className={cn(
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-foreground',
                 !owner && draft.shape ? 'hover:bg-accent/60' : !owner && 'cursor-default'
               )}
               onClick={owner ? undefined : () => draft.place(x, y)}

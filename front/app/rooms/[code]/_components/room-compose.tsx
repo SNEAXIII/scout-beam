@@ -1,9 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
 import type { RoomView } from '@/app/services/rooms'
 import KeyboardLayoutToggle from '@/app/games/[id]/_components/keyboard-layout-toggle'
@@ -26,20 +22,6 @@ export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
   return (
     <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
       <header className='flex flex-wrap items-center gap-2 pt-2'>
-        <Button
-          asChild
-          variant='ghost'
-          size='icon'
-        >
-          <Link
-            href='/play'
-            aria-label={t.rooms.back}
-            title={t.rooms.back}
-            data-cy='room-back'
-          >
-            <ArrowLeft />
-          </Link>
-        </Button>
         <h1
           className='text-xl font-semibold tracking-tight'
           data-cy='room-mode'
@@ -59,7 +41,6 @@ export default function RoomCompose({ room, onRoom }: RoomComposeProps) {
               onToggle={toggle}
             />
           )}
-          <LanguageSwitcher />
         </div>
       </header>
       <div className='grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem]'>

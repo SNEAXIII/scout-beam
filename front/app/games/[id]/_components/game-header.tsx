@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { ArrowLeft, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmationDialog } from '@/components/confirmation-dialog'
-import LanguageSwitcher from '@/components/language-switcher'
 import GameStatusBadge from '@/app/play/_components/game-status-badge'
 import { useI18n } from '@/app/i18n'
 import type { KeyboardLayout } from '@/app/lib/keyboard'
@@ -75,7 +74,6 @@ export default function GameHeader({
             onToggle={onToggleKeyboardLayout}
           />
         )}
-        <LanguageSwitcher />
       </div>
       <ConfirmationDialog
         open={confirming}

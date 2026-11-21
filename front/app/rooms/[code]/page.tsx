@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useI18n } from '@/app/i18n'
@@ -29,19 +29,6 @@ export default function RoomPage() {
 
   return (
     <main className='mx-auto flex w-full max-w-md flex-col gap-6 p-4 md:p-8'>
-      <Button
-        asChild
-        variant='ghost'
-        className='self-start'
-      >
-        <Link
-          href='/play'
-          data-cy='room-back'
-        >
-          <ArrowLeft />
-          {t.rooms.back}
-        </Link>
-      </Button>
       {error && (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'

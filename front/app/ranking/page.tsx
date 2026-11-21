@@ -1,10 +1,6 @@
 'use client'
 
 import { useEffect, useEffectEvent, useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import LanguageSwitcher from '@/components/language-switcher'
 import { useI18n } from '@/app/i18n'
 import { getRanking, type GlobalRankingEntry, type Ranking } from '@/app/services/daily'
 import RankingTable from './_components/ranking-table'
@@ -24,26 +20,7 @@ export default function RankingPage() {
 
   return (
     <main className='mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8'>
-      <header className='flex flex-wrap items-center gap-2'>
-        <Button
-          asChild
-          variant='ghost'
-          size='icon'
-        >
-          <Link
-            href='/'
-            aria-label={t.ranking.back}
-            title={t.ranking.back}
-            data-cy='ranking-back'
-          >
-            <ArrowLeft />
-          </Link>
-        </Button>
-        <h1 className='text-2xl font-semibold tracking-tight'>{t.ranking.title}</h1>
-        <div className='ml-auto'>
-          <LanguageSwitcher />
-        </div>
-      </header>
+      <h1 className='text-2xl font-semibold tracking-tight'>{t.ranking.title}</h1>
       {error ? (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
