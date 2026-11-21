@@ -316,6 +316,7 @@ const en = {
     },
     incorrect: 'Not quite: some shots would answer differently. Move a piece and try again.',
     doneTitle: 'Tutorial complete',
+    example: 'Here is a finished game, as an example: tap an entry to see its beam’s route.',
     doneText:
       'You know how to fire, read the markers, rule out candidates and propose. Today’s daily is waiting.',
     playDaily: 'Play the daily',

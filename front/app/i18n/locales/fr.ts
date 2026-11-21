@@ -326,6 +326,8 @@ const fr: Translations = {
     incorrect:
       'Pas tout à fait : certains tirs répondraient autrement. Déplacez une pièce et réessayez.',
     doneTitle: 'Tutoriel terminé',
+    example:
+      'Voici une partie finie, pour exemple : touchez une entrée pour voir le trajet de son rayon.',
     doneText:
       'Vous savez tirer, lire les marqueurs, éliminer des candidats et proposer. La quotidienne du jour vous attend.',
     playDaily: 'Jouer la quotidienne',

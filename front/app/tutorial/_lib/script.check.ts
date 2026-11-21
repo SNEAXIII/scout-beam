@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { traceBeam, traceSegments, type Trace } from '../../lib/trace.ts'
 import { fitsGrid, overlaps, type Layout } from '../../lib/pieces.ts'
-import { INTRO_LAYOUT, TUTORIAL_LAYOUT, TUTORIAL_STEPS } from './script.ts'
+import { EXAMPLE_LAYOUT, INTRO_LAYOUT, TUTORIAL_LAYOUT, TUTORIAL_STEPS } from './script.ts'
 
 const shots = TUTORIAL_STEPS.flatMap((step) => (step.kind === 'shot' ? [step] : []))
 const fire = (layout: Layout, entry: number): Trace => {
@@ -38,6 +38,13 @@ intro.forEach((piece, i) => {
   assert.ok(fitsGrid(piece), `${piece.shape} fits the grid`)
   assert.ok(!overlaps(piece, intro.slice(i + 1)), `${piece.shape} overlaps no other`)
 })
+
+const example = EXAMPLE_LAYOUT.pieces
+example.forEach((piece, i) => {
+  assert.ok(fitsGrid(piece), `example ${piece.shape} fits the grid`)
+  assert.ok(!overlaps(piece, example.slice(i + 1)), `example ${piece.shape} overlaps no other`)
+})
+for (let entry = 1; entry <= 36; entry += 1) fire(EXAMPLE_LAYOUT, entry)
 
 assert.equal(hidden[0].colour, 'none', 'step 1 touches nothing')
 assert.equal(hidden[1].exit, hidden[1].entry, 'step 2 is a Return')

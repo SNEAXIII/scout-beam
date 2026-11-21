@@ -12,8 +12,8 @@ const SHOT_STEPS = TUTORIAL_STEPS.filter((step) => step.kind === 'shot')
 export const TUTORIAL_DRAFT = 'tutorial'
 export const TUTORIAL_KEY = 'scout-beam.tutorial'
 
-export function shotOf(entry: number): Shot {
-  const trace = traceBeam(TUTORIAL_LAYOUT, entry)
+export function shotOf(entry: number, layout = TUTORIAL_LAYOUT): Shot {
+  const trace = traceBeam(layout, entry)
   return { entry, exit_entry: trace?.exit ?? entry, colour: trace?.colour ?? 'none' }
 }
 
