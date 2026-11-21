@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check:tutorial": "node app/tutorial/_lib/script.check.ts"
+    "check:tutorial": "node app/tutorial/_lib/script.check.ts",
+    "check:wheel": "node app/lib/wheel.check.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.2.1",
