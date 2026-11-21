@@ -40,7 +40,10 @@ export default function GamePage() {
   }
 
   return (
-    <main className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'>
+    <main
+      className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'
+      data-game
+    >
       <GameHeader
         game={game}
         onSurrender={surrender}

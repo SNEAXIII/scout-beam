@@ -1,4 +1,4 @@
-import { apiRequest, refreshSession } from '@/app/lib/api'
+import { ApiError, apiRequest, refreshSession } from '@/app/lib/api'
 import { nextPath } from '@/app/lib/utils'
 
 /** `GET /auth/session` and the body of every sign-in: who is signed in, never their tokens. */
@@ -46,6 +46,17 @@ export const oauthLogin = (provider: ProviderName, code: string) =>
 export const devLogin = (login: string) => signIn('/auth/dev-login', { login })
 
 export const getSession = () => apiRequest<UserProfile>('/auth/session')
+
+/** The session if there is one, null when signed out: never sends the visitor to /login. */
+export async function peekSession(): Promise<UserProfile | null> {
+  const read = () => apiRequest<UserProfile>('/auth/session', { noRedirect: true })
+  try {
+    return await read()
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 401)) throw error
+  }
+  return (await refreshSession()) ? read() : null
+}
 
 export const logout = () =>
   apiRequest<undefined>('/auth/logout', { method: 'POST', noRedirect: true })

@@ -1,6 +1,6 @@
 import { useI18n } from '@/app/i18n'
-import { BEAM_SWATCHES } from '@/app/lib/colours'
-import type { Piece } from '@/app/lib/pieces'
+import { BEAM_SWATCHES, PIECE_SWATCHES } from '@/app/lib/colours'
+import { cellPoints, pieceCells, type Piece } from '@/app/lib/pieces'
 import GhostPiece from '@/components/ghost-piece'
 
 const COLUMNS = 5
@@ -36,11 +36,13 @@ const SHOTS = [
 const RULED_OUT = [
   {
     piece: CORNER,
+    gone: 'motion-safe:animate-[deduce-gone-a_9s_linear_infinite]',
     animate:
       'motion-safe:[&_g[fill]]:animate-[deduce-drop-a_9s_linear_infinite] motion-safe:[&_line]:animate-[deduce-strike-a_9s_linear_infinite]',
   },
   {
     piece: DIAMOND,
+    gone: 'motion-safe:animate-[deduce-gone-b_9s_linear_infinite]',
     animate:
       'motion-safe:[&_g[fill]]:animate-[deduce-drop-b_9s_linear_infinite] motion-safe:[&_line]:animate-[deduce-strike-b_9s_linear_infinite]',
   },
@@ -54,7 +56,7 @@ export default function DeduceDemo() {
   return (
     <svg
       viewBox='-0.5 -0.5 6 5'
-      className='w-full max-w-xs text-border'
+      className='w-full max-w-xs text-board-line'
       role='img'
       aria-label={t.landing.deduceDemo}
       data-cy='deduce-demo'
@@ -62,7 +64,7 @@ export default function DeduceDemo() {
       <rect
         width={COLUMNS}
         height={ROWS}
-        className='fill-muted/40'
+        className='fill-board'
       />
       <g stroke='currentColor'>
         {lines(COLUMNS).map((x) => (
@@ -87,17 +89,34 @@ export default function DeduceDemo() {
       <g className='motion-safe:animate-[deduce-loop_9s_linear_infinite]'>
         <g className='motion-safe:animate-[deduce-ghosts_9s_linear_infinite]'>
           <GhostPiece piece={SPIKE} />
-          {RULED_OUT.map(({ piece, animate }) => (
+          {/* Each ruled-out candidate is struck, then leaves: the overlap would hide the Spike. */}
+          {RULED_OUT.map(({ piece, gone, animate }) => (
             <g
               key={piece.shape}
-              className={animate}
-              data-cy={`deduce-demo-out-${piece.shape}`}
+              className={gone}
             >
-              <GhostPiece
-                piece={piece}
-                eliminated
-              />
+              <g
+                className={animate}
+                data-cy={`deduce-demo-out-${piece.shape}`}
+              >
+                <GhostPiece
+                  piece={piece}
+                  eliminated
+                />
+              </g>
             </g>
+          ))}
+        </g>
+        <g
+          fill={PIECE_SWATCHES[SPIKE.colour].fill}
+          className='motion-safe:animate-[deduce-found_9s_linear_infinite]'
+          data-cy='deduce-demo-found'
+        >
+          {pieceCells(SPIKE).map((cell) => (
+            <polygon
+              key={`${cell.x},${cell.y}`}
+              points={cellPoints(cell)}
+            />
           ))}
         </g>
         <g

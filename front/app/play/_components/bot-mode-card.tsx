@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Bot } from 'lucide-react'
 import { useI18n } from '@/app/i18n'
 import { createGame } from '@/app/services/games'
+import ModeCard from './mode-card'
 
-export default function NewGameButton() {
+/** Starts a Bot game in one click. */
+export default function BotModeCard() {
   const { t } = useI18n()
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -26,15 +27,15 @@ export default function NewGameButton() {
   }
 
   return (
-    <div className='flex flex-col items-end gap-2'>
-      <Button
+    <>
+      <ModeCard
+        icon={Bot}
+        title={t.play.modes.bot}
+        text={t.play.botText}
         onClick={() => void start()}
         disabled={pending}
-        data-cy='new-game'
-      >
-        <Plus />
-        {t.play.newGame}
-      </Button>
+        cy='new-game'
+      />
       {error && (
         <p
           className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
@@ -44,6 +45,6 @@ export default function NewGameButton() {
           {error}
         </p>
       )}
-    </div>
+    </>
   )
 }

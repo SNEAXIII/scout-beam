@@ -22,6 +22,10 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-primary-soft: hsl(var(--primary-soft));
+  --color-board: hsl(var(--board));
+  --color-board-line: hsl(var(--board-line));
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -29,28 +33,56 @@
 }
 
 @layer base {
-  /* Dark only in v1: Mawster's dark tokens sit on :root, no light theme to switch to. */
+  /* Light is Mawster's new-a set; dark is read off the v1 mockups. The board stays dark in both. */
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --info: 212 99% 57%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 214 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 214 100% 92%;
+    --secondary: 210 40% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 45%;
+    --accent: 205 70% 93%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 205 85% 45%;
     --info-foreground: 0 0% 100%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --radius: 0.5rem;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 214 100% 45%;
+    --sidebar: 0 0% 100%;
+    --board: 210 100% 3%;
+    --board-line: 207 55% 18%;
+    --radius: 1rem;
+    color-scheme: light;
+  }
+  .dark {
+    --background: 213 90% 4%;
+    --foreground: 210 40% 96%;
+    --card: 209 94% 7%;
+    --card-foreground: 210 40% 96%;
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 213 100% 22%;
+    --secondary: 210 60% 11%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 210 60% 10%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 210 70% 12%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 205 90% 66%;
+    --info-foreground: 222 47% 8%;
+    --border: 210 50% 13%;
+    --input: 210 50% 15%;
+    --ring: 214 100% 50%;
+    --sidebar: 209 94% 6%;
     color-scheme: dark;
   }
 }
@@ -257,6 +289,37 @@
     stroke-dashoffset: 0;
   }
 }
+@keyframes deduce-gone-a {
+  0%,
+  52% {
+    opacity: 1;
+  }
+  58%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes deduce-gone-b {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  84%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Reduced motion shows the final frame, so the found Spike rests visible. */
+@keyframes deduce-found {
+  0%,
+  80% {
+    opacity: 0;
+  }
+  86%,
+  100% {
+    opacity: 1;
+  }
+}
 @keyframes deduce-loop {
   0%,
   92% {
@@ -346,6 +409,30 @@
   from {
     opacity: 0;
     transform: scale(0.5);
+  }
+}
+@keyframes trace-show {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Inline animations escape motion-safe: a reduced motion shows the drawn beam at once. */
+@media (prefers-reduced-motion: reduce) {
+  .demo-trace * {
+    animation: none !important;
+  }
+}
+/* Tutorial traces: a blink tells them apart from what a real game shows. */
+@keyframes trace-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
   }
 }
 @keyframes trace-draw {

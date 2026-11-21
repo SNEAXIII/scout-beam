@@ -59,11 +59,14 @@ export default function TutorialDraft({ tutorial }: { tutorial: Tutorial }) {
         onHighlight={tutorial.setHighlighted}
         guide={proposing || !missing ? undefined : { x: missing.x, y: missing.y }}
       >
+        {/* Two groups: the blink animates opacity and would override the dimming. */}
         <g opacity={0.35}>
-          <TraceLines
-            traces={ALL_TRACES}
-            misses
-          />
+          <g className='motion-safe:animate-[trace-blink_1.2s_ease-in-out_infinite]'>
+            <TraceLines
+              traces={ALL_TRACES}
+              misses
+            />
+          </g>
         </g>
       </GameBoard>
       <TutorialNav

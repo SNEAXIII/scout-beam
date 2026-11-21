@@ -6,7 +6,7 @@ import { listGames, type GameSummary } from '@/app/services/games'
 import { listRooms, type RoomView } from '@/app/services/rooms'
 import GameList from './_components/game-list'
 import PlayHeader from './_components/play-header'
-import RoomActions from './_components/room-actions'
+import PlayModes from './_components/play-modes'
 
 export default function PlayPage() {
   const { t } = useI18n()
@@ -31,24 +31,29 @@ export default function PlayPage() {
   }, [load])
 
   return (
-    <main className='mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8'>
+    <main className='mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-8'>
       <PlayHeader />
-      <RoomActions />
-      {error && (
-        <p
-          className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
-          role='alert'
-          data-cy='games-error'
-        >
-          {error}
-        </p>
-      )}
-      {!error && (
-        <GameList
-          games={games}
-          rooms={rooms}
-        />
-      )}
+      <div className='grid items-start gap-6 lg:grid-cols-2'>
+        <PlayModes />
+        <section className='flex flex-col gap-3'>
+          <h2 className='text-xl font-bold'>{t.play.myGames}</h2>
+          {error && (
+            <p
+              className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
+              role='alert'
+              data-cy='games-error'
+            >
+              {error}
+            </p>
+          )}
+          {!error && (
+            <GameList
+              games={games}
+              rooms={rooms}
+            />
+          )}
+        </section>
+      </div>
     </main>
   )
 }

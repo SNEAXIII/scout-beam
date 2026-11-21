@@ -61,7 +61,7 @@ export default function GridSvg({
   return (
     <svg
       viewBox={`0 0 ${GRID_COLUMNS} ${GRID_ROWS}`}
-      className={cn('size-full rounded-sm bg-muted/40 text-border', className)}
+      className={cn('size-full rounded-sm bg-board text-board-line', className)}
       style={style}
       role='img'
       aria-label={label ?? (layout ? t.game.gridRevealed : t.game.grid)}

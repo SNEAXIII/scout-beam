@@ -39,6 +39,17 @@ export const INTRO_LAYOUT: Layout = {
   ],
 }
 
+/** A finished game of five pieces, shown at the end of the Tutorial as an example. */
+export const EXAMPLE_LAYOUT: Layout = {
+  pieces: [
+    { shape: 'corner', colour: 'blue', x: 5, y: 1, rotation: 1 },
+    { shape: 'diamond', colour: 'red', x: 7, y: 2, rotation: 0 },
+    { shape: 'square', colour: 'red', x: 1, y: 5, rotation: 0 },
+    { shape: 'spike', colour: 'yellow', x: 3, y: 5, rotation: 2 },
+    { shape: 'bar', colour: 'white', x: 6, y: 5, rotation: 0 },
+  ],
+}
+
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   { kind: 'intro', text: 'intro' },
   { kind: 'shot', text: 'step1', entry: 1 },

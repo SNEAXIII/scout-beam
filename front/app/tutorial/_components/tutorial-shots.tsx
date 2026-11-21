@@ -6,6 +6,7 @@ import { traceBeam } from '@/app/lib/trace'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 import { useCandidateCycle } from '../_viewmodels/use-candidate-cycle'
 import { pastTraces, type Tutorial } from '../_viewmodels/use-tutorial'
+import DemoTrace from './demo-trace'
 import TutorialCandidates from './tutorial-candidates'
 import TutorialNav from './tutorial-nav'
 
@@ -15,10 +16,10 @@ const OPENER = TUTORIAL_STEPS.find((step) => step.kind === 'shot' && step.candid
 const TURN =
   OPENER?.kind === 'shot' ? traceBeam(TUTORIAL_LAYOUT, OPENER.entry)?.points[1] : undefined
 
-/** A shot step: only the guided entry fires, its bare answer shows, then "Next" draws its Trace. */
+/** A shot step: only the guided entry fires; its Trace shows at once, then "Next" explains it. */
 export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
   const { t } = useI18n()
-  const { current, fired, trace, phase, ghosts } = tutorial
+  const { current, fired, phase, ghosts } = tutorial
   const remaining = ghosts.flatMap((ghost, i) => (ghost.eliminated ? [] : [String(i)]))
   // The shot that rules candidates out shows only those, crossed, so the player sees why.
   const ruledOut = fired && current?.kind === 'shot' ? (current.eliminated ?? []) : []
@@ -79,14 +80,19 @@ export default function TutorialShots({ tutorial }: { tutorial: Tutorial }) {
               </text>
             </g>
           )}
-          <TraceLines
-            traces={[
-              ...pastTraces(tutorial.step),
-              ...(phase === 'explain' && trace ? [trace] : []),
-            ]}
-            animated={phase === 'explain' ? trace?.key : null}
-            misses
-          />
+          {/* Blinking: a teaching aid, never what a real game draws. */}
+          <g className='motion-safe:animate-[trace-blink_1.2s_ease-in-out_infinite]'>
+            <TraceLines
+              traces={pastTraces(tutorial.step)}
+              misses
+            />
+            {fired && (
+              <DemoTrace
+                key={current.entry}
+                entry={current.entry}
+              />
+            )}
+          </g>
         </GameBoard>
         <TutorialCandidates
           ghosts={ghosts}
