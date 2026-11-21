@@ -7,8 +7,9 @@ use uuid::Uuid;
 use crate::engine;
 use crate::errors::game_error::GameError;
 use crate::models::daily_model::{DayRankingRow, GlobalRankingRow};
-use crate::models::game_model::{Game, SealedLayout};
+use crate::models::game_model::{Game, GameStatus, SealedLayout};
 use crate::repositories::{daily_repository, game_repository};
+use crate::services::game_service;
 
 /// The launch day: no daily game before it, whatever the `daily` table holds.
 pub const FIRST_DAY: NaiveDate = NaiveDate::from_ymd_opt(2026, 11, 15).unwrap();
@@ -27,6 +28,20 @@ pub async fn find(pool: &PgPool, user_id: Uuid, date: NaiveDate) -> Result<Game,
 /// The caller's game of that day, and whether this call created it. Today's layout is drawn on
 /// first sight; a past day without one, or a day to come, has no daily.
 pub async fn start(
+    pool: &PgPool,
+    user_id: Uuid,
+    date: NaiveDate,
+) -> Result<(Game, bool), GameError> {
+    let (game, created) = find_or_create(pool, user_id, date).await?;
+    if game.status == GameStatus::InProgress {
+        let mut tx = pool.begin().await?;
+        game_service::fire_all(&mut tx, &game).await?;
+        tx.commit().await?;
+    }
+    Ok((game, created))
+}
+
+async fn find_or_create(
     pool: &PgPool,
     user_id: Uuid,
     date: NaiveDate,

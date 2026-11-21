@@ -60,7 +60,10 @@ pub async fn list_for_user(pool: &PgPool, user_id: Uuid) -> sqlx::Result<Vec<Gam
     .await
 }
 
-pub async fn insert(pool: &PgPool, user_id: Uuid, layout: &SealedLayout) -> sqlx::Result<Game> {
+pub async fn insert<'e, E>(executor: E, user_id: Uuid, layout: &SealedLayout) -> sqlx::Result<Game>
+where
+    E: PgExecutor<'e>,
+{
     sqlx::query_as!(
         Game,
         r#"INSERT INTO game (user_id, layout)
@@ -72,7 +75,7 @@ pub async fn insert(pool: &PgPool, user_id: Uuid, layout: &SealedLayout) -> sqlx
         user_id,
         layout as _
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await
 }
 
@@ -141,13 +144,14 @@ pub async fn insert_daily(
     .await
 }
 
+/// Shots fired in one transaction share their `created_at`: entry order settles them.
 pub async fn shots_of(pool: &PgPool, game_id: Uuid) -> sqlx::Result<Vec<Shot>> {
     sqlx::query_as!(
         Shot,
         r#"SELECT entry, exit_entry, colour as "colour: ShotColour"
            FROM shot
            WHERE game_id = $1
-           ORDER BY created_at, id"#,
+           ORDER BY created_at, entry"#,
         game_id
     )
     .fetch_all(pool)
