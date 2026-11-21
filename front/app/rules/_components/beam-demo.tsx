@@ -7,15 +7,20 @@ const ROWS = 5
 const SPIKE: Piece = { shape: 'spike', colour: 'red', x: 1, y: 1, rotation: 0 }
 const DIAMOND: Piece = { shape: 'diamond', colour: 'yellow', x: 2, y: 3, rotation: 0 }
 const ENTRY = { x: 1.5, y: -0.55 }
-const DRAW = ['beam-a', 'beam-b', 'beam-c'].map(
-  (name) => `motion-safe:animate-[${name}_6s_linear_infinite]`
-)
+// Spelled out: Tailwind only generates the classes it finds whole in the source.
+const DRAW = [
+  'motion-safe:animate-[beam-a_6s_linear_infinite]',
+  'motion-safe:animate-[beam-b_6s_linear_infinite]',
+  'motion-safe:animate-[beam-c_6s_linear_infinite]',
+]
 
 interface Example {
   readonly cy: string
   readonly pieces: readonly Piece[]
   /** The beam before, between and after its turns: none, red, then red + blue = violet. */
   readonly segments: readonly [string, string, string]
+  /** The whole route, shown at the end in the beam's colour: the same either way it is fired. */
+  readonly route: string
   readonly exit: { x: number; y: number }
 }
 
@@ -24,12 +29,14 @@ const TURN: Example = {
   cy: 'beam-demo-turn',
   pieces: [SPIKE, { shape: 'spike', colour: 'blue', x: 4, y: 1, rotation: 2 }, DIAMOND],
   segments: ['M1.5 -0.25V1.5', 'M1.5 1.5H4.5', 'M4.5 1.5V5.25'],
+  route: 'M1.5 -0.25V1.5H4.5V5.25',
   exit: { x: 4.5, y: 5.55 },
 }
 const RETURN: Example = {
   cy: 'beam-demo-return',
   pieces: [SPIKE, { shape: 'square', colour: 'blue', x: 4, y: 1, rotation: 0 }, DIAMOND],
   segments: ['M1.4 -0.25V1.4', 'M1.4 1.4H4', 'M4 1.4V1.6H1.6V-0.25'],
+  route: 'M1.5 -0.25V1.5H4',
   exit: ENTRY,
 }
 const COLOURS = [BEAM_SWATCHES.none.outline, BEAM_SWATCHES.red.fill, BEAM_SWATCHES.violet.fill]
@@ -40,7 +47,7 @@ function BeamExample({ example, label }: { readonly example: Example; readonly l
   return (
     <svg
       viewBox='-0.5 -1.1 7 7.2'
-      className='w-full text-border'
+      className='w-full text-board-line'
       role='img'
       aria-label={label}
       data-cy={example.cy}
@@ -48,7 +55,7 @@ function BeamExample({ example, label }: { readonly example: Example; readonly l
       <rect
         width={COLUMNS}
         height={ROWS}
-        className='fill-muted/40'
+        className='fill-board'
       />
       <g stroke='currentColor'>
         {lines(COLUMNS).map((x) => (
@@ -103,14 +110,31 @@ function BeamExample({ example, label }: { readonly example: Example; readonly l
             className={DRAW[index]}
           />
         ))}
-        <circle
-          cx={example.exit.x}
-          cy={example.exit.y}
-          r={0.22}
+        <g
+          stroke={BEAM_SWATCHES.violet.fill}
           fill={BEAM_SWATCHES.violet.fill}
           className='motion-safe:animate-[beam-exit_6s_linear_infinite]'
-          data-cy={`${example.cy}-exit`}
-        />
+        >
+          <path
+            d={example.route}
+            strokeWidth={0.2}
+            fill='none'
+            data-cy={`${example.cy}-route`}
+          />
+          <circle
+            cx={ENTRY.x}
+            cy={ENTRY.y}
+            r={0.22}
+            stroke='none'
+          />
+          <circle
+            cx={example.exit.x}
+            cy={example.exit.y}
+            r={0.22}
+            stroke='none'
+            data-cy={`${example.cy}-exit`}
+          />
+        </g>
       </g>
     </svg>
   )

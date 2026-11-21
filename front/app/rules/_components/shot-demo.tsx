@@ -49,12 +49,12 @@ export default function ShotDemo() {
       >
         <svg
           viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.width} ${VIEW.height}`}
-          className='block w-full text-border'
+          className='block w-full text-board-line'
         >
           <rect
             width={COLUMNS}
             height={ROWS}
-            className='fill-muted/40'
+            className='fill-board'
             stroke='currentColor'
             strokeWidth={0.04}
           />

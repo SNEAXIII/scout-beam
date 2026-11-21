@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { GraduationCap, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/app/i18n'
+import { useNavUser } from '@/components/nav/use-nav-user'
 
 export default function LandingHero() {
   const { t } = useI18n()
+  const user = useNavUser()
   return (
     <header className='flex flex-col items-center gap-4 text-center'>
       <h1 className='text-4xl font-semibold tracking-tight md:text-5xl'>{t.landing.title}</h1>
@@ -37,18 +39,20 @@ export default function LandingHero() {
             {t.tutorial.title}
           </Link>
         </Button>
-        <Button
-          asChild
-          variant='ghost'
-          size='lg'
-        >
-          <Link
-            href='/login'
-            data-cy='sign-in-link'
+        {user === null && (
+          <Button
+            asChild
+            variant='ghost'
+            size='lg'
           >
-            {t.landing.signIn}
-          </Link>
-        </Button>
+            <Link
+              href='/login'
+              data-cy='sign-in-link'
+            >
+              {t.landing.signIn}
+            </Link>
+          </Button>
+        )}
       </div>
     </header>
   )
