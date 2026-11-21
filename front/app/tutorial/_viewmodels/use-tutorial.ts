@@ -5,7 +5,6 @@ import type { Piece } from '@/app/lib/pieces'
 import { traceBeam } from '@/app/lib/trace'
 import type { Shot } from '@/app/services/games'
 import { pairKey, shotPaths } from '@/app/games/[id]/_components/shot-paths'
-import type { KeyedTrace } from '@/app/games/[id]/_viewmodels/use-traces'
 import { TUTORIAL_LAYOUT, TUTORIAL_STEPS } from '../_lib/script'
 
 const SHOT_STEPS = TUTORIAL_STEPS.filter((step) => step.kind === 'shot')
@@ -72,11 +71,6 @@ export function useTutorial() {
 
   const shot = fired ? shots.at(-1) : undefined
 
-  const trace = useMemo((): KeyedTrace | undefined => {
-    const traced = shot && traceBeam(TUTORIAL_LAYOUT, shot.entry)
-    return traced && { ...traced, key: pairKey(traced.entry, traced.exit) }
-  }, [shot])
-
   const fire = useCallback(
     (entry: number) => {
       if (current?.kind === 'shot' && !fired && entry === current.entry) setPhase('answer')
@@ -127,7 +121,6 @@ export function useTutorial() {
     shot,
     paths,
     ghosts,
-    trace,
     highlighted,
     setHighlighted,
     fire,

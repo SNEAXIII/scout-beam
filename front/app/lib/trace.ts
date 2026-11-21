@@ -118,12 +118,24 @@ function push(points: TracePoint[], point: TracePoint): void {
   points.push(point)
 }
 
-/** Fires a beam from `entry`; `undefined` past the engine's step cap, which only a bug reaches. */
-export function traceBeam(layout: Layout, entry: number): Trace | undefined {
+/** A trace and the colour of each of its segments, `colours[i]` running from `points[i]` on. */
+export interface ColouredTrace {
+  trace: Trace
+  colours: BeamColour[]
+}
+
+/** Fires a beam from `entry`, colouring each segment with the pieces met so far; `undefined` past the step cap. */
+export function traceSegments(layout: Layout, entry: number): ColouredTrace | undefined {
   const cells = occupancy(layout)
   let [cell, direction] = launch(entry)
   const bounces: PieceColour[] = []
   const points: TracePoint[] = [pointIn(cell, REVERSE[direction])]
+  const colours: BeamColour[] = ['none']
+  // A dropped point is straight on, so no bounce lies between: its slot takes the same colour.
+  const add = (point: TracePoint) => {
+    push(points, point)
+    colours[points.length - 1] = mix(bounces)
+  }
 
   for (let step = 0; step < STEP_CAP; step += 1) {
     const occupant = cells.get(`${cell.x},${cell.y}`)
@@ -131,15 +143,20 @@ export function traceBeam(layout: Layout, entry: number): Trace | undefined {
       const [fill, colour] = occupant
       bounces.push(colour)
       const turned = deflect(fill, direction)
-      push(points, turned === REVERSE[direction] ? pointIn(cell, turned) : pointIn(cell))
+      add(turned === REVERSE[direction] ? pointIn(cell, turned) : pointIn(cell))
       direction = turned
     }
     const next = { x: cell.x + DELTA[direction].x, y: cell.y + DELTA[direction].y }
     if (!inGrid(next)) {
-      push(points, pointIn(cell, direction))
-      return { entry, exit: leaving(cell, direction), colour: mix(bounces), points }
+      add(pointIn(cell, direction))
+      const trace = { entry, exit: leaving(cell, direction), colour: mix(bounces), points }
+      return { trace, colours: colours.slice(0, points.length - 1) }
     }
     cell = next
   }
   return undefined
 }
+
+/** Fires a beam from `entry`; `undefined` past the engine's step cap, which only a bug reaches. */
+export const traceBeam = (layout: Layout, entry: number): Trace | undefined =>
+  traceSegments(layout, entry)?.trace

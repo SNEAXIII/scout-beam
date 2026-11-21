@@ -56,7 +56,9 @@ export default function TutorialDone({ tutorial }: { tutorial: Tutorial }) {
         onFire={tutorial.fire}
         onHighlight={tutorial.setHighlighted}
       >
-        <TraceLines traces={ALL_TRACES} />
+        <g className='motion-safe:animate-[trace-blink_1.2s_ease-in-out_infinite]'>
+          <TraceLines traces={ALL_TRACES} />
+        </g>
       </GameBoard>
       <div className='flex flex-wrap justify-end gap-2'>
         <Button

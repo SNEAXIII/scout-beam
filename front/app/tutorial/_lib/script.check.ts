@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { traceBeam, type Trace } from '../../lib/trace.ts'
+import { traceBeam, traceSegments, type Trace } from '../../lib/trace.ts'
 import { fitsGrid, overlaps, type Layout } from '../../lib/pieces.ts'
 import { INTRO_LAYOUT, TUTORIAL_LAYOUT, TUTORIAL_STEPS } from './script.ts'
 
@@ -78,5 +78,13 @@ for (const candidate of candidates) {
     )
   }
 }
+
+// The orange Return picks up yellow at the corner, then red at the square, and keeps orange back.
+assert.deepEqual(traceSegments(TUTORIAL_LAYOUT, 24)?.colours, [
+  'none',
+  'yellow',
+  'orange',
+  'orange',
+])
 
 console.log('tutorial script ok')
