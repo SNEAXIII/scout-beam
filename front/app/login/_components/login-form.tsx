@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PasswordInput from '@/components/password-input'
 import { useI18n } from '@/app/i18n'
 import { nextPath } from '@/app/lib/utils'
 import { login as signIn, type ProviderLink } from '@/app/services/auth'
@@ -60,9 +61,8 @@ export default function LoginForm({ providers }: Readonly<{ providers: ProviderL
           </div>
           <div className='flex flex-col gap-2'>
             <Label htmlFor='password'>{t.login.password}</Label>
-            <Input
+            <PasswordInput
               id='password'
-              type='password'
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete='current-password'
