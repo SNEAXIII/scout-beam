@@ -1,0 +1,50 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Bot } from 'lucide-react'
+import { useI18n } from '@/app/i18n'
+import { createGame } from '@/app/services/games'
+import ModeCard from './mode-card'
+
+/** Starts a Bot game in one click. */
+export default function BotModeCard() {
+  const { t } = useI18n()
+  const router = useRouter()
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const start = async () => {
+    setPending(true)
+    setError(null)
+    try {
+      const game = await createGame()
+      router.push(`/games/${game.id}`)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t.play.createFailed)
+      setPending(false)
+    }
+  }
+
+  return (
+    <>
+      <ModeCard
+        icon={Bot}
+        title={t.play.modes.bot}
+        text={t.play.botText}
+        onClick={() => void start()}
+        disabled={pending}
+        cy='new-game'
+      />
+      {error && (
+        <p
+          className='text-sm text-destructive-foreground bg-destructive rounded-md px-3 py-2'
+          role='alert'
+          data-cy='new-game-error'
+        >
+          {error}
+        </p>
+      )}
+    </>
+  )
+}
