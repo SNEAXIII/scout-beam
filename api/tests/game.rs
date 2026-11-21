@@ -52,6 +52,20 @@ impl TestApp {
         .unwrap();
     }
 
+    /// The host's game of a Race joined by a fresh opponent: its entries are fired one at a time.
+    async fn race_game(&self, token: &str) -> Uuid {
+        let (_, other) = self.seed_with_token("racer", Role::User).await;
+        let code = self
+            .post("/rooms", Some(token), json!({ "mode": "race" }))
+            .await;
+        let code = code.body["code"].as_str().unwrap().to_owned();
+        self.post(&format!("/rooms/{code}/join"), Some(&other), json!({}))
+            .await
+            .assert_status(StatusCode::OK);
+        let room = self.get(&format!("/rooms/{code}"), Some(token)).await;
+        room.body["game_id"].as_str().unwrap().parse().unwrap()
+    }
+
     async fn shot_count(&self, game_id: Uuid) -> i64 {
         sqlx::query_scalar("SELECT count(*) FROM shot WHERE game_id = $1")
             .bind(game_id)
@@ -75,7 +89,7 @@ fn layout_with_square(x: u8, colour: &str) -> Layout {
 // --- POST /games --------------------------------------------------------------
 
 #[sqlx::test]
-async fn a_new_game_is_in_progress_with_no_shot_and_no_layout(pool: PgPool) {
+async fn a_new_game_is_in_progress_with_all_36_shots_and_no_layout(pool: PgPool) {
     let app = TestApp::new(pool);
     let (user_id, token) = app.seed_with_token("owner", Role::User).await;
 
@@ -83,7 +97,6 @@ async fn a_new_game_is_in_progress_with_no_shot_and_no_layout(pool: PgPool) {
 
     created.assert_status(StatusCode::CREATED);
     assert_eq!(created.body["status"], "in_progress");
-    assert_eq!(created.body["shots"], json!([]));
     assert!(created.body["solved_at"].is_null());
     assert!(created.body.get("layout").is_none(), "{}", created.body);
 
@@ -94,10 +107,21 @@ async fn a_new_game_is_in_progress_with_no_shot_and_no_layout(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(owner, user_id);
-    app.stored_layout(id)
-        .await
-        .validate()
-        .expect("the bot draws a valid layout");
+    let layout = app.stored_layout(id).await;
+    layout.validate().expect("the bot draws a valid layout");
+    let expected: Vec<Value> = Entry::all()
+        .map(|entry| {
+            let traced = engine::trace(&layout, entry).unwrap();
+            json!({
+                "entry": entry.number(),
+                "exit_entry": traced.exit.number(),
+                "colour": traced.beam_colour,
+            })
+        })
+        .collect();
+    assert_eq!(created.body["shots"], json!(expected));
+    let read = app.get(&format!("/games/{id}"), Some(&token)).await;
+    assert_eq!(read.body["shots"], created.body["shots"]);
 }
 
 #[sqlx::test]
@@ -216,7 +240,6 @@ async fn a_surrendered_bot_game_adds_five_minutes(pool: PgPool) {
 async fn bot_stats_leave_out_dailies_and_races_and_average_the_five_latest(pool: PgPool) {
     let app = TestApp::new(pool);
     let (owner, token) = app.seed_with_token("owner", Role::User).await;
-    let (_, other) = app.seed_with_token("other", Role::User).await;
     for i in 0..6 {
         let game_id = app.start_game(&token).await;
         app.solve(game_id, &token).await;
@@ -239,15 +262,7 @@ async fn bot_stats_leave_out_dailies_and_races_and_average_the_five_latest(pool:
     .execute(&app.pool)
     .await
     .unwrap();
-    let code = app
-        .post("/rooms", Some(&token), json!({ "mode": "race" }))
-        .await;
-    let code = code.body["code"].as_str().unwrap().to_owned();
-    app.post(&format!("/rooms/{code}/join"), Some(&other), json!({}))
-        .await
-        .assert_status(StatusCode::OK);
-    let room = app.get(&format!("/rooms/{code}"), Some(&token)).await;
-    let race_game: Uuid = room.body["game_id"].as_str().unwrap().parse().unwrap();
+    let race_game = app.race_game(&token).await;
     app.surrender(race_game, &token)
         .await
         .assert_status(StatusCode::OK);
@@ -281,7 +296,7 @@ async fn an_anonymous_caller_cannot_read_bot_stats(pool: PgPool) {
 async fn a_game_reads_back_its_shots_in_firing_order_without_layout(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
+    let game_id = app.race_game(&token).await;
     for entry in [12, 3, 30] {
         app.fire(game_id, &token, json!(entry))
             .await
@@ -361,7 +376,7 @@ async fn an_anonymous_caller_cannot_read_a_game(pool: PgPool) {
 async fn a_shot_answers_what_the_engine_traces_on_the_hidden_layout(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
+    let game_id = app.race_game(&token).await;
 
     let fired = app.fire(game_id, &token, json!(7)).await;
 
@@ -383,7 +398,7 @@ async fn a_shot_answers_what_the_engine_traces_on_the_hidden_layout(pool: PgPool
 async fn re_firing_an_entry_answers_the_stored_shot_without_a_second_row(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
+    let game_id = app.race_game(&token).await;
     let first = app.fire(game_id, &token, json!(18)).await;
     first.assert_status(StatusCode::CREATED);
 
@@ -398,7 +413,7 @@ async fn re_firing_an_entry_answers_the_stored_shot_without_a_second_row(pool: P
 async fn concurrent_re_fires_of_one_entry_store_a_single_shot(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
+    let game_id = app.race_game(&token).await;
 
     let (left, right) = tokio::join!(
         app.fire(game_id, &token, json!(25)),
@@ -427,7 +442,7 @@ async fn firing_on_a_solved_game_is_a_conflict(pool: PgPool) {
         "{}",
         fired.detail()
     );
-    assert_eq!(app.shot_count(game_id).await, 0);
+    assert_eq!(app.shot_count(game_id).await, 36);
 }
 
 #[sqlx::test]
@@ -451,14 +466,14 @@ async fn entries_outside_one_to_thirty_six_are_refused(pool: PgPool) {
         "{}",
         refused.detail()
     );
-    assert_eq!(app.shot_count(game_id).await, 0);
+    assert_eq!(app.shot_count(game_id).await, 36);
 }
 
 #[sqlx::test]
 async fn the_first_and_last_entries_can_be_fired(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
+    let game_id = app.race_game(&token).await;
 
     for entry in [1, 36] {
         app.fire(game_id, &token, json!(entry))
@@ -479,7 +494,7 @@ async fn another_players_game_cannot_be_fired_at(pool: PgPool) {
         .await
         .assert_status(StatusCode::NOT_FOUND);
 
-    assert_eq!(app.shot_count(game_id).await, 0);
+    assert_eq!(app.shot_count(game_id).await, 36);
 }
 
 #[sqlx::test]
@@ -492,7 +507,7 @@ async fn an_anonymous_caller_cannot_fire(pool: PgPool) {
         .await
         .assert_status(StatusCode::UNAUTHORIZED);
 
-    assert_eq!(app.shot_count(game_id).await, 0);
+    assert_eq!(app.shot_count(game_id).await, 36);
 }
 
 // --- surrender, on /games/{game_id}/ws -----------------------------------------
@@ -502,14 +517,13 @@ async fn a_surrendered_game_reveals_its_layout_and_keeps_its_shots(pool: PgPool)
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
-    app.fire(game_id, &token, json!(7)).await;
 
     let surrendered = app.surrender(game_id, &token).await;
 
     surrendered.assert_status(StatusCode::OK);
     assert_eq!(surrendered.body["status"], "surrendered");
     assert!(surrendered.body["solved_at"].is_null());
-    assert_eq!(surrendered.body["shots"][0]["entry"], 7);
+    assert_eq!(surrendered.body["shots"].as_array().unwrap().len(), 36);
     let revealed: Layout = serde_json::from_value(surrendered.body["layout"].clone()).unwrap();
     assert_eq!(revealed, app.stored_layout(game_id).await);
 
@@ -541,7 +555,7 @@ async fn a_surrendered_game_takes_no_shot_no_proposition_and_no_second_surrender
             refused.detail()
         );
     }
-    assert_eq!(app.shot_count(game_id).await, 0);
+    assert_eq!(app.shot_count(game_id).await, 36);
 }
 
 #[sqlx::test]

@@ -145,15 +145,63 @@ async fn a_second_post_answers_the_same_game(pool: PgPool) {
     let today = app.today().await;
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_daily(today, &token).await;
-    app.play(game_id, Some(&token), json!({ "type": "fire", "entry": 7 }))
-        .await
-        .assert_status(StatusCode::CREATED);
 
     let again = app.post_daily(today, &token).await;
 
     again.assert_status(StatusCode::OK);
     assert_eq!(again.body["id"], game_id.to_string());
-    assert_eq!(again.body["shots"][0]["entry"], 7);
+    assert_eq!(again.body["shots"].as_array().unwrap().len(), 36);
+}
+
+#[sqlx::test]
+async fn a_started_daily_has_every_entry_fired_in_entry_order(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (_, token) = app.seed_with_token("owner", Role::User).await;
+
+    let created = app.post_daily(today, &token).await;
+
+    created.assert_status(StatusCode::CREATED);
+    let game_id: Uuid = created.body["id"].as_str().unwrap().parse().unwrap();
+    let expected: Vec<i64> = (1..=36).collect();
+    assert_eq!(entries(&created), expected);
+    assert_eq!(entries(&app.game(game_id, &token).await), expected);
+}
+
+#[sqlx::test]
+async fn an_unfinished_daily_with_a_few_shots_gets_the_rest_and_a_finished_one_none(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    app.insert_daily(today).await;
+    let (owner, token) = app.seed_with_token("owner", Role::User).await;
+    let game_id = app.insert_daily_game(owner, today).await;
+    sqlx::query("UPDATE game SET status = 'in_progress', solved_at = NULL WHERE id = $1")
+        .bind(game_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    for entry in [12, 3] {
+        app.play(
+            game_id,
+            Some(&token),
+            json!({ "type": "fire", "entry": entry }),
+        )
+        .await
+        .assert_status(StatusCode::CREATED);
+    }
+    let (solver, solver_token) = app.seed_with_token("solver", Role::User).await;
+    let solved = app.insert_daily_game(solver, today).await;
+
+    let resumed = app.post_daily(today, &token).await;
+    let finished = app.post_daily(today, &solver_token).await;
+
+    resumed.assert_status(StatusCode::OK);
+    let rest = (1..=36).filter(|entry| ![12, 3].contains(entry));
+    let expected: Vec<i64> = [12, 3].into_iter().chain(rest).collect();
+    assert_eq!(entries(&resumed), expected);
+    finished.assert_status(StatusCode::OK);
+    assert_eq!(finished.body["id"], solved.to_string());
+    assert_eq!(finished.body["shots"], json!([]));
 }
 
 #[sqlx::test]
@@ -298,16 +346,6 @@ async fn a_daily_fires_every_entry_at_once_and_has_no_pace(pool: PgPool) {
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_daily(today, &token).await;
 
-    for entry in 1..=36 {
-        app.play(
-            game_id,
-            Some(&token),
-            json!({ "type": "fire", "entry": entry }),
-        )
-        .await
-        .assert_status(StatusCode::CREATED);
-    }
-
     let game = app.game(game_id, &token).await;
     assert!(game.body.get("elapsed_ms").is_none(), "{}", game.body);
     assert!(game.body.get("proposition_in_ms").is_none());
@@ -323,6 +361,15 @@ async fn a_game_against_the_bot_has_no_daily_date(pool: PgPool) {
     created.assert_status(StatusCode::CREATED);
     assert!(created.body["daily_date"].is_null());
     assert_eq!(created.body["wrong_propositions"], 0);
+}
+
+fn entries(game: &Response) -> Vec<i64> {
+    game.body["shots"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|shot| shot["entry"].as_i64().unwrap())
+        .collect()
 }
 
 /// One field of every line of the top.

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { useI18n } from '@/app/i18n'
 import type { Piece } from '@/app/lib/pieces'
 import DraftPanel from './_components/draft-panel'
@@ -21,8 +21,6 @@ export default function GamePage() {
     useGame(id)
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const { keyboardLayout, toggle } = useKeyboardLayout()
-  const router = useRouter()
-  const firstShot = useSearchParams().get('fire')
   // The winning proposition, kept to tell the player when it differs from the hidden layout.
   const [proposed, setProposed] = useState<readonly Piece[] | null>(null)
   const proposeAndKeep = async (pieces: readonly Piece[]) => {
@@ -30,13 +28,6 @@ export default function GamePage() {
     if (verdict?.correct) setProposed(pieces)
     return verdict
   }
-
-  // The daily's first shot, clicked on `/` before the game existed.
-  useEffect(() => {
-    if (!connected || firstShot === null) return
-    fire(Number(firstShot))
-    router.replace(`/games/${id}`)
-  }, [connected, firstShot, fire, router, id])
 
   const shots = useMemo(() => game?.shots ?? [], [game])
   const paths = useMemo(() => shotPaths(shots), [shots])

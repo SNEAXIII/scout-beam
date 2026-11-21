@@ -82,11 +82,13 @@ async fn post_daily_game(
     Path(date): Path<NaiveDate>,
 ) -> ApiResult<(StatusCode, Json<GameView>)> {
     let (game, created) = daily_service::start(&state.pool, user.id, date).await?;
-    if created {
-        return Ok((StatusCode::CREATED, Json(GameView::new(&game, Vec::new()))));
-    }
     let shots = game_service::shots_of(&state.pool, &game).await?;
-    Ok((StatusCode::OK, Json(GameView::new(&game, shots))))
+    let status = if created {
+        StatusCode::CREATED
+    } else {
+        StatusCode::OK
+    };
+    Ok((status, Json(GameView::new(&game, shots))))
 }
 
 /// `GET /daily/{date}/ranking` — that day's ranking by score.

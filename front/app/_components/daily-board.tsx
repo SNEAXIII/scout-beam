@@ -15,7 +15,7 @@ interface DailyBoardProps {
   readonly daily: ReturnType<typeof useDaily>
 }
 
-/** The picked day's grid: empty and live until the first shot, else the caller's game on it. */
+/** The picked day's grid: empty behind a Start button, else the caller's game on it. */
 export default function DailyBoard({ daily }: DailyBoardProps) {
   const { t } = useI18n()
   const { today, date, setDate, game, starting, error, start } = daily
@@ -48,18 +48,22 @@ export default function DailyBoard({ daily }: DailyBoardProps) {
         <GameBoard
           paths={paths}
           layout={game?.layout}
-          disabled={game !== null || starting}
+          disabled
           highlighted={highlighted}
-          onFire={(entry) => void start(entry)}
+          onFire={() => undefined}
           onHighlight={setHighlighted}
         />
         {game === null && (
-          <p
-            className='pointer-events-none absolute inset-0 m-auto h-fit w-fit max-w-[70%] rounded-lg bg-card/85 px-5 py-3 text-center text-xl font-semibold md:text-2xl'
-            data-cy='daily-hint'
-          >
-            {t.daily.fireToStart}
-          </p>
+          <div className='absolute inset-0 flex items-center justify-center'>
+            <Button
+              size='lg'
+              onClick={() => void start()}
+              disabled={starting}
+              data-cy='daily-start'
+            >
+              {t.daily.start}
+            </Button>
+          </div>
         )}
       </div>
       {game?.status === 'in_progress' && (

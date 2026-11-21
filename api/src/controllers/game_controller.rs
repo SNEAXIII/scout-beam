@@ -43,7 +43,8 @@ async fn post_game(
         return Err(GameError::AccountRequired.into());
     }
     let game = game_service::create(&state.pool, user.id).await?;
-    Ok((StatusCode::CREATED, Json(GameView::new(&game, Vec::new()))))
+    let shots = game_service::shots_of(&state.pool, &game).await?;
+    Ok((StatusCode::CREATED, Json(GameView::new(&game, shots))))
 }
 
 /// `GET /games` — the caller's games, newest first.

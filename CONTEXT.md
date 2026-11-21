@@ -37,7 +37,8 @@ One attempt by a player to find one hidden layout.
 _Avoid_: round, match, party
 
 **Bot game**:
-A game against the bot outside the daily, as many as the player wants, with surrender allowed.
+A game against the bot outside the daily, as many as the player wants, with surrender allowed;
+every entry is fired from the start.
 _Avoid_: practice, solo game
 
 **Shot**:
@@ -76,7 +77,8 @@ account and keeps its games.
 _Avoid_: anonymous, visitor
 
 **Daily**:
-The game of the day: one layout drawn by the bot for every player, one attempt each, no surrender.
+The game of the day: one layout drawn by the bot for every player, one attempt each, no surrender;
+every entry is fired from the start.
 _Avoid_: puzzle of the day, challenge
 
 **Score**:

@@ -1,6 +1,6 @@
 //! Rules of a game: controllers never reach its repository but through here.
 
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
 use crate::engine::{self, Entry, Layout};
@@ -24,11 +24,33 @@ pub enum Verdict {
     Correct(Game),
 }
 
-/// The bot draws a layout and the game starts with no shot.
+/// The bot draws a layout and the game starts with every entry fired.
 pub async fn create(pool: &PgPool, user_id: Uuid) -> Result<Game, GameError> {
     // The thread-local rng is not `Send`: it must be gone before the first await.
     let layout = engine::draw_layout(&mut rand::rng())?;
-    Ok(game_repository::insert(pool, user_id, &SealedLayout::new(layout)).await?)
+    let mut tx = pool.begin().await?;
+    let game = game_repository::insert(&mut *tx, user_id, &SealedLayout::new(layout)).await?;
+    fire_all(&mut tx, &game).await?;
+    tx.commit().await?;
+    Ok(game)
+}
+
+/// Store the shot of every entry not fired yet, in entry order.
+pub async fn fire_all(conn: &mut PgConnection, game: &Game) -> Result<(), GameError> {
+    for entry in Entry::all() {
+        let shot = traced_shot(game, entry)?;
+        game_repository::insert_shot_if_absent(&mut *conn, game.id, &shot).await?;
+    }
+    Ok(())
+}
+
+fn traced_shot(game: &Game, entry: Entry) -> Result<Shot, GameError> {
+    let traced = engine::trace(game.layout.pieces(), entry)?;
+    Ok(Shot {
+        entry: i16::from(traced.entry.number()),
+        exit_entry: i16::from(traced.exit.number()),
+        colour: traced.beam_colour.into(),
+    })
 }
 
 pub async fn list(pool: &PgPool, user_id: Uuid) -> Result<Vec<GameSummary>, GameError> {
@@ -103,12 +125,7 @@ pub async fn fire(
 ) -> Result<(Shot, Firing, Option<Pace>), GameError> {
     playable(game.status)?;
 
-    let traced = engine::trace(game.layout.pieces(), entry)?;
-    let shot = Shot {
-        entry: i16::from(traced.entry.number()),
-        exit_entry: i16::from(traced.exit.number()),
-        colour: traced.beam_colour.into(),
-    };
+    let shot = traced_shot(game, entry)?;
 
     let mut tx = pool.begin().await?;
     // Locked on its own first: the pace read next then sees a racing tab's committed shot.

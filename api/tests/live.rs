@@ -65,24 +65,20 @@ async fn joining_answers_the_game_as_it_reads_over_http(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.start_game(&token).await;
-    app.play(game_id, Some(&token), json!({ "type": "fire", "entry": 7 }))
-        .await
-        .assert_status(StatusCode::CREATED);
 
     let socket = app.join(game_id, Some(&token)).await.unwrap();
 
     let read = app.get(&format!("/games/{game_id}"), Some(&token)).await;
     assert_eq!(socket.joined, read.body);
-    assert_eq!(socket.joined["shots"][0]["entry"], 7);
+    assert_eq!(socket.joined["shots"].as_array().unwrap().len(), 36);
 }
 
 #[sqlx::test]
 async fn a_new_shot_is_pushed_to_the_other_sockets_and_not_echoed(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
-    let mut shooter = app.join(game_id, Some(&token)).await.unwrap();
-    let mut watcher = app.join(game_id, Some(&token)).await.unwrap();
+    let (alice, _) = app.playing_room("race").await;
+    let mut shooter = alice.socket;
+    let mut watcher = app.join(alice.game, Some(&alice.token)).await.unwrap();
 
     let fired = shooter
         .request(json!({ "type": "fire", "entry": 12 }))
@@ -97,14 +93,13 @@ async fn a_new_shot_is_pushed_to_the_other_sockets_and_not_echoed(pool: PgPool) 
 #[sqlx::test]
 async fn a_replayed_shot_is_pushed_to_nobody(pool: PgPool) {
     let app = TestApp::new(pool);
-    let (_, token) = app.seed_with_token("owner", Role::User).await;
-    let game_id = app.start_game(&token).await;
-    let mut shooter = app.join(game_id, Some(&token)).await.unwrap();
+    let (alice, _) = app.playing_room("race").await;
+    let mut shooter = alice.socket;
     shooter
         .request(json!({ "type": "fire", "entry": 3 }))
         .await
         .assert_status(StatusCode::CREATED);
-    let mut watcher = app.join(game_id, Some(&token)).await.unwrap();
+    let mut watcher = app.join(alice.game, Some(&alice.token)).await.unwrap();
 
     shooter
         .request(json!({ "type": "fire", "entry": 3 }))
@@ -169,7 +164,7 @@ async fn an_unreadable_message_is_refused_and_the_socket_stays_open(pool: PgPool
     socket
         .request(json!({ "type": "fire", "entry": 7 }))
         .await
-        .assert_status(StatusCode::CREATED);
+        .assert_status(StatusCode::OK);
 }
 
 #[sqlx::test]

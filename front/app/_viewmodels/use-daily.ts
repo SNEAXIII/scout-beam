@@ -40,13 +40,13 @@ export function useDaily() {
     }
   }, [date])
 
-  /** Starts the day's game, then lets the game page fire this first shot. */
-  const start = async (entry: number) => {
+  /** Starts the day's game, whose entries are all fired from the start. */
+  const start = async () => {
     setError(null)
     setStarting(true)
     try {
       const game = await playDaily(date)
-      router.push(`/games/${game.id}?fire=${entry}`)
+      router.push(`/games/${game.id}`)
     } catch (caught) {
       setStarting(false)
       if (caught instanceof ApiError && caught.status === 404) setError(t.daily.noDaily)
