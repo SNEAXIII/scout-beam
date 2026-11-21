@@ -197,7 +197,7 @@ const fr: Translations = {
   daily: {
     title: 'Quotidienne',
     pickDay: 'Jour — aujourd’hui, ou un jour passé',
-    fireToStart: 'Tirez en sélectionnant un numéro',
+    start: 'Commencer',
     resume: 'Reprendre ma partie',
     noDaily: 'Pas de quotidienne ce jour-là',
     startFailed: 'Impossible de lancer la quotidienne',
