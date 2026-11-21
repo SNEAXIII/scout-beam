@@ -3,7 +3,9 @@
 
 mod common;
 
-use common::{Response, TestApp};
+use std::time::Duration;
+
+use common::{GameSocket, Response, TestApp, answered};
 use http::StatusCode;
 use scout_beam::engine::{self, Entry, Layout};
 use scout_beam::shared::role::Role;
@@ -409,16 +411,30 @@ async fn re_firing_an_entry_answers_the_stored_shot_without_a_second_row(pool: P
     assert_eq!(app.shot_count(game_id).await, 1);
 }
 
+/// A tab firing after the other stored the shot sees that shot pushed, then its own replayed
+/// answer. A replayed shot is never pushed, so once one arrives it is this tab's answer.
+async fn own_answer(socket: &mut GameSocket) -> Response {
+    let first = socket.next().await.expect("the server answers");
+    if first["replayed"] == false
+        && let Ok(Ok(next)) = tokio::time::timeout(Duration::from_millis(300), socket.next()).await
+        && next["replayed"] == true
+    {
+        return answered(next);
+    }
+    answered(first)
+}
+
 #[sqlx::test]
 async fn concurrent_re_fires_of_one_entry_store_a_single_shot(pool: PgPool) {
     let app = TestApp::new(pool);
     let (_, token) = app.seed_with_token("owner", Role::User).await;
     let game_id = app.race_game(&token).await;
+    let fire = json!({ "type": "fire", "entry": 25 });
+    let mut left = app.join(game_id, Some(&token)).await.unwrap();
+    let mut right = app.join(game_id, Some(&token)).await.unwrap();
 
-    let (left, right) = tokio::join!(
-        app.fire(game_id, &token, json!(25)),
-        app.fire(game_id, &token, json!(25)),
-    );
+    tokio::join!(left.send(fire.clone()), right.send(fire.clone()));
+    let (left, right) = tokio::join!(own_answer(&mut left), own_answer(&mut right));
 
     let mut statuses = [left.status, right.status];
     statuses.sort();
