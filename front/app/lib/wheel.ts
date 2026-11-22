@@ -20,9 +20,10 @@ const point = (radius: number, angle: number) => ({
   y: -radius * Math.cos(angle),
 })
 
+/** Past the edge only the direction counts: the outer ring's slice that way. */
 export function wheelSliceAt(dx: number, dy: number, counts: WheelCounts): WheelSlice | null {
   const r = Math.hypot(dx, dy) / WHEEL_RADIUS
-  if (r < WHEEL_DEAD_ZONE || r > 1) return null
+  if (r < WHEEL_DEAD_ZONE) return null
   const ring: WheelRing = r < WHEEL_RINGS.colour.outer ? 'colour' : 'shape'
   const slices = counts[ring]
   if (slices === 0) return null
@@ -49,4 +50,10 @@ export function sliceCentre(
 ): { x: number; y: number } {
   const { inner, outer } = WHEEL_RINGS[ring]
   return point(((inner + outer) / 2) * WHEEL_RADIUS, (index * TURN) / slices)
+}
+
+/** The pointer's offset pulled back onto the wheel's edge once past it. */
+export function clampToWheel(dx: number, dy: number): { x: number; y: number } {
+  const scale = Math.min(1, WHEEL_RADIUS / (Math.hypot(dx, dy) || 1))
+  return { x: dx * scale, y: dy * scale }
 }

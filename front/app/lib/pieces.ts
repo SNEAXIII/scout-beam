@@ -35,6 +35,10 @@ export const SHAPES: readonly Shape[] = ['square', 'bar', 'spike', 'corner', 'di
 
 export const PIECE_COLOURS: readonly PieceColour[] = ['red', 'blue', 'yellow', 'white']
 
+/** The shapes not on the grid yet. */
+export const freeShapes = (pieces: readonly Piece[]) =>
+  SHAPES.filter((shape) => !pieces.some((piece) => piece.shape === shape))
+
 /** The names the API uses in its messages. */
 const BASE_CELLS: Record<Shape, readonly PieceCell[]> = {
   square: [{ x: 0, y: 0, fill: 'full' }],

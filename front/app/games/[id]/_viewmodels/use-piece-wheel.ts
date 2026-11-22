@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KEYMAPS } from '@/app/lib/keyboard'
-import { PIECE_COLOURS, SHAPES, type Piece } from '@/app/lib/pieces'
-import { WHEEL_RADIUS, wheelSliceAt, type WheelSlice } from '@/app/lib/wheel'
+import { freeShapes, PIECE_COLOURS } from '@/app/lib/pieces'
+import { clampToWheel, WHEEL_RADIUS, wheelSliceAt, type WheelSlice } from '@/app/lib/wheel'
 import { typing, type Draft } from './use-draft'
 import { LONG_PRESS_MS, SLOP_PX, swallowNextClick } from './use-long-press'
 
@@ -10,9 +10,7 @@ type Point = { readonly x: number; readonly y: number }
 const clamp = (value: number, size: number) =>
   Math.max(WHEEL_RADIUS, Math.min(value, size - WHEEL_RADIUS))
 
-/** The shapes the wheel offers: those not on the grid yet. */
-export const freeShapes = (pieces: readonly Piece[]) =>
-  SHAPES.filter((shape) => !pieces.some((piece) => piece.shape === shape))
+const HIDE_CURSOR = ['cursor-none', '[&_*]:cursor-none!']
 
 const sameSlice = (a: WheelSlice | null, b: WheelSlice | null) =>
   a?.ring === b?.ring && a?.index === b?.index
@@ -21,6 +19,7 @@ const sameSlice = (a: WheelSlice | null, b: WheelSlice | null) =>
 export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement | null>) {
   const [open, setOpen] = useState<Point | null>(null)
   const [hovered, setHovered] = useState<WheelSlice | null>(null)
+  const [cursor, setCursor] = useState<Point | null>(null)
   // Refs as well: the window listeners read them between renders.
   const openRef = useRef<Point | null>(null)
   const hoveredRef = useRef<WheelSlice | null>(null)
@@ -37,6 +36,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     hoveredRef.current = null
     setOpen(centre)
     setHovered(null)
+    setCursor(null)
   }, [])
 
   const key = KEYMAPS[draft.keyboardLayout].wheel
@@ -68,7 +68,9 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     if (!open) return
     const counts = { colour: PIECE_COLOURS.length, shape: shapes.length }
     const onPointerMove = (event: PointerEvent) => {
-      const slice = wheelSliceAt(event.clientX - open.x, event.clientY - open.y, counts)
+      const [dx, dy] = [event.clientX - open.x, event.clientY - open.y]
+      setCursor(clampToWheel(dx, dy))
+      const slice = wheelSliceAt(dx, dy, counts)
       if (sameSlice(slice, hoveredRef.current)) return
       hoveredRef.current = slice
       setHovered(slice)
@@ -87,6 +89,8 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
       event.preventDefault()
       rotate()
     }
+    // The system cursor would wander off the wheel: the wheel draws its own instead.
+    document.documentElement.classList.add(...HIDE_CURSOR)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('touchend', release)
@@ -94,6 +98,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     window.addEventListener('blur', close)
     window.addEventListener('wheel', onWheel, { passive: false })
     return () => {
+      document.documentElement.classList.remove(...HIDE_CURSOR)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('touchend', release)
@@ -140,5 +145,5 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     onPointerCancel: cancelPress,
   }
 
-  return { open, hovered, onPointerMove, cellHandlers }
+  return { open, hovered, cursor, onPointerMove, cellHandlers }
 }

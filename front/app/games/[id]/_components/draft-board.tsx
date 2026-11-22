@@ -130,6 +130,7 @@ export default function DraftBoard({ draft, style, children }: DraftBoardProps) 
           draft={draft}
           centre={wheel.open}
           hovered={wheel.hovered}
+          cursor={wheel.cursor}
         />
       )}
     </div>

@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict'
-import { WHEEL_RADIUS, sliceCentre, slicePath, wheelSliceAt, type WheelCounts } from './wheel.ts'
+import {
+  WHEEL_RADIUS,
+  clampToWheel,
+  sliceCentre,
+  slicePath,
+  wheelSliceAt,
+  type WheelCounts,
+} from './wheel.ts'
 
 const R = WHEEL_RADIUS
 const FULL: WheelCounts = { colour: 4, shape: 5 }
@@ -10,7 +17,8 @@ const at = (radius: number, degrees: number, counts = FULL) => {
 
 assert.equal(at(0.2, 0), null, 'dead zone')
 assert.equal(at(0.24, 0), null, 'dead zone edge')
-assert.equal(at(1.01, 0), null, 'beyond the radius')
+assert.deepEqual(at(3, 0), { ring: 'shape', index: 0 }, 'beyond the radius')
+assert.deepEqual(at(3, -37), { ring: 'shape', index: 4 }, 'beyond the radius')
 assert.deepEqual(at(0.26, 0), { ring: 'colour', index: 0 })
 assert.deepEqual(at(0.54, 0), { ring: 'colour', index: 0 })
 assert.deepEqual(at(0.56, 0), { ring: 'shape', index: 0 })
@@ -39,5 +47,8 @@ for (const shapes of [1, 2, 3, 4, 5])
       assert.ok(d.startsWith('M') && d.endsWith('Z') && !d.includes('NaN'), `${ring} ${index} path`)
     }
   }
+
+assert.deepEqual(clampToWheel(3 * R, 0), { x: R, y: 0 }, 'clamped onto the edge')
+assert.deepEqual(clampToWheel(10, -20), { x: 10, y: -20 }, 'inside, untouched')
 
 console.log('wheel ok')

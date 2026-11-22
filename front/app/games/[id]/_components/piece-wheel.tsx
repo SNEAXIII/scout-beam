@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useI18n } from '@/app/i18n'
 import { PIECE_SWATCHES } from '@/app/lib/colours'
-import { PIECE_COLOURS } from '@/app/lib/pieces'
+import { freeShapes, PIECE_COLOURS } from '@/app/lib/pieces'
 import { cn } from '@/app/lib/utils'
 import {
   sliceCentre,
@@ -13,19 +13,20 @@ import {
 } from '@/app/lib/wheel'
 import ShapeIcon from '@/components/shape-icon'
 import type { Draft } from '../_viewmodels/use-draft'
-import { freeShapes } from '../_viewmodels/use-piece-wheel'
 
 interface PieceWheelProps {
   readonly draft: Draft
   /** Viewport px, already clamped so the wheel fits. */
   readonly centre: { readonly x: number; readonly y: number }
   readonly hovered: WheelSlice | null
+  /** Offset from the centre, already held on the wheel; null until the pointer moves. */
+  readonly cursor: { readonly x: number; readonly y: number } | null
 }
 
 const SIZE = 2 * WHEEL_RADIUS
 
 /** The radial picker, drawn over the page at `centre`; it never takes the pointer. */
-export default function PieceWheel({ draft, centre, hovered }: PieceWheelProps) {
+export default function PieceWheel({ draft, centre, hovered, cursor }: PieceWheelProps) {
   const { t } = useI18n()
   const isHovered = (ring: WheelRing, index: number) =>
     hovered?.ring === ring && hovered.index === index
@@ -95,6 +96,13 @@ export default function PieceWheel({ draft, centre, hovered }: PieceWheelProps) 
       <span className='absolute top-1/2 left-1/2 w-14 -translate-1/2 text-center text-[11px] leading-tight font-medium text-foreground'>
         {label}
       </span>
+      {cursor && (
+        <div
+          className='absolute size-3 -translate-1/2 rounded-full border-2 border-background bg-foreground'
+          style={{ left: WHEEL_RADIUS + cursor.x, top: WHEEL_RADIUS + cursor.y }}
+          data-cy='wheel-cursor'
+        />
+      )}
     </div>,
     document.body
   )
