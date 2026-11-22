@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
-import { WHEEL_RADIUS, WHEEL_RINGS, sliceCentre, slicePath, wheelSliceAt } from './wheel.ts'
+import { WHEEL_RADIUS, sliceCentre, slicePath, wheelSliceAt, type WheelCounts } from './wheel.ts'
 
 const R = WHEEL_RADIUS
-const at = (radius: number, degrees: number) => {
+const FULL: WheelCounts = { colour: 4, shape: 5 }
+const at = (radius: number, degrees: number, counts = FULL) => {
   const a = (degrees * Math.PI) / 180
-  return wheelSliceAt(radius * R * Math.sin(a), -radius * R * Math.cos(a))
+  return wheelSliceAt(radius * R * Math.sin(a), -radius * R * Math.cos(a), counts)
 }
 
 assert.equal(at(0.2, 0), null, 'dead zone')
@@ -23,12 +24,20 @@ assert.deepEqual(at(0.8, 35), { ring: 'shape', index: 0 })
 assert.deepEqual(at(0.8, 37), { ring: 'shape', index: 1 })
 assert.deepEqual(at(0.8, -37), { ring: 'shape', index: 4 })
 
-for (const ring of ['colour', 'shape'] as const)
-  for (let index = 0; index < WHEEL_RINGS[ring].slices; index += 1) {
-    const { x, y } = sliceCentre(ring, index)
-    assert.deepEqual(wheelSliceAt(x, y), { ring, index }, `${ring} ${index} centre`)
-    const d = slicePath(ring, index)
-    assert.ok(d.startsWith('M') && d.endsWith('Z') && !d.includes('NaN'), `${ring} ${index} path`)
+assert.deepEqual(at(0.8, 89, { colour: 4, shape: 2 }), { ring: 'shape', index: 0 }, 'two shapes')
+assert.deepEqual(at(0.8, 91, { colour: 4, shape: 2 }), { ring: 'shape', index: 1 }, 'two shapes')
+assert.deepEqual(at(0.8, 180, { colour: 4, shape: 1 }), { ring: 'shape', index: 0 }, 'lone shape')
+assert.equal(at(0.8, 0, { colour: 4, shape: 0 }), null, 'no shape left')
+
+for (const shapes of [1, 2, 3, 4, 5])
+  for (const ring of ['colour', 'shape'] as const) {
+    const counts = { ...FULL, shape: shapes }
+    for (let index = 0; index < counts[ring]; index += 1) {
+      const { x, y } = sliceCentre(ring, index, counts[ring])
+      assert.deepEqual(wheelSliceAt(x, y, counts), { ring, index }, `${ring} ${index} centre`)
+      const d = slicePath(ring, index, counts[ring])
+      assert.ok(d.startsWith('M') && d.endsWith('Z') && !d.includes('NaN'), `${ring} ${index} path`)
+    }
   }
 
 console.log('wheel ok')

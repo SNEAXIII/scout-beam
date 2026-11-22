@@ -12,7 +12,7 @@ draft's colour and shape by aiming at a slice and releasing.
   (`games/[id]/_viewmodels/use-draft.ts`): it never places a piece, and a click on a cell still places
   as today. The toolbar stays as it is and shows every change.
 - Slice order, both rings: first slice centred straight up, then clockwise — colours in
-  `PIECE_COLOURS` order, shapes in `SHAPES` order (all five, placed ones included)
+  `PIECE_COLOURS` order, shapes in `SHAPES` order (only those not placed yet: the ring splits among them)
 
 ---
 

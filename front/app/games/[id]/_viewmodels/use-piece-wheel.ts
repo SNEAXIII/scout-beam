@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KEYMAPS } from '@/app/lib/keyboard'
-import { PIECE_COLOURS, SHAPES } from '@/app/lib/pieces'
+import { PIECE_COLOURS, SHAPES, type Piece } from '@/app/lib/pieces'
 import { WHEEL_RADIUS, wheelSliceAt, type WheelSlice } from '@/app/lib/wheel'
 import { typing, type Draft } from './use-draft'
 import { LONG_PRESS_MS, SLOP_PX, swallowNextClick } from './use-long-press'
@@ -9,6 +9,10 @@ type Point = { readonly x: number; readonly y: number }
 
 const clamp = (value: number, size: number) =>
   Math.max(WHEEL_RADIUS, Math.min(value, size - WHEEL_RADIUS))
+
+/** The shapes the wheel offers: those not on the grid yet. */
+export const freeShapes = (pieces: readonly Piece[]) =>
+  SHAPES.filter((shape) => !pieces.some((piece) => piece.shape === shape))
 
 const sameSlice = (a: WheelSlice | null, b: WheelSlice | null) =>
   a?.ring === b?.ring && a?.index === b?.index
@@ -59,10 +63,12 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
   }, [board])
 
   const { selectColour, selectShape, rotate } = draft
+  const shapes = useMemo(() => freeShapes(draft.pieces), [draft.pieces])
   useEffect(() => {
     if (!open) return
+    const counts = { colour: PIECE_COLOURS.length, shape: shapes.length }
     const onPointerMove = (event: PointerEvent) => {
-      const slice = wheelSliceAt(event.clientX - open.x, event.clientY - open.y)
+      const slice = wheelSliceAt(event.clientX - open.x, event.clientY - open.y, counts)
       if (sameSlice(slice, hoveredRef.current)) return
       hoveredRef.current = slice
       setHovered(slice)
@@ -70,7 +76,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     }
     const release = () => {
       const slice = hoveredRef.current
-      if (slice?.ring === 'shape') selectShape(SHAPES[slice.index])
+      if (slice?.ring === 'shape') selectShape(shapes[slice.index])
       show(null)
     }
     const onKeyUp = (event: KeyboardEvent) => {
@@ -95,7 +101,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
       window.removeEventListener('blur', close)
       window.removeEventListener('wheel', onWheel)
     }
-  }, [open, key, selectColour, selectShape, rotate, show])
+  }, [open, key, shapes, selectColour, selectShape, rotate, show])
 
   const cancelPress = () => window.clearTimeout(press.current?.timer)
   useEffect(
