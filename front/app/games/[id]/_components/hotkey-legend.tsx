@@ -21,6 +21,7 @@ export default function HotkeyLegend({ keyboardLayout }: HotkeyLegendProps) {
     { keys: [keys.shapePrevious, keys.shapeNext], label: t.hotkeys.shape },
     { keys: [keys.colourPrevious, keys.colourNext], label: t.hotkeys.colour },
     { keys: ['r'], label: t.hotkeys.rotate },
+    { keys: [keys.wheel], label: t.hotkeys.wheel },
     { keys: [t.hotkeys.rightClick, t.hotkeys.space], label: t.hotkeys.remove },
   ]
   return (
@@ -30,7 +31,11 @@ export default function HotkeyLegend({ keyboardLayout }: HotkeyLegendProps) {
         data-cy='touch-legend'
       >
         <Hand className='size-4 shrink-0 text-primary' />
-        {t.hotkeys.holdToRemove}
+        <span>
+          {t.hotkeys.holdToRemove}
+          <br />
+          {t.hotkeys.holdForWheel}
+        </span>
       </p>
       <ul
         className='hidden flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pointer-fine:flex'

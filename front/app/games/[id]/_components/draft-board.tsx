@@ -3,7 +3,9 @@ import { GRID_COLUMNS, GRID_ROWS, pieceCells, type Shape } from '@/app/lib/piece
 import { fill, useI18n } from '@/app/i18n'
 import { cn } from '@/app/lib/utils'
 import GridSvg from './grid-svg'
+import PieceWheel from './piece-wheel'
 import type { Draft } from '../_viewmodels/use-draft'
+import { usePieceWheel } from '../_viewmodels/use-piece-wheel'
 
 interface DraftBoardProps {
   readonly draft: Draft
@@ -16,12 +18,15 @@ const CELLS = Array.from({ length: GRID_ROWS }, (_, y) =>
   Array.from({ length: GRID_COLUMNS }, (_, x) => ({ x, y }))
 ).flat()
 
-/** The draft grid: a click places the picked shape; a right click, or Space over it, removes a piece. */
+/** The draft grid: a click places the picked shape; a right click, or Space over it, removes a piece.
+ * Holding the wheel key, or a long press on an empty cell, opens the piece wheel. */
 export default function DraftBoard({ draft, style, children }: DraftBoardProps) {
   const { t } = useI18n()
   const [hovered, setHovered] = useState<{ x: number; y: number } | null>(null)
   // A ref, not state: Space right after the mouse lands must already see the piece.
   const hoveredPiece = useRef<Shape | null>(null)
+  const board = useRef<HTMLDivElement>(null)
+  const wheel = usePieceWheel(draft, board)
   const owners = useMemo(() => {
     const owner = new Map<string, Shape>()
     for (const piece of draft.pieces)
@@ -70,9 +75,11 @@ export default function DraftBoard({ draft, style, children }: DraftBoardProps) 
 
   return (
     <div
+      ref={board}
       className='relative size-full'
       style={style}
       onContextMenu={(event) => event.preventDefault()}
+      onPointerMove={wheel.onPointerMove}
       data-cy='draft-board'
     >
       <div
@@ -81,6 +88,7 @@ export default function DraftBoard({ draft, style, children }: DraftBoardProps) 
           gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
         }}
+        {...wheel.cellHandlers}
       >
         {CELLS.map(({ x, y }) => {
           const owner = owners.get(`${x},${y}`)
@@ -117,6 +125,13 @@ export default function DraftBoard({ draft, style, children }: DraftBoardProps) 
       >
         {children}
       </GridSvg>
+      {wheel.open && (
+        <PieceWheel
+          draft={draft}
+          centre={wheel.open}
+          hovered={wheel.hovered}
+        />
+      )}
     </div>
   )
 }

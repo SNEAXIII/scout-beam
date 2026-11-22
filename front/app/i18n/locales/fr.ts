@@ -42,6 +42,8 @@ const fr: Translations = {
     rightClick: 'Clic droit',
     space: 'Espace',
     holdToRemove: 'Maintenez une pièce pour la retirer',
+    wheel: 'maintenir : roue des pièces',
+    holdForWheel: 'Maintenez une case vide pour ouvrir la roue des pièces',
   },
   login: {
     description: 'Connectez-vous pour retrouver vos parties.',
@@ -288,6 +290,7 @@ const fr: Translations = {
     cell: 'Case {{x}}, {{y}}',
     cellPiece: 'Case {{x}}, {{y}} : pièce « {{shape}} »',
     cellPlace: 'Case {{x}}, {{y}} : placer la pièce « {{shape}} »',
+    wheel: 'Choisir une pièce',
   },
   tutorial: {
     title: 'Tutoriel',

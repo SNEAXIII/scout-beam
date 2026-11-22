@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import type { Shape } from '@/app/lib/pieces'
 
-const LONG_PRESS_MS = 500
-const SLOP_PX = 10
+export const LONG_PRESS_MS = 500
+export const SLOP_PX = 10
 const CLICK_GUARD_MS = 400
 
 /** Swallows the click a browser may synthesise when a long press lifts over the emptied cell. */
-function swallowNextClick(): () => void {
+export function swallowNextClick(): () => void {
   let expiry: number | undefined
   const expire = () => {
     window.clearTimeout(expiry)

@@ -40,6 +40,8 @@ const en = {
     rightClick: 'Right-click',
     space: 'Space',
     holdToRemove: 'Hold a piece to remove it',
+    wheel: 'hold: piece wheel',
+    holdForWheel: 'Hold an empty cell to open the piece wheel',
   },
   login: {
     description: 'Sign in to find your games.',
@@ -280,6 +282,7 @@ const en = {
     cell: 'Cell {{x}}, {{y}}',
     cellPiece: 'Cell {{x}}, {{y}}: {{shape}} piece',
     cellPlace: 'Cell {{x}}, {{y}}: place the {{shape}} piece',
+    wheel: 'Pick a piece',
   },
   tutorial: {
     title: 'Tutorial',

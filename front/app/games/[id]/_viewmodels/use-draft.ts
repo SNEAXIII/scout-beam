@@ -28,12 +28,13 @@ const walkShape = (from: Shape, step: 1 | -1, pieces: readonly Piece[]): Shape =
   return from
 }
 
-const typing = (target: EventTarget | null) =>
+export const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 export interface Draft {
   readonly pieces: readonly Piece[]
+  readonly keyboardLayout: KeyboardLayout
   /** The shape the next click places; null once all five are placed. */
   readonly shape: Shape | null
   readonly rotation: Rotation
@@ -112,6 +113,7 @@ export function useDraft(gameId: string, keyboardLayout: KeyboardLayout): Draft 
 
   return {
     pieces,
+    keyboardLayout,
     shape,
     rotation,
     colour,
