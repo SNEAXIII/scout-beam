@@ -3,10 +3,11 @@ export const WHEEL_RADIUS = 120
 export type WheelRing = 'colour' | 'shape'
 export type WheelSlice = { ring: WheelRing; index: number }
 
+// Shapes inside: reaching one never crosses a colour, which is picked by passing over it.
 export const WHEEL_DEAD_ZONE = 0.25
 export const WHEEL_RINGS: Record<WheelRing, { inner: number; outer: number }> = {
-  colour: { inner: WHEEL_DEAD_ZONE, outer: 0.55 },
-  shape: { inner: 0.55, outer: 1 },
+  shape: { inner: WHEEL_DEAD_ZONE, outer: 0.7 },
+  colour: { inner: 0.7, outer: 1 },
 }
 
 /** How many slices each ring holds right now. */
@@ -24,7 +25,7 @@ const point = (radius: number, angle: number) => ({
 export function wheelSliceAt(dx: number, dy: number, counts: WheelCounts): WheelSlice | null {
   const r = Math.hypot(dx, dy) / WHEEL_RADIUS
   if (r < WHEEL_DEAD_ZONE) return null
-  const ring: WheelRing = r < WHEEL_RINGS.colour.outer ? 'colour' : 'shape'
+  const ring: WheelRing = r < WHEEL_RINGS.shape.outer ? 'shape' : 'colour'
   const slices = counts[ring]
   if (slices === 0) return null
   const angle = (Math.atan2(dx, -dy) + TURN) % TURN

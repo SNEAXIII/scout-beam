@@ -21,7 +21,7 @@ draft's colour and shape by aiming at a slice and releasing.
 **Files:** `front/app/lib/wheel.ts` (new), `front/app/lib/wheel.check.ts` (new), `front/package.json`
 
 Pure module, no React. Export `WHEEL_RADIUS = 120` (px) and the ring bounds as fractions of it:
-centre (dead zone) up to `0.25`, colour ring `0.25`–`0.55`, shape ring `0.55`–`1`. Export
+centre (dead zone) up to `0.25`, shape ring `0.25`–`0.7`, colour ring `0.7`–`1`. Export
 `wheelSliceAt(dx, dy)`: the pointer's offset from the wheel centre in px (y downwards) to
 `{ ring: 'colour', index }` (4 slices of 90°), `{ ring: 'shape', index }` (5 slices of 72°), or
 `null` in the dead zone and beyond the radius. Also export `slicePath(ring, index)` returning the
