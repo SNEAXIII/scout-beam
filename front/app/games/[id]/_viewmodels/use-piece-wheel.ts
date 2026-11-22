@@ -3,7 +3,7 @@ import { KEYMAPS } from '@/app/lib/keyboard'
 import { freeShapes, PIECE_COLOURS } from '@/app/lib/pieces'
 import { clampToWheel, WHEEL_RADIUS, wheelSliceAt, type WheelSlice } from '@/app/lib/wheel'
 import { typing, type Draft } from './use-draft'
-import { LONG_PRESS_MS, SLOP_PX, swallowNextClick } from './use-long-press'
+import { useCellLongPress } from './use-cell-long-press'
 
 type Point = { readonly x: number; readonly y: number }
 
@@ -24,8 +24,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
   const openRef = useRef<Point | null>(null)
   const hoveredRef = useRef<WheelSlice | null>(null)
   const pointer = useRef<Point | null>(null)
-  const press = useRef<(Point & { timer: number }) | null>(null)
-  const dropGuard = useRef<() => void>(undefined)
+  const offset = useRef<Point>({ x: 0, y: 0 })
 
   const show = useCallback((at: Point | null) => {
     const centre = at && {
@@ -34,6 +33,8 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     }
     openRef.current = centre
     hoveredRef.current = null
+    offset.current = { x: 0, y: 0 }
+    if (!centre && document.pointerLockElement) document.exitPointerLock()
     setOpen(centre)
     setHovered(null)
     setCursor(null)
@@ -47,6 +48,8 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
       const rect = board.current?.getBoundingClientRect()
       if (!rect) return
       show(pointer.current ?? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+      // The cursor stays put while the wheel is held; refused, the wheel follows it instead.
+      void Promise.resolve(board.current?.requestPointerLock()).catch(() => undefined)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -68,9 +71,19 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     if (!open) return
     const counts = { colour: PIECE_COLOURS.length, shape: shapes.length }
     const onPointerMove = (event: PointerEvent) => {
-      const [dx, dy] = [event.clientX - open.x, event.clientY - open.y]
-      setCursor(clampToWheel(dx, dy))
-      const slice = wheelSliceAt(dx, dy, counts)
+      // Some browsers report one bogus jump as the lock starts: it would land on a colour.
+      if (
+        document.pointerLockElement &&
+        Math.hypot(event.movementX, event.movementY) > WHEEL_RADIUS
+      )
+        return
+      const moved = document.pointerLockElement
+        ? { x: offset.current.x + event.movementX, y: offset.current.y + event.movementY }
+        : { x: event.clientX - open.x, y: event.clientY - open.y }
+      const at = clampToWheel(moved.x, moved.y)
+      offset.current = at
+      setCursor(at)
+      const slice = wheelSliceAt(at.x, at.y, counts)
       if (sameSlice(slice, hoveredRef.current)) return
       hoveredRef.current = slice
       setHovered(slice)
@@ -85,11 +98,15 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
       if (event.key.toLowerCase() === key) release()
     }
     const close = () => show(null)
+    // Escape lifts the lock: the wheel goes with it.
+    const onLockChange = () => {
+      if (!document.pointerLockElement) close()
+    }
     const onWheel = (event: WheelEvent) => {
       event.preventDefault()
       rotate()
     }
-    // The system cursor would wander off the wheel: the wheel draws its own instead.
+    // Without the lock the system cursor would wander off the wheel: it draws its own instead.
     document.documentElement.classList.add(...HIDE_CURSOR)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('keyup', onKeyUp)
@@ -97,6 +114,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
     window.addEventListener('touchcancel', close)
     window.addEventListener('blur', close)
     window.addEventListener('wheel', onWheel, { passive: false })
+    document.addEventListener('pointerlockchange', onLockChange)
     return () => {
       document.documentElement.classList.remove(...HIDE_CURSOR)
       window.removeEventListener('pointermove', onPointerMove)
@@ -105,17 +123,9 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
       window.removeEventListener('touchcancel', close)
       window.removeEventListener('blur', close)
       window.removeEventListener('wheel', onWheel)
+      document.removeEventListener('pointerlockchange', onLockChange)
     }
   }, [open, key, shapes, selectColour, selectShape, rotate, show])
-
-  const cancelPress = () => window.clearTimeout(press.current?.timer)
-  useEffect(
-    () => () => {
-      window.clearTimeout(press.current?.timer)
-      dropGuard.current?.()
-    },
-    []
-  )
 
   /** Spread on the board: remembers the mouse for the wheel key. */
   const onPointerMove = (event: React.PointerEvent) => {
@@ -123,27 +133,7 @@ export function usePieceWheel(draft: Draft, board: React.RefObject<HTMLElement |
   }
 
   /** Spread on the cells: a touch long press on an empty one opens the wheel there. */
-  const cellHandlers = {
-    onPointerDown: (event: React.PointerEvent) => {
-      cancelPress()
-      press.current = null
-      const target = event.target as HTMLElement
-      if (event.pointerType !== 'touch' || target.dataset.piece) return
-      const at = { x: event.clientX, y: event.clientY }
-      const timer = window.setTimeout(() => {
-        dropGuard.current?.()
-        dropGuard.current = swallowNextClick()
-        show(at)
-      }, LONG_PRESS_MS)
-      press.current = { ...at, timer }
-    },
-    onPointerMove: ({ clientX, clientY }: React.PointerEvent) => {
-      const start = press.current
-      if (start && Math.hypot(clientX - start.x, clientY - start.y) > SLOP_PX) cancelPress()
-    },
-    onPointerUp: cancelPress,
-    onPointerCancel: cancelPress,
-  }
+  const cellHandlers = useCellLongPress(show)
 
   return { open, hovered, cursor, onPointerMove, cellHandlers }
 }
