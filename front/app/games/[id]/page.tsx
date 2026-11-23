@@ -6,6 +6,7 @@ import { useI18n } from '@/app/i18n'
 import type { Piece } from '@/app/lib/pieces'
 import DraftPanel from './_components/draft-panel'
 import GameHeader from './_components/game-header'
+import { BOARD_COLUMN } from './_components/game-board'
 import GameOverPanel from './_components/game-over-panel'
 import RoomLine from './_components/room-line'
 import ShotList from './_components/shot-list'
@@ -13,6 +14,9 @@ import { shotPaths } from './_components/shot-paths'
 import { useGame } from './_viewmodels/use-game'
 import { useKeyboardLayout } from './_viewmodels/use-keyboard-layout'
 import { useTraces } from './_viewmodels/use-traces'
+
+// Board, gap, shot list and padding: no wider, so the whole game sits centred on wide screens.
+const PAGE_WIDTH = { maxWidth: `min(64rem, calc(${BOARD_COLUMN.maxWidth} + 17rem))` }
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>()
@@ -41,7 +45,8 @@ export default function GamePage() {
 
   return (
     <main
-      className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 pb-3 md:px-4'
+      className='mx-auto flex w-full flex-col gap-3 px-3 pb-3 md:my-auto md:px-4'
+      style={PAGE_WIDTH}
       data-game
     >
       <GameHeader
