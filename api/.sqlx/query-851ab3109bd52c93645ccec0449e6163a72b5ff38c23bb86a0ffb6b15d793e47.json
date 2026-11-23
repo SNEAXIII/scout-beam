@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE game g SET user_id = $2\n           WHERE g.user_id = $1 AND g.daily_date IS NOT NULL\n             AND EXISTS (SELECT 1 FROM \"user\" u WHERE u.id = $1 AND u.guest)\n             AND NOT EXISTS (SELECT 1 FROM game a\n                             WHERE a.user_id = $2 AND a.daily_date = g.daily_date)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "851ab3109bd52c93645ccec0449e6163a72b5ff38c23bb86a0ffb6b15d793e47"
+}

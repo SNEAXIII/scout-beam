@@ -3,9 +3,9 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::errors::user_error::UserError;
+use crate::errors::user_error::{UserError, is_unique_violation};
 use crate::models::user_model::User;
-use crate::repositories::user_repository;
+use crate::repositories::{game_repository, user_repository};
 use crate::services::{login_generator, password};
 use crate::shared::role::Role;
 
@@ -105,6 +105,23 @@ pub async fn login_with_password(
     };
 
     Ok(user_repository::touch_last_login(pool, user.id).await?)
+}
+
+/// A guest `caller` signing in to `account` hands it the dailies of days it has not played.
+/// Register and a converting sign-in made the guest the account itself: nothing to move then.
+pub async fn take_guest_dailies(
+    pool: &PgPool,
+    caller: Option<Uuid>,
+    account: &User,
+) -> Result<(), UserError> {
+    let Some(guest_id) = caller.filter(|id| *id != account.id) else {
+        return Ok(());
+    };
+    match game_repository::move_guest_dailies(pool, guest_id, account.id).await {
+        // The account started one of those days meanwhile: nothing moves, the sign-in still succeeds.
+        Err(error) if is_unique_violation(&error) => Ok(()),
+        result => result.map(|_| ()).map_err(UserError::from),
+    }
 }
 
 /// The pseudo the caller goes by from now on; its rules are the DTO's, the unique index settles a race.

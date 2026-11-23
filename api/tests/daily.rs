@@ -509,3 +509,102 @@ async fn the_caller_outside_the_top_still_gets_their_line(pool: PgPool) {
     }
     assert!(anonymous.body["me"].is_null());
 }
+
+// --- a guest signing in ---------------------------------------------------------
+
+impl TestApp {
+    /// A password account, registered without any session: its id and access token.
+    async fn account(&self, login: &str) -> (Uuid, String) {
+        let registered = self.post("/auth/register", None, credentials(login)).await;
+        registered.assert_status(StatusCode::CREATED);
+        let token = registered.access_token();
+        (self.jwt.decode_access(&token).unwrap().sub, token)
+    }
+
+    /// Sign in to `login` by password, sending `token` as the session already held.
+    async fn login_from(&self, login: &str, token: &str) -> String {
+        let logged = self
+            .post("/auth/login", Some(token), credentials(login))
+            .await;
+        logged.assert_status(StatusCode::OK);
+        logged.access_token()
+    }
+
+    async fn owner_of(&self, game_id: Uuid) -> Uuid {
+        sqlx::query_scalar("SELECT user_id FROM game WHERE id = $1")
+            .bind(game_id)
+            .fetch_one(&self.pool)
+            .await
+            .unwrap()
+    }
+}
+
+fn credentials(login: &str) -> Value {
+    json!({ "login": login, "password": "correct horse" })
+}
+
+#[sqlx::test]
+async fn signing_in_from_a_guest_moves_its_solved_daily_to_the_account(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    app.account("Sneaxiii").await;
+    let (_, guest_token) = app.guest().await;
+    let game_id = app.start_daily(today, &guest_token).await;
+    app.solve(game_id, &guest_token).await;
+    app.time_game(game_id, 0.0, 95.0).await;
+
+    let token = app.login_from("Sneaxiii", &guest_token).await;
+
+    let day = app.day_ranking(today, Some(&token)).await;
+    assert_eq!(column(&day, "login"), [json!("Sneaxiii")]);
+    assert_eq!(day.body["me"]["seconds"], 95);
+    let read = app.get(&format!("/daily/{today}/game"), Some(&token)).await;
+    read.assert_status(StatusCode::OK);
+    assert_eq!(read.body["id"], game_id.to_string());
+    assert_eq!(read.body["status"], "solved");
+}
+
+#[sqlx::test]
+async fn a_day_the_account_played_stays_on_each_side(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (account_id, account_token) = app.account("Sneaxiii").await;
+    let account_game = app.start_daily(today, &account_token).await;
+    let (guest_id, guest_token) = app.guest().await;
+    let guest_game = app.start_daily(today, &guest_token).await;
+    app.solve(guest_game, &guest_token).await;
+
+    let token = app.login_from("Sneaxiii", &guest_token).await;
+
+    assert_eq!(app.owner_of(account_game).await, account_id);
+    assert_eq!(app.owner_of(guest_game).await, guest_id);
+    let read = app.get(&format!("/daily/{today}/game"), Some(&token)).await;
+    assert_eq!(read.body["id"], account_game.to_string());
+    assert_eq!(read.body["status"], "in_progress");
+}
+
+#[sqlx::test]
+async fn an_unfinished_guest_daily_moves_too(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    let (account_id, _) = app.account("Sneaxiii").await;
+    let (_, guest_token) = app.guest().await;
+    let game_id = app.start_daily(today, &guest_token).await;
+
+    app.login_from("Sneaxiii", &guest_token).await;
+
+    assert_eq!(app.owner_of(game_id).await, account_id);
+}
+
+#[sqlx::test]
+async fn signing_in_from_another_account_moves_nothing(pool: PgPool) {
+    let app = TestApp::new(pool);
+    let today = app.today().await;
+    app.account("Sneaxiii").await;
+    let (other_id, other_token) = app.account("other").await;
+    let game_id = app.start_daily(today, &other_token).await;
+
+    app.login_from("Sneaxiii", &other_token).await;
+
+    assert_eq!(app.owner_of(game_id).await, other_id);
+}

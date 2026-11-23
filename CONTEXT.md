@@ -73,7 +73,8 @@ _Avoid_: guess, solution, answer
 
 **Guest**:
 A player without credentials, who may only play the daily; signing up turns the guest into that
-account and keeps its games.
+account and keeps its games, signing in to an existing account moves to it the guest's dailies of
+days that account has not played.
 _Avoid_: anonymous, visitor
 
 **Daily**:

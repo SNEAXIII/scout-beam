@@ -27,13 +27,14 @@ export interface Providers {
 const signIn = (path: string, body?: unknown) =>
   apiRequest<UserProfile>(path, { method: 'POST', body, noRedirect: true })
 
-/** The API ignores an expired access cookie: renewed first, so a guest is converted, not left behind. */
+/** The API ignores an expired access cookie: renewed first, so a guest is converted or hands over its dailies. */
 async function convertingSignIn(path: string, body: unknown): Promise<UserProfile> {
   await refreshSession().catch(() => false)
   return signIn(path, body)
 }
 
-export const login = (login: string, password: string) => signIn('/auth/login', { login, password })
+export const login = (login: string, password: string) =>
+  convertingSignIn('/auth/login', { login, password })
 
 export const register = (login: string, password: string) =>
   convertingSignIn('/auth/register', { login, password })
