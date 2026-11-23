@@ -29,7 +29,8 @@ export default function TutorialPage() {
   const text = useStepText(tutorial)
 
   return (
-    <main className='mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 pb-4'>
+    // The tap hint's slide and ripple overflow the Next button; clipped, they no longer resize the page.
+    <main className='mx-auto flex w-full max-w-3xl flex-col gap-3 overflow-clip px-4 pb-4'>
       <div className='flex items-center gap-2'>
         <h1 className='text-lg font-semibold'>{t.tutorial.title}</h1>
         {!tutorial.done && (
