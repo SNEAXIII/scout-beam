@@ -1,4 +1,5 @@
 import { useI18n } from '@/app/i18n'
+import DayRanking from '@/app/_components/day-ranking'
 import { sameLook, type Piece } from '@/app/lib/pieces'
 import type { GameStatus, GameView } from '@/app/services/games'
 import GameBoard, { BOARD_COLUMN, type GameBoardProps } from './game-board'
@@ -83,6 +84,7 @@ export default function GameOverPanel({
         </p>
       )}
       {game.daily_date && status === 'solved' && <GuestSaveCard />}
+      {game.daily_date && <DayRanking date={game.daily_date} />}
     </div>
   )
 }
