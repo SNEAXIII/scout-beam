@@ -287,3 +287,24 @@ where
     .fetch_one(executor)
     .await
 }
+
+/// Hand a guest's dailies to an account, except days the account already has a game of; a
+/// `guest_id` that is not a guest moves nothing. Returns how many games moved.
+pub async fn move_guest_dailies(
+    pool: &PgPool,
+    guest_id: Uuid,
+    account_id: Uuid,
+) -> sqlx::Result<u64> {
+    let moved = sqlx::query!(
+        r#"UPDATE game g SET user_id = $2
+           WHERE g.user_id = $1 AND g.daily_date IS NOT NULL
+             AND EXISTS (SELECT 1 FROM "user" u WHERE u.id = $1 AND u.guest)
+             AND NOT EXISTS (SELECT 1 FROM game a
+                             WHERE a.user_id = $2 AND a.daily_date = g.daily_date)"#,
+        guest_id,
+        account_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(moved.rows_affected())
+}

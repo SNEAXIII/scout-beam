@@ -218,11 +218,12 @@ async fn post_register(
     session_response(&state, user, StatusCode::CREATED)
 }
 
-/// `POST /auth/login` — sign in with a login and password.
+/// `POST /auth/login` — sign in with a login and password; a guest's token hands over its dailies.
 #[utoipa::path(
     post,
     path = "/auth/login",
     tag = "Auth",
+    security((), ("bearer" = [])),
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Signed in: session cookies, the profile as the body", body = UserProfile),
@@ -232,9 +233,12 @@ async fn post_register(
 )]
 async fn post_login(
     State(state): State<AppState>,
+    caller: Option<Identity>,
     ValidatedJson(body): ValidatedJson<LoginRequest>,
 ) -> ApiResult<Response> {
     let user = user_service::login_with_password(&state.pool, &body.login, &body.password).await?;
+    let caller = caller.map(|identity| identity.user_id);
+    user_service::take_guest_dailies(&state.pool, caller, &user).await?;
     session_response(&state, user, StatusCode::OK)
 }
 
@@ -321,7 +325,8 @@ async fn post_google(
     provider_sign_in(&state, Provider::Google, caller, &body.code).await
 }
 
-/// A guest's token converts that guest when no account matches; any other token is ignored.
+/// A guest's token converts that guest when no account matches, else hands it its dailies;
+/// any other token is ignored.
 async fn provider_sign_in(
     state: &AppState,
     provider: Provider,
@@ -338,5 +343,6 @@ async fn provider_sign_in(
         caller,
     )
     .await?;
+    user_service::take_guest_dailies(&state.pool, caller, &user).await?;
     session_response(state, user, StatusCode::OK)
 }
