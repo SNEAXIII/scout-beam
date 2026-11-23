@@ -12,11 +12,11 @@ interface TutorialNavProps {
   readonly hint?: boolean
 }
 
-/** "Previous" and "Next", together under the board. */
+/** "Previous" and "Next", under the board; pinned to the screen's bottom on short desktop screens. */
 export default function TutorialNav({ tutorial, children, nextDisabled, hint }: TutorialNavProps) {
   const { t } = useI18n()
   return (
-    <div className='flex flex-wrap items-center justify-end gap-2'>
+    <div className='flex flex-wrap items-center justify-end gap-2 bg-background md:sticky md:bottom-0 md:py-2'>
       <Button
         size='sm'
         variant='outline'
